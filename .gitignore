@@ -1,0 +1,16 @@
+*
+!Makefile
+!doc
+!doc/**
+!*.v
+!.gitignore
+!.gitattribute
+!.gitmodules
+!Makefile
+!*.jpg
+!tcl
+!*.tcl
+!*.xdc
+!tb
+!tv
+!*.c
