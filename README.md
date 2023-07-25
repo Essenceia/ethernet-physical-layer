@@ -2,25 +2,35 @@
 
 Physical layer rtl to be shared between the very low latency ethernet application and the
 compliant network verification ethernet application.
+Modules should be parametrisable to support multiple configurations. 
 
-Relevant 802.3 clauses :
+## Objective
 
-[ ] 48 - 10GBASE-X PCS
+The objective is to support using different modules 10GBASE-R and 40GBASE-R.
 
-[ ] 49 - 64b66b PCS
+10GBASE-R:
 
-[ ] 51 - 10GBASE-{R,W} PMA
+- 16b wide data path, very low latency
 
-[ ] 78 - Energy-Efficient Etherent
+- 64b wide data path, no latency requirement
 
-[ ] 82 - 64b66b, {40,100}GBASE-R
+40GBASE-R:
 
-[ ] 83 - {40,100}GBASE-R PMA
+- ?b wide data part, very low latency
+
+- 256b wide data path, no latency requirement
 
 Features not supported :
 
 - MDIO
 
-- RS - Reconsilliation Sublayer
+- RS - Reconsiliation Sublayer
 
 - WIS - WAN Interface Sublayer
+
+- EEE - Ethernet Energy Efficiency 
+
+# License 
+
+This code uses the MIT license, all rights belong to Julia Desmazes.
+
