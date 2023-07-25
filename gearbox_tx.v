@@ -98,6 +98,9 @@ always @(posedge clk) begin
 end
 
 // buffer is full, tell mac to not send next cycle
+logic [DATA_W-1:0] fifo_data;
+assign fifo_data = rd_fifo_mask & fifo_q;
+
 assign full_v_o = seq_i == SEQ_FULL;
 assign data_o = rd_fifo_mask & fifo_q | ~rd_fifo_mask & rd_data_shifted;
 endmodule
