@@ -7,8 +7,8 @@
 *   of the block size we need a CNT_N cycle pause to sent
 *   a block with the terminate control
 */
-module pcs_enc #(
-	parameter XGMII_DATA_W = 32,
+module pcs_10g_enc #(
+	parameter XGMII_DATA_W = 64,
 	parameter XGMII_KEEP_W = $clog2(XGMII_DATA_W),
 	parameter BLOCK_W = 64,
 	parameter CNT_N = BLOCK_W/XGMII_DATA_W,
@@ -16,6 +16,7 @@ module pcs_enc #(
 
 	parameter FULL_KEEP_W = CNT_N*XGMII_KEEP_W,
 	parameter BLOCK_TYPE_W = 8,
+	parameter CTRL_W  = 7
 )(
 	// data clk
 	input clk,
@@ -53,18 +54,20 @@ localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_TERM_6   = 8'he1, // C7    D5 D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_7   = 8'hff; //    D6 D5 D4 D3 D2 D1 D0 BT
 
-logic [BLOCK_TYPE_W-1:0] block_type;
+localparam [CTRL_W-1:0] CTRL_IDLE = 7'h07;
+
 // fsm
 reg   fsm_idle_q;
 reg   fsm_data_q;
 reg   fsm_end_delay_q;
 logic last_v;
 logic ctrl_v;
+logic idle_v;
 logic fsm_idle_next;
 logic fsm_data_next;
 logic fsm_end_delay_next;
 logic fsm_end;
-
+logic fsm_en;
 logic part_zero;
 // block type
 logic [FULL_KEEP_W-1:0]  block_keep_lite;
@@ -74,9 +77,12 @@ logic                    term_mask_lite_overflow;
 logic [BLOCK_TYPE_W-1:0] term_block_type;
 logic                    keep_full;
 // block type field
+logic                    block_type_v;
+logic [BLOCK_TYPE_W-1:0] block_type;
 assign block_type_v = ctrl_v;
 assign block_type   = {BLOCK_TYPE_W{start_i & ~last_v}} & BLOCK_TYPE_OS_0
-					| {BLOCK_TYPE_W{last_v}} & term_block_type;
+					| {BLOCK_TYPE_W{last_v}} & term_block_type
+					| {BLOCK_TYPE_W{idle_v}} & BLOCK_TYPE_CTRL;
 
 // terminate block type
 assign block_keep_lite = { keep_next_i, keep_i };
@@ -96,9 +102,11 @@ always @(term_mask_lite) begin
 		default : term_block_type = 'X;
 	endcase
 end
-
+// data 
+logic [XGMII_DATA_W-BLOCK_TYPE_W-1:0] data_ctrl;
+assign data_ctrl = idle_v ? {8{CTRL_IDLE}} : data_i[XGMII_DATA_W-1:BLOCK_TYPE_W];
 // output data
-assign data_o = { data_i[XGMII_DATA_W-1:BLOCK_TYPE_W] , block_type_v ? block_type : data_i[BLOCK_TYPE_W-1:0] };
+assign data_o = { data_ctrl , block_type_v ? block_type : data_i[BLOCK_TYPE_W-1:0] };
 // sync header data or control
 // data 2'b01
 // cntr 2'b10
@@ -109,10 +117,11 @@ assign sync_header_o   = { ctrl_v , ~ctrl_v };
 assign part_zero = part_i == 'd0; 
 
 assign last_v = ( ~keep_full & last_i ) | fsm_end_delay_q;
-assign ctrl_v  = ( start_i | last_v | idle_v_i ) & part_zero;
+assign ctrl_v = ( start_i | last_v | idle_v_i ) & part_zero;
+assign idle_v = idle_v_i & ~fsm_end_delay_q;
 
 assign fsm_idle_next = ( last_v & ~keep_full ) | fsm_end_delay_q 
-					 | fsm_idle_q & ~( start_v & ~idle_v_i );
+					 | fsm_idle_q & ~( start_i & ~idle_v_i );
 assign fsm_data_next = ( start_i & ~idle_v_i ) &  | fsm_data_q & last_v; 
 
 // last packet was received but there is no space to insert block type to
