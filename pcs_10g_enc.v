@@ -58,5 +58,13 @@ m_pcs_10g_enc_lite(
 .data_o(data_o)	
 );
 
-
+`ifdef FORMAL
+logic data_v_f;
+assign data_v_f = ( xgmii_txc_i != XGMII_CTRL_ERR ) | ( xgmii_txc_i == XGMII_CTRL_IDLE );
+always_comb begin
+	// xcheck
+	sva_xcheck_xgmii_ctr : assert( ~$isunknown(xgmii_txc_i));
+	sva_xcheck_xgmii_keep : assert(~data_v_f | data_v_f & ~$isunknown(xgmii_txk_i));
+end
+`endif
 endmodule

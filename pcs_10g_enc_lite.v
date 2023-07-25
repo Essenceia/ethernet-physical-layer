@@ -143,4 +143,32 @@ always @(posedge clk) begin
 		fsm_end_delay_q <= fsm_end_delay_next;
 	end
 end
+
+`ifdef FORMAL 
+
+logic data_v_f;
+assert data_v_f = ~(idle_v_i | err_i );
+initial begin
+	// assume reset
+	a_nreset : assume( ~nreset );
+end
+
+always_comb begin
+	// xcheck
+	sva_xcheck_ctrl_i : assert( ~$isunknown({idle_v_i, start_i, last_i, err_i }));
+	sva_xcheck_keep_i : assert ( ~data_v_f | data_v_f & ~$isunknown( keep_i )); 
+	genvar f;
+	generate 
+		for( f=0; f < XGMII_KEEP_W; f++) begin
+			assert( ~(data_v_f&keep_i[f]) | data_v_f & keep_i[f] & ~$isunknown(data_i[f*8+7:f*8]));
+		end
+	endgenerate
+	if ( BLOCK_W != XGMII_DATA_W ) begin
+	sva_xcheck_part_i : assert( ~data_v_f | data_v_f & ~$isunknown( part_i ));
+	sva_xcheck_keep_next_i : assert( ~data_v_f | data_v_f & ~$isunknown( keep_next_i ));
+	end
+	// fsm
+	sva_fsm_onehote : assert( $onehot( { fsm_idle_q, fsm_data_q, fsm_end_delay_q });
+end
+`endif
 endmodule
