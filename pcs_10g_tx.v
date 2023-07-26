@@ -3,6 +3,8 @@ module pcs_10g_tx#(
 	parameter XGMII_DATA_W = 32,
 	parameter XGMII_KEEP_W = $clog2(XGMII_DATA_W),
 	parameter BLOCK_W = 64,
+	parameter LANE0_CNT_N = BLOCK_W/( 4 * 8),
+	parameter LANE0_CNT_W = $clog2(LANE0_CNT_N)+1,
 	parameter CNT_N = BLOCK_W/XGMII_DATA_W,
 	parameter CNT_W = $clog2( CNT_N ),
 	parameter BLOCK_TYPE_W = 8,
@@ -16,7 +18,7 @@ module pcs_10g_tx#(
 	// MAC
 	input                    ctrl_v_i,
 	input                    idle_v_i,
-	input                    start_i,
+	input [LANE0_CNT_W-1:0]  start_i,
 	input                    term_i,
 	input                    err_i,
 	input [XGMII_DATA_W-1:0] data_i, // tx data

@@ -1,7 +1,10 @@
 /* XGMII 10G PCS */
 
 module xgmii_pcs_10g_tx #(
-	parameter XGMII_DATA_W = 64	
+	parameter XGMII_DATA_W = 64,
+	parameter LANE0_CNT_N  = BLOCK_W/( 4 * 8),
+	parameter LANE0_CNT_W  = $clog2(LANE0_CNT_N+1)
+
 )(
 	input clk, 
 	input nreset,
@@ -14,9 +17,9 @@ module xgmii_pcs_10g_tx #(
 // xgmii interface to custom lite pcs interface
 logic ctrl_v;
 logic idle_v;
-logic start_v;
 logic term_v;
 logic err_v;
+logic [LANE0_CNT_W-1:0]  start_v;
 logic [XGMII_KEEP_W-1:0] keep; // data keep
 
 xgmii_pcs_10g_enc_intf #( .XGMII_DATA_W(XGMII_DATA_W))

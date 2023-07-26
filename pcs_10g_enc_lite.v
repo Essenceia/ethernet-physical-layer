@@ -13,7 +13,8 @@ module pcs_10g_enc_lite #(
 	parameter BLOCK_W = 64,
 	parameter CNT_N = BLOCK_W/XGMII_DATA_W,
 	parameter CNT_W = $clog2( CNT_N ),
-
+	parameter LANE0_CNT_N = BLOCK_W/( 4 * 8),
+	parameter LANE0_CNT_W = $clog2(LANE0_CNT_N)+1,
 	parameter FULL_KEEP_W = CNT_N*XGMII_KEEP_W,
 	parameter BLOCK_TYPE_W = 8,
 	parameter CTRL_W  = 7
@@ -24,7 +25,7 @@ module pcs_10g_enc_lite #(
 
 	input                    ctrl_v_i,
 	input                    idle_v_i,
-	input                    start_i,
+	input [LANE0_CNT_W-1:0]  start_i,
 	input                    term_i,
 	input                    err_i,
 	input [XGMII_DATA_W-1:0] data_i, // tx data
@@ -81,7 +82,8 @@ logic                    keep_full;
 logic                    block_type_v;
 logic [BLOCK_TYPE_W-1:0] block_type;
 assign block_type_v = ctrl_v;
-assign block_type   = {BLOCK_TYPE_W{start_i & ~last_v}} & BLOCK_TYPE_OS_0
+assign block_type   = {BLOCK_TYPE_W{start_i[0] & ~last_v}} & BLOCK_TYPE_START_0
+					| {BLOCK_TYPE_W{start_i[1] & ~last_v}} & BLOCK_TYPE_START_4
 					| {BLOCK_TYPE_W{last_v}} & term_block_type
 					| {BLOCK_TYPE_W{idle_v}} & BLOCK_TYPE_CTRL;
 
