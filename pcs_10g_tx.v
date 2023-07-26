@@ -8,7 +8,7 @@ module pcs_10g_tx#(
 	parameter BLOCK_TYPE_W = 8,
 	
 	parameter PMA_DATA_W = 16, 
-	parameter PMA_CNT_N  = XGMII_DATA_W/PMA_DATA_W,
+	parameter PMA_CNT_N  = XGMII_DATA_W/PMA_DATA_W
 )(
 	input clk,
 	input nreset,
@@ -30,13 +30,13 @@ module pcs_10g_tx#(
 	output [PMA_CNT_N*PMA_DATA_W-1:0] data_o
 );
 localparam HEAD_W = 2;
-localparam SEQ_W  = $clog(XGMII_DATA_W/HEAD_W+1);
+localparam SEQ_W  = $clog2(XGMII_DATA_W/HEAD_W+1);
 // data
 logic [XGMII_DATA_W-1:0] data_enc; // encoded
 logic [XGMII_DATA_W-1:0] data_scram; // scrambled
 // sync header
-logic       sync_header_v;
-logic [1:0] sync_header;
+logic       sync_head_v;
+logic [1:0] sync_head;
 logic       gearbox_full;
 
 // pcs fsm
@@ -47,7 +47,7 @@ logic             seq_inc_overflow;
 reg   [SEQ_W-1:0] seq_q;
 
 assign seq_rst = gearbox_full;
-assign { seq_inc_overflow, seq_inc } = seq_q + {{SEQ_W-1{1'b0} , 1'b1};
+assign { seq_inc_overflow, seq_inc } = seq_q + {{SEQ_W-1{1'b0}} , 1'b1};
 assign seq_next = seq_rst ? {SEQ_W{1'b0}} : seq_inc;
 always @(posedge clk) begin
 	if ( ~nreset ) begin
@@ -68,12 +68,12 @@ m_pcs_enc(
 	.start_i(start_i),
 	.term_i(term_i),
 	.err_i(err_i),
-	.part_i(seq_q),
+	.part_i(seq_q[CNT_W-1:0]),
 	.data_i(data_i), // tx data
 	.keep_i(keep_i),
 	.keep_next_i(keep_next_i),
-	.block_header_v_o(sync_header_v),
-	.sync_header_o(sync_header), 
+	.head_v_o(sync_head_v),
+	.sync_head_o(sync_head), 
 	.data_o(data_enc)	
 );
 // scramble
@@ -91,7 +91,7 @@ m_gearbox_tx (
 	.clk(clk),
 	.nreset(nreset),
 	.seq_i(seq_q),
-	.head_i(sync_header),
+	.head_i(sync_head),
 	.data_i(data_scram),
 	.full_v_o(gearbox_full),
 	.data_o(data_o)

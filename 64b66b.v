@@ -20,12 +20,13 @@ logic [S_W-1:0] s_next;
 genvar i;
 generate
 	for (  i = 0; i < LEN; i++ ) begin : xor_loop
-		if ( LEN <= I0 )
+		if ( LEN <= I0 ) begin
 			assign scram_o[i] = data_i[i] ^ ( s_q[I0-i] ^ s_q[I1-i] ); 
-		end else if ( LEN <= I1 )  
+		end else if ( LEN <= I1 ) begin 
 			assign scram_o[i] = data_i[i] ^ ( scram_o[I0-i] ^ s_q[I1-i] ); 
-		end else 
+		end else begin
 			assign scram_o[i] = data_i[i] ^ ( scram_o[I0-i] ^  scram_o[I1-i]); 
+		end
 	end
 endgenerate
 

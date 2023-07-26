@@ -27,6 +27,9 @@ gearbox_tx_tb: gearbox_tx.v build
 pcs_10g_enc_tb: pcs_10g_enc.v pcs_10g_enc_lite.v
 	iverilog ${FLAGS} -s pcs_10g_enc_tb -o ${BUILD}/pcs_10g_enc_tb pcs_10g_enc.v pcs_10g_enc_lite.v ${TB_DIR}/pcs_10g_enc_tb.sv
 
+pcs_10g_tx : pcs_10g_tx.v pcs_10g_enc_lite.v 64b66b.v gearbox_tx.v 
+	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_10g_enc_lite.v 64b66b.v gearbox_tx.v
+
 run_64b66b: 64b66b_tb
 	vvp ${BUILD}/lite_64b66b_tb
 
