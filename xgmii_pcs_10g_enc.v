@@ -3,7 +3,7 @@
 module xgmii_pcs_10g_tx #(
 	parameter XGMII_DATA_W = 64,
 	parameter LANE0_CNT_N  = BLOCK_W/( 4 * 8),
-	parameter LANE0_CNT_W  = $clog2(LANE0_CNT_N+1)
+	parameter LANE0_CNT_W  = $clog2(LANE0_CNT_N)+1
 
 )(
 	input clk, 
@@ -12,6 +12,7 @@ module xgmii_pcs_10g_tx #(
  	input [XGMII_DATA_W-1:0] xgmii_txd_i,
 	input [XGMII_CTRL_W-1:0] xgmii_txc_i,
 
+	output                    ready_o,
 	output [XGMII_DATA_W-1:0] data_o
 );
 // xgmii interface to custom lite pcs interface
@@ -49,6 +50,7 @@ m_pcs_tx(
 	.keep_i(keep),
 	.part_i(), // NC
 	.keep_next_i(), //NC
+	.ready_o(ready_o),
 	.data_o(data_o)
 );
 endmodule
