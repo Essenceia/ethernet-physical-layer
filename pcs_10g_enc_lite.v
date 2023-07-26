@@ -22,17 +22,17 @@ module pcs_10g_enc_lite #(
 	input clk,
 	input nreset,
 
-	input idle_v_i,
+	input                    ctrl_v_i,
+	input                    idle_v_i,
+	input                    start_i,
+	input                    last_i,
+	input                    err_i,
+	input [XGMII_DATA_W-1:0] data_i, // tx data
+	input [XGMII_KEEP_W-1:0] keep_i,
 
-	input [XGMII_DATA_W-1:0]       data_i, // tx data
-	input [XGMII_KEEP_W-1:0]       keep_i,
-
-	input [CNT_W-1:0]              part_i,
+	input [CNT_W-1:0]                  part_i,
 	input [(CNT_N-1)*XGMII_KEEP_W-1:0] keep_next_i,
 
-	input start_i,
-	input last_i,
-	input err_i,
 
 	output                    head_v_o,
 	output [1:0]              sync_head_o, 

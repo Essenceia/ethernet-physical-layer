@@ -1,5 +1,5 @@
 /* PCS on the transmission path */
-module pcs_tx#(
+module pcs_10g_tx#(
 	parameter XGMII_DATA_W = 32,
 	parameter XGMII_KEEP_W = $clog2(XGMII_DATA_W),
 	parameter BLOCK_W = 64,
@@ -7,25 +7,26 @@ module pcs_tx#(
 	parameter CNT_W = $clog2( CNT_N ),
 	parameter BLOCK_TYPE_W = 8,
 	
-	parameter PMA_DATA_W = 16 
+	parameter PMA_DATA_W = 16, 
+	parameter PMA_CNT_N  = XGMII_DATA_W/PMA_DATA_W,
 )(
-	input mii_clk,
-	input pma_clk,
+	input clk,
 	input nreset,
 
 	// MAC
-	input idle_v_i,
+	input                    ctrl_v_i,
+	input                    idle_v_i,
+	input                    start_i,
+	input                    last_i,
+	input                    err_i,
+	input [XGMII_DATA_W-1:0] data_i, // tx data
+	input [XGMII_KEEP_W-1:0] keep_i,
 
-	input [CNT_W-1:0]              part_i,
-	input [XGMII_DATA_W-1:0]       data_i, // tx data
-	input [XGMII_KEEP_W-1:0]           keep_i,
+	input [CNT_W-1:0]                  part_i,
 	input [(CNT_N-1)*XGMII_KEEP_W-1:0] keep_next_i,
 	
-	input start_i,
-	input last_i,
-
 	// PMA
-	output [PMA_DATA_W-1:0] data_o
+	output [PMA_CNT_N*PMA_DATA_W-1:0] data_o
 );
 // data
 logic [XGMII_DATA_W-1:0] data_enc; // encoded
@@ -38,7 +39,7 @@ logic [1:0] sync_header;
 // encode
 pcs_enc #()
 m_pcs_enc(
-	.clk(mii_clk),
+	.clk(clk),
 	.nreset(nreset),
 
 	.idle_v_i(idle_v_i),
