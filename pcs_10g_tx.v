@@ -17,45 +17,84 @@ module pcs_10g_tx#(
 	input                    ctrl_v_i,
 	input                    idle_v_i,
 	input                    start_i,
-	input                    last_i,
+	input                    term_i,
 	input                    err_i,
 	input [XGMII_DATA_W-1:0] data_i, // tx data
 	input [XGMII_KEEP_W-1:0] keep_i,
 
 	input [CNT_W-1:0]                  part_i,
 	input [(CNT_N-1)*XGMII_KEEP_W-1:0] keep_next_i,
-	
+
+	output                           ready_o,	
 	// PMA
 	output [PMA_CNT_N*PMA_DATA_W-1:0] data_o
 );
+localparam HEAD_W = 2;
+localparam SEQ_W  = $clog(XGMII_DATA_W/HEAD_W+1);
 // data
 logic [XGMII_DATA_W-1:0] data_enc; // encoded
-logic [XGMII_DATA_W-1:0] data_scram_part; // scrambled
-logic [BLOCK_W-1:0}      data_scram_part_shifted;
-logic [BLOCK_W-1:0]      data_scram;// full data
+logic [XGMII_DATA_W-1:0] data_scram; // scrambled
 // sync header
 logic       sync_header_v;
 logic [1:0] sync_header;
+logic       gearbox_full;
+
+// pcs fsm
+logic             seq_rst;
+logic [SEQ_W-1:0] seq_next;
+logic [SEQ_W-1:0] seq_inc;
+logic             seq_inc_overflow;
+reg   [SEQ_W-1:0] seq_q;
+
+assign seq_rst = gearbox_full;
+assign { seq_inc_overflow, seq_inc } = seq_q + {{SEQ_W-1{1'b0} , 1'b1};
+assign seq_next = seq_rst ? {SEQ_W{1'b0}} : seq_inc;
+always @(posedge clk) begin
+	if ( ~nreset ) begin
+		seq_q <= {SEQ_W{1'b0}};
+	end else begin
+		seq_q <= seq_next;
+	end
+end
+
 // encode
-pcs_enc #()
+pcs_10g_enc_lite #(.XGMII_DATA_W(XGMII_DATA_W))
 m_pcs_enc(
 	.clk(clk),
 	.nreset(nreset),
 
+	.ctrl_v_i(ctrl_v_i),
 	.idle_v_i(idle_v_i),
-	.part_i(part_i),
+	.start_i(start_i),
+	.term_i(term_i),
+	.err_i(err_i),
+	.part_i(seq_q),
 	.data_i(data_i), // tx data
 	.keep_i(keep_i),
 	.keep_next_i(keep_next_i),
-	.start_i(start_i),
-	.last_i(last_i),
 	.block_header_v_o(sync_header_v),
 	.sync_header_o(sync_header), 
 	.data_o(data_enc)	
 );
 // scramble
-
-// add sync header
+scrambler_64b66b_tx #(.LEN(XGMII_DATA_W))
+m_64b66b_tx(
+	.clk(clk),
+	.nreset(nreset),
+	.data_i(data_enc),
+	.scram_o(data_scram)
+);
 
 // gearbox
+gearbox_tx #( .DATA_W(XGMII_DATA_W))
+m_gearbox_tx (
+	.clk(clk),
+	.nreset(nreset),
+	.seq_i(seq_q),
+	.head_i(sync_header),
+	.data_i(data_scram),
+	.full_v_o(gearbox_full),
+	.data_o(data_o)
+);
+assign ready_o = ~gearbox_full;
 endmodule

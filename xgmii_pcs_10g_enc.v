@@ -40,7 +40,7 @@ m_pcs_tx(
 	.ctrl_v_i(ctrl_v),
 	.idle_v_i(idle_v),
 	.start_i(start_v),
-	.last_i(last_v),
+	.term_i(term_v),
 	.err_i(err_v),
 	.data_i(xgmii_txd_i),
 	.keep_i(keep),

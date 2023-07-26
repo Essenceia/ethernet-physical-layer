@@ -25,7 +25,7 @@ module pcs_10g_enc_lite #(
 	input                    ctrl_v_i,
 	input                    idle_v_i,
 	input                    start_i,
-	input                    last_i,
+	input                    term_i,
 	input                    err_i,
 	input [XGMII_DATA_W-1:0] data_i, // tx data
 	input [XGMII_KEEP_W-1:0] keep_i,
@@ -117,7 +117,7 @@ assign sync_head_o   = { ctrl_v , ~ctrl_v };
 // FSM
 assign part_zero = part_i == 'd0; 
 
-assign last_v = ( ~keep_full & last_i ) | fsm_end_delay_q;
+assign last_v = ( ~keep_full & term_i ) | fsm_end_delay_q;
 assign ctrl_v = ( start_i | last_v | idle_v_i ) & part_zero;
 assign idle_v = idle_v_i & ~fsm_end_delay_q;
 
@@ -128,7 +128,7 @@ assign fsm_data_next = ( start_i & ~idle_v_i ) &  | fsm_data_q & last_v;
 // last packet was received but there is no space to insert block type to
 // signal this is the terminate control data. We will sent terminate packet
 // in next block
-assign fsm_end_delay_next = fsm_data_q & last_i & keep_full;
+assign fsm_end_delay_next = fsm_data_q & term_i & keep_full;
 
 assign fsm_en = part_zero & ( ~idle_v_i | fsm_end_delay_q );
 
@@ -155,7 +155,7 @@ end
 
 always_comb begin
 	// xcheck
-	sva_xcheck_ctrl_i : assert( ~$isunknown({idle_v_i, start_i, last_i, err_i }));
+	sva_xcheck_ctrl_i : assert( ~$isunknown({idle_v_i, start_i, term_i, err_i }));
 	sva_xcheck_keep_i : assert ( ~data_v_f | data_v_f & ~$isunknown( keep_i )); 
 	genvar f;
 	generate 
