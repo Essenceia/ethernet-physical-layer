@@ -16,7 +16,7 @@ The objective is to support using different modules 10GBASE-R and 40GBASE-R.
 
 40GBASE-R:
 
-- ?b wide data part, very low latency
+- 4 lanes
 
 - 256b wide data path, no latency requirement
 

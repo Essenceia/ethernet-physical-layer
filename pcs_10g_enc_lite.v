@@ -1,21 +1,16 @@
 /* PCS encode block
 *
 * Add control additional control blocks.
-*
-* Limitations :
-* - At the end of a packet, if packet size is a multiple
-*   of the block size we need a CNT_N cycle pause to sent
-*   a block with the terminate control
 */
-module pcs_10g_enc_lite #(
-	parameter XGMII_DATA_W = 64,
-	parameter XGMII_KEEP_W = $clog2(XGMII_DATA_W),
+module pcs_enc_lite #(
+	parameter IS_40G = 0,
+	parameter DATA_W = 64,
+	parameter KEEP_W = $clog2(DATA_W),
 	parameter BLOCK_W = 64,
-	parameter CNT_N = BLOCK_W/XGMII_DATA_W,
+	parameter CNT_N = BLOCK_W/DATA_W,
 	parameter CNT_W = $clog2( CNT_N ),
-	parameter LANE0_CNT_N = BLOCK_W/( 4 * 8),
-	parameter LANE0_CNT_W = $clog2(LANE0_CNT_N)+1,
-	parameter FULL_KEEP_W = CNT_N*XGMII_KEEP_W,
+	parameter LANE0_CNT_N = IS_40G ? 1 : BLOCK_W/( 4 * 8),
+	parameter FULL_KEEP_W = CNT_N*KEEP_W,
 	parameter BLOCK_TYPE_W = 8,
 	parameter CTRL_W  = 7
 )(
@@ -25,19 +20,19 @@ module pcs_10g_enc_lite #(
 
 	input                    ctrl_v_i,
 	input                    idle_v_i,
-	input [LANE0_CNT_W-1:0]  start_i,
+	input [LANE0_CNT_N-1:0]  start_i,
 	input                    term_i,
 	input                    err_i,
-	input [XGMII_DATA_W-1:0] data_i, // tx data
-	input [XGMII_KEEP_W-1:0] keep_i,
+	input [DATA_W-1:0] data_i, // tx data
+	input [KEEP_W-1:0] keep_i,
 
 	input [CNT_W-1:0]                  part_i,
-	input [(CNT_N-1)*XGMII_KEEP_W-1:0] keep_next_i,
+	input [(CNT_N-1)*KEEP_W-1:0] keep_next_i,
 
 
 	output                    head_v_o,
 	output [1:0]              sync_head_o, 
-	output [XGMII_DATA_W-1:0] data_o		
+	output [DATA_W-1:0] data_o		
 );
 localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_CTRL     = 8'h1e, // C7 C6 C5 C4 C3 C2 C1 C0 BT
@@ -82,10 +77,17 @@ logic                    keep_full;
 logic                    block_type_v;
 logic [BLOCK_TYPE_W-1:0] block_type;
 assign block_type_v = ctrl_v;
+if ( !IS_40G ) begin	
 assign block_type   = {BLOCK_TYPE_W{start_i[0] & ~last_v}} & BLOCK_TYPE_START_0
 					| {BLOCK_TYPE_W{start_i[1] & ~last_v}} & BLOCK_TYPE_START_4
 					| {BLOCK_TYPE_W{last_v}} & term_block_type
 					| {BLOCK_TYPE_W{idle_v}} & BLOCK_TYPE_CTRL;
+end else begin
+// start signal can only be sent on lower order byte
+assign block_type   = {BLOCK_TYPE_W{start_i & ~last_v}} & BLOCK_TYPE_START_0
+					| {BLOCK_TYPE_W{last_v}} & term_block_type
+					| {BLOCK_TYPE_W{idle_v}} & BLOCK_TYPE_CTRL;
+end
 
 // terminate block type
 assign block_keep_lite = { keep_next_i, keep_i };
@@ -106,8 +108,8 @@ always @(term_mask_lite) begin
 	endcase
 end
 // data 
-logic [XGMII_DATA_W-BLOCK_TYPE_W-1:0] data_ctrl;
-assign data_ctrl = idle_v ? {8{CTRL_IDLE}} : data_i[XGMII_DATA_W-1:BLOCK_TYPE_W];
+logic [DATA_W-BLOCK_TYPE_W-1:0] data_ctrl;
+assign data_ctrl = idle_v ? {8{CTRL_IDLE}} : data_i[DATA_W-1:BLOCK_TYPE_W];
 // output data
 assign data_o = { data_ctrl , block_type_v ? block_type : data_i[BLOCK_TYPE_W-1:0] };
 // sync header data or control
@@ -161,11 +163,11 @@ always_comb begin
 	sva_xcheck_keep_i : assert ( ~data_v_f | data_v_f & ~$isunknown( keep_i )); 
 	genvar f;
 	generate 
-		for( f=0; f < XGMII_KEEP_W; f++) begin
+		for( f=0; f < KEEP_W; f++) begin
 			assert( ~(data_v_f&keep_i[f]) | data_v_f & keep_i[f] & ~$isunknown(data_i[f*8+7:f*8]));
 		end
 	endgenerate
-	if ( BLOCK_W != XGMII_DATA_W ) begin
+	if ( BLOCK_W != DATA_W ) begin
 	sva_xcheck_part_i : assert( ~data_v_f | data_v_f & ~$isunknown( part_i ));
 	sva_xcheck_keep_next_i : assert( ~data_v_f | data_v_f & ~$isunknown( keep_next_i ));
 	end
