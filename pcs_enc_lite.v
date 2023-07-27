@@ -53,21 +53,8 @@ localparam [BLOCK_TYPE_W-1:0]
 
 localparam [CTRL_W-1:0] CTRL_IDLE = 7'h07;
 
-// fsm
-reg   fsm_idle_q;
-reg   fsm_data_q;
-reg   fsm_end_delay_q;
-logic last_v;
-logic ctrl_v;
-logic idle_v;
-logic fsm_idle_next;
-logic fsm_data_next;
-logic fsm_end_delay_next;
-logic fsm_end;
-logic fsm_en;
 logic part_zero;
 // block type
-logic [FULL_KEEP_W-1:0]  block_keep_lite;
 logic [FULL_KEEP_W-1:0]  block_keep;
 logic [FULL_KEEP_W-1:0]  term_mask_lite;
 logic                    term_mask_lite_overflow;
@@ -90,9 +77,7 @@ assign block_type   = {BLOCK_TYPE_W{start_i & ~last_v}} & BLOCK_TYPE_START_0
 end
 
 // terminate block type
-assign block_keep_lite = { keep_next_i, keep_i };
-assign block_keep = { BLOCK_W{~fsm_end_delay_q}} & block_keep_lite;
-assign keep_full  = &block_keep_lite;
+assign block_keep = { keep_next_i, keep_i };
 assign { term_mask_lite_overflow, term_mask_lite } = block_keep + {{FULL_KEEP_W-1{1'b0}}, 1'b1};
 always @(term_mask_lite) begin
 	case ( term_mask_lite ) 
@@ -109,44 +94,17 @@ always @(term_mask_lite) begin
 end
 // data 
 logic [DATA_W-BLOCK_TYPE_W-1:0] data_ctrl;
-assign data_ctrl = idle_v ? {8{CTRL_IDLE}} : data_i[DATA_W-1:BLOCK_TYPE_W];
+assign data_ctrl = idle_v_i ? {7{CTRL_IDLE}} : data_i[DATA_W-1:BLOCK_TYPE_W];
 // output data
 assign data_o = { data_ctrl , block_type_v ? block_type : data_i[BLOCK_TYPE_W-1:0] };
 // sync header data or control
 // data 2'b01
 // cntr 2'b10
 assign head_v_o = part_zero;
-assign sync_head_o   = { ctrl_v , ~ctrl_v };
+assign sync_head_o   = { ctrl_v_i, ~ctrl_v_i };
 
 // FSM
 assign part_zero = part_i == 'd0; 
-
-assign last_v = ( ~keep_full & term_i ) | fsm_end_delay_q;
-assign ctrl_v = ( start_i | last_v | idle_v_i ) & part_zero;
-assign idle_v = idle_v_i & ~fsm_end_delay_q;
-
-assign fsm_idle_next = ( last_v & ~keep_full ) | fsm_end_delay_q 
-					 | fsm_idle_q & ~( start_i & ~idle_v_i );
-assign fsm_data_next = ( start_i & ~idle_v_i ) &  | fsm_data_q & last_v; 
-
-// last packet was received but there is no space to insert block type to
-// signal this is the terminate control data. We will sent terminate packet
-// in next block
-assign fsm_end_delay_next = fsm_data_q & term_i & keep_full;
-
-assign fsm_en = part_zero & ( ~idle_v_i | fsm_end_delay_q );
-
-always @(posedge clk) begin
-	if ( ~nreset ) begin
-		fsm_idle_q  <= 1'b1;
-		fsm_data_q  <= 1'b0;
-		fsm_end_delay_q <= 1'b0;
-	end else if ( fsm_en ) begin
-		fsm_idle_q  <= fsm_idle_next;
-		fsm_data_q  <= fsm_data_next;
-		fsm_end_delay_q <= fsm_end_delay_next;
-	end
-end
 
 `ifdef FORMAL 
 
