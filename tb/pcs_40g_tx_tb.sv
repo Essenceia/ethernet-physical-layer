@@ -1,4 +1,4 @@
-`ifndef
+`ifndef TB_LOOP_CNT_N
 `define TB_LOOP_CNT_N 16400
 `endif
 module pcs_40g_tx_tb;
@@ -43,7 +43,7 @@ initial begin
 		#10
 		`ifdef DEBUG
 		$display("Seq cnt %d, align marker gap %d", m_pcs_40g_tx.seq_q, m_pcs_40g_tx.m_align_market.gap_q );
-		`elseif
+		`else
 		// have to add something to make iverilog happy
 		idle_v_i  = {LANE_N{1'b1}};
 		`endif

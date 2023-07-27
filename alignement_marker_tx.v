@@ -10,6 +10,7 @@ module alignement_marker_tx #(
 	input [LANE_N*HEAD_W-1:0] head_i,
 	input [LANE_N*DATA_W-1:0] data_i,
 
+	output                     marker_v_o,
 	output [LANE_N*HEAD_W-1:0] head_o,
 	output [LANE_N*DATA_W-1:0] data_o
 );
@@ -63,4 +64,5 @@ for( i = 0; i < LANE_N; i++) begin
 end
 endgenerate
 
+assign marker_v_o = add_market_v_q;
 endmodule

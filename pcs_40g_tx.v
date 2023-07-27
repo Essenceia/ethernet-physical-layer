@@ -49,7 +49,7 @@ logic [LANE_N*HEAD_W-1:0] sync_head_mark;
 // gearbox full has the same value every gearbox
 // regardless of the lane, we can ignore all of them but 1
 logic [LANE_N-1:0]        gearbox_full;
-
+logic                     marker_v;
 // pcs fsm
 logic             seq_rst;
 logic [SEQ_W-1:0] seq_next;
@@ -119,10 +119,11 @@ m_align_market(
 	.nreset(nreset),
 	.head_i(sync_head),
 	.data_i(data_scram ),
+	.marker_v_o(marker_v),
 	.head_o(sync_head_mark ),
 	.data_o(data_mark )
 );
 
-assign ready_o = ~gearbox_full[0];
+assign ready_o = ~gearbox_full[0] & ~marker_v;
 
 endmodule
