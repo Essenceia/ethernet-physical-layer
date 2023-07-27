@@ -30,11 +30,11 @@ initial begin
 	nreset = 1'b0;
 	#10
 	nreset = 1'b1;
-	ctrl_v_i = 1'b1;
-	idle_v_i = 1'b1;
-	start_v_i = '0;
-	term_v_i = 1'b0;
-	err_v_i = 1'b0;	
+	ctrl_v_i  = {LANE_N{1'b1}};
+	idle_v_i  = {LANE_N{1'b1}};
+	term_v_i  = {LANE_N{1'b0}};
+	err_v_i   = {LANE_N{1'b0}};	
+	start_v_i = {LANE_N{1'b0}};
 	#20
 	
 	$display("Sucess");	

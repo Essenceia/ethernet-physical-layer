@@ -58,7 +58,7 @@ for( i = 0; i < LANE_N; i++) begin
 		.nreset(nreset),
 		.marker_v(add_market_v_q),
 		.data_i({ data_i[i*DATA_W+DATA_W-1:i*DATA_W], head_i[i*HEAD_W+HEAD_W-1:i*HEAD_W]}),	
-		.data_o({ data_o[i*DATA_W+DATA_W-1:i*DATA_W], head_i[i*HEAD_W+HEAD_W-1:i*HEAD_W]})	
+		.data_o({ data_o[i*DATA_W+DATA_W-1:i*DATA_W], head_o[i*HEAD_W+HEAD_W-1:i*HEAD_W]})	
 	);
 end
 endgenerate

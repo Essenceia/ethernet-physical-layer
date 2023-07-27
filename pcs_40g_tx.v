@@ -99,7 +99,7 @@ m_64b66b_tx(
 	.scram_o(data_scram[l*DATA_W+DATA_W-1:l*DATA_W])
 );
 // gearbox
-gearbox_tx #( .DATA_W(DATA_W))
+gearbox_tx #( .DATA_W(DATA_W), .BLOCK_DATA_W(DATA_W))
 m_gearbox_tx (
 	.clk(clk),
 	.nreset(nreset),

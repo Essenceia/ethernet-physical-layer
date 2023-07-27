@@ -51,7 +51,7 @@ localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_TERM_6   = 8'he1, // C7    D5 D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_7   = 8'hff; //    D6 D5 D4 D3 D2 D1 D0 BT
 
-localparam [CTRL_W-1:0] CTRL_IDLE = 7'h07;
+localparam [CTRL_W-1:0] CTRL_IDLE = 7'h00;
 
 logic part_zero;
 // block type
