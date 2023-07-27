@@ -32,7 +32,7 @@ logic [GAP_W-1:0] gap_next;
 logic [GAP_W-1:0] gap_add;
 logic             gap_add_overflow;
 assign { gap_add_overflow, gap_add } = gap_q + {{GAP_W-1{1'b0}}, 1'b1};
-assign gap_next = add_market_v_q ? {GAP_W{1'b0}} : gap_q;
+assign gap_next = add_market_v_q ? {GAP_W{1'b0}} : gap_add;
  
 logic add_market_v_next;
 reg   add_market_v_q;

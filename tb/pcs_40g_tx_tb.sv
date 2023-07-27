@@ -1,3 +1,6 @@
+`ifndef
+`define TB_LOOP_CNT_N 16400
+`endif
 module pcs_40g_tx_tb;
 
 localparam LANE_N = 4;
@@ -35,7 +38,17 @@ initial begin
 	term_v_i  = {LANE_N{1'b0}};
 	err_v_i   = {LANE_N{1'b0}};	
 	start_v_i = {LANE_N{1'b0}};
-	#20
+	#10
+	for ( int i= 0; i < `TB_LOOP_CNT_N; i ++ ) begin
+		#10
+		`ifdef DEBUG
+		$display("Seq cnt %d, align marker gap %d", m_pcs_40g_tx.seq_q, m_pcs_40g_tx.m_align_market.gap_q );
+		`elseif
+		// have to add something to make iverilog happy
+		idle_v_i  = {LANE_N{1'b1}};
+		`endif
+		
+	end
 	
 	$display("Sucess");	
 	$finish;
