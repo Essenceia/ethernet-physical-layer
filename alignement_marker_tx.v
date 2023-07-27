@@ -1,13 +1,17 @@
 module alignement_marker_tx(
 	parameter LANE_N = 4,
-	parameter BLOCK_W = 66
+	parameter HEAD_W = 2,
+	parameter DATA_W = 64,
+	parameter BLOCK_W = HEAD_W+DATA_W
 )(
 	input clk,
 	input nreset,
 
-	input [LANE_N*BLOCK_W-1:0] data_i,
+	input [HEAD_W-1:0]        head_i,
+	input [LANE_N*DATA_W-1:0] data_i,
 
-	output [LANE_N*BLOCK_W-1:0] data_o
+	output [HEAD_W-1:0]        head_o,
+	output [LANE_N*DATA_W-1:0] data_o
 );
 localparam GAP_W = 14;
 localparam [BLOCK_W-1:0]
@@ -19,6 +23,7 @@ localparam [BLOCK_W-1:0]
 	MARKER_LANE2 = { 8{1'bx},8'h64, 8'h9a, 8'h3a, {8{1'bx}}, 8'h9b, 8'h65, 8'hc5 }
 	// 0xA2, 0x79, 0x3D, BIP3 , 0x5D, 0x86, 0xC2, BIP7
 	MARKER_LANE3 = { 8{1'bx},8'hc2, 8'h86, 8'h5d, {8{1'bx}}, 8'h3d, 8'h79, 8'ha2 }
+localparam [BLOCK_W-1:0] MARKER_LANE[LANE_N-1:0] ={ MARKER_LANE3, MARKER_LANE2, MARKER_LANE1, MARKER_LANE0};
 // number of cycles since last alignement marker
 // count 16383 blocks between 2 makrets
 // which is equivalent to the overflow on 14 bits
@@ -43,34 +48,17 @@ always @(posedge clk) begin
 		add_market_v_q <= add_market_v_next;
 	end
 end
-//lane 0
-alignement_marker_lane_tx #(.LANE_ENC(MARKER_LANE0))
-m_market_lane0(
-	.marker_v(add_market_v_q),
-	.data_i(data_i[BLOCK_W-1:0]),	
-	.data_o(data_o[BLOCK_W-1:0])	
-);
-//lane 1
-alignement_marker_lane_tx #(.LANE_ENC(MARKER_LANE1))
-m_market_lane1(
-	.marker_v(add_market_v_q),
-	.data_i(data_i[2*BLOCK_W-1:BLOCK_W]),	
-	.data_o(data_o[2*BLOCK_W-1:BLOCK_W])	
-);
-//lane 2
-alignement_marker_lane_tx #(.LANE_ENC(MARKER_LANE2))
-m_market_lane2(
-	.marker_v(add_market_v_q),
-	.data_i(data_i[3*BLOCK_W-1:2*BLOCK_W]),	
-	.data_o(data_o[3*BLOCK_W-1:2*BLOCK_W])	
-);
-//lane 3
-alignement_marker_lane_tx #(.LANE_ENC(MARKER_LANE3))
-m_market_lane3(
-	.marker_v(add_market_v_q),
-	.data_i(data_i[4*BLOCK_W-1:3*BLOCK_W]),	
-	.data_o(data_o[4*BLOCK_W-1:3*BLOCK_W])	
-);
 
+genvar i;
+generate
+for( i = 0; i < LANE_N; i++) begin
+	alignement_marker_lane_tx #(.LANE_ENC(MARKER_LANE[i]))
+	m_market_lane(
+		.marker_v(add_market_v_q),
+		.data_i({ data_i[i*DATA_W+DATA_W-1:i*DATA_W], head_i[i*HEAD_W+HEAD_W+1:i*HEAD_W]}),	
+		.data_o({ data_o[i*DATA_W+DATA_W-1:i*DATA_W], head_i[i*HEAD_W+HEAD_W+1:i*HEAD_W]})	
+	);
+end
+endgenerate
 
 endmodule
