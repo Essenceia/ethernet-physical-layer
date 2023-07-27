@@ -1,6 +1,6 @@
 #include "pcs_gearbox.h"
 
-uint8_t gearbox( gearbox_s * state, block_s* block, uint64_t *pma ){
+uint8_t gearbox( gearbox_s * state, block_s block, uint64_t *pma ){
 	if ( state->len >= 64 ){
 		// buffer is full : purge
 		state->buff = state->buff >> 64; 
