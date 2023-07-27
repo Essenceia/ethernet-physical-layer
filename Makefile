@@ -34,7 +34,7 @@ pcs_40g_tx : pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker
 	iverilog ${FLAGS} -s pcs_40g_tx -o ${BUILD}/pcs_40g_tx pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v
 
 pcs_40g_tx_tb : ${TB_DIR}/pcs_40g_tx_tb.sv pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v 
-	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v
+	iverilog ${FLAGS} -s pcs_40g_tx_tb -o ${BUILD}/pcs_40g_tx_tb pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v ${TB_DIR}/pcs_40g_tx_tb.sv
 
 
 run_64b66b: 64b66b_tb
@@ -43,8 +43,8 @@ run_64b66b: 64b66b_tb
 run_gearbox_tx: gearbox_tx_tb
 	vvp ${BUILD}/gearbox_tx_tb
 
-run_pcs_10g_enc: pcs_10g_enc_tb
-	vvp ${BUILD}/pcs_10g_enc_tb
+run_pcs_40g_tx: pcs_40g_tx_tb
+	vvp ${BUILD}/pcs_40g_tx_tb
 
 wave:
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
