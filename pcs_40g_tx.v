@@ -26,9 +26,9 @@ module pcs_40g_tx#(
 	// MAC
 	input [LANE_N-1:0]       ctrl_v_i,
 	input [LANE_N-1:0]       idle_v_i,
-	input [LANE_N-1:0]       start_i,
-	input [LANE_N-1:0]       term_i,
-	input [LANE_N-1:0]       err_i,
+	input [LANE_N-1:0]       start_v_i,
+	input [LANE_N-1:0]       term_v_i,
+	input [LANE_N-1:0]       err_v_i,
 	input [XGMII_DATA_W-1:0] data_i, // tx data
 	input [XGMII_KEEP_W-1:0] keep_i,
 
@@ -69,18 +69,19 @@ always @(posedge clk) begin
 end
 
 genvar l;
+generate
 for( l = 0; l < LANE_N; l++ ) begin
 // encode
-pcs_enc_lite #(.DATA_W(DATA_W))
+pcs_enc_lite #(.DATA_W(DATA_W), .IS_40G(1))
 m_pcs_enc(
 	.clk(clk),
 	.nreset(nreset),
 
 	.ctrl_v_i(ctrl_v_i[l]),
 	.idle_v_i(idle_v_i[l]),
-	.start_i(start_i[l]),
-	.term_i(term_i[l]),
-	.err_i(err_i[l]),
+	.start_v_i(start_v_i[l]),
+	.term_v_i(term_v_i[l]),
+	.err_v_i(err_v_i[l]),
 	.part_i('0),
 	.data_i(data_i[l*DATA_W+DATA_W-1:l*DATA_W]), // tx data
 	.keep_i(keep_i[l*KEEP_W+KEEP_W-1:l*KEEP_W]),
@@ -108,16 +109,17 @@ m_gearbox_tx (
 	.full_v_o(gearbox_full[l]),
 	.data_o(data_o[l*DATA_W+DATA_W-1:l*DATA_W])
 );
+end
 endgenerate
 
 // alignement marker
-alignement_marker_lane #(.LANE_N(LANE_N), .HEAD_W( HEAD_W ), .DATA_W(DATA_W))
+alignement_marker_tx #(.LANE_N(LANE_N), .HEAD_W( HEAD_W ), .DATA_W(DATA_W))
 m_align_market(
 	.clk(clk),
 	.nreset(nreset),
 	.head_i(sync_head),
 	.data_i(data_scram ),
-	.head_o(sync_head_scram ),
+	.head_o(sync_head_mark ),
 	.data_o(data_mark )
 );
 

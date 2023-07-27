@@ -24,11 +24,18 @@ build:
 gearbox_tx_tb: gearbox_tx.v build
 	iverilog ${FLAGS} -s gearbox_tx_tb -o ${BUILD}/gearbox_tx_tb gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
 
-pcs_10g_enc_tb: pcs_10g_enc.v pcs_10g_enc_lite.v
-	iverilog ${FLAGS} -s pcs_10g_enc_tb -o ${BUILD}/pcs_10g_enc_tb pcs_10g_enc.v pcs_10g_enc_lite.v ${TB_DIR}/pcs_10g_enc_tb.sv
+pcs_10g_enc_tb: pcs_10g_enc.v pcs_enc_lite.v
+	iverilog ${FLAGS} -s pcs_10g_enc_tb -o ${BUILD}/pcs_10g_enc_tb pcs_10g_enc.v pcs_enc_lite.v ${TB_DIR}/pcs_10g_enc_tb.sv
 
-pcs_10g_tx : pcs_10g_tx.v pcs_10g_enc_lite.v 64b66b.v gearbox_tx.v 
-	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_10g_enc_lite.v 64b66b.v gearbox_tx.v
+pcs_10g_tx : pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v 
+	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v
+
+pcs_40g_tx : pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v 
+	iverilog ${FLAGS} -s pcs_40g_tx -o ${BUILD}/pcs_40g_tx pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v
+
+pcs_40g_tx_tb : ${TB_DIR}/pcs_40g_tx_tb.sv pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v 
+	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v
+
 
 run_64b66b: 64b66b_tb
 	vvp ${BUILD}/lite_64b66b_tb

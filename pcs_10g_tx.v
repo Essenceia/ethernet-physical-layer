@@ -1,16 +1,16 @@
 /* PCS on the transmission path */
 module pcs_10g_tx#(
-	parameter XGMII_DATA_W = 32,
-	parameter XGMII_KEEP_W = $clog2(XGMII_DATA_W),
+	parameter DATA_W = 32,
+	parameter KEEP_W = $clog2(DATA_W),
 	parameter BLOCK_W = 64,
 	parameter LANE0_CNT_N = BLOCK_W/( 4 * 8),
 	parameter LANE0_CNT_W = $clog2(LANE0_CNT_N)+1,
-	parameter CNT_N = BLOCK_W/XGMII_DATA_W,
+	parameter CNT_N = BLOCK_W/DATA_W,
 	parameter CNT_W = $clog2( CNT_N ),
 	parameter BLOCK_TYPE_W = 8,
 	
 	parameter PMA_DATA_W = 16, 
-	parameter PMA_CNT_N  = XGMII_DATA_W/PMA_DATA_W
+	parameter PMA_CNT_N  = DATA_W/PMA_DATA_W
 )(
 	input clk,
 	input nreset,
@@ -18,24 +18,24 @@ module pcs_10g_tx#(
 	// MAC
 	input                    ctrl_v_i,
 	input                    idle_v_i,
-	input [LANE0_CNT_W-1:0]  start_i,
-	input                    term_i,
-	input                    err_i,
-	input [XGMII_DATA_W-1:0] data_i, // tx data
-	input [XGMII_KEEP_W-1:0] keep_i,
+	input [LANE0_CNT_W-1:0]  start_v_i,
+	input                    term_v_i,
+	input                    err_v_i,
+	input [DATA_W-1:0] data_i, // tx data
+	input [KEEP_W-1:0] keep_i,
 
 	input [CNT_W-1:0]                  part_i,
-	input [(CNT_N-1)*XGMII_KEEP_W-1:0] keep_next_i,
+	input [(CNT_N-1)*KEEP_W-1:0] keep_next_i,
 
 	output                           ready_o,	
 	// PMA
 	output [PMA_CNT_N*PMA_DATA_W-1:0] data_o
 );
 localparam HEAD_W = 2;
-localparam SEQ_W  = $clog2(XGMII_DATA_W/HEAD_W+1);
+localparam SEQ_W  = $clog2(DATA_W/HEAD_W+1);
 // data
-logic [XGMII_DATA_W-1:0] data_enc; // encoded
-logic [XGMII_DATA_W-1:0] data_scram; // scrambled
+logic [DATA_W-1:0] data_enc; // encoded
+logic [DATA_W-1:0] data_scram; // scrambled
 // sync header
 logic       sync_head_v;
 logic [1:0] sync_head;
@@ -60,16 +60,16 @@ always @(posedge clk) begin
 end
 
 // encode
-pcs_10g_enc_lite #(.XGMII_DATA_W(XGMII_DATA_W))
+pcs_enc_lite #(.DATA_W(DATA_W))
 m_pcs_enc(
 	.clk(clk),
 	.nreset(nreset),
 
 	.ctrl_v_i(ctrl_v_i),
 	.idle_v_i(idle_v_i),
-	.start_i(start_i),
-	.term_i(term_i),
-	.err_i(err_i),
+	.start_v_i(start_v_i),
+	.term_v_i(term_v_i),
+	.err_v_i(err_v_i),
 	.part_i(seq_q[CNT_W-1:0]),
 	.data_i(data_i), // tx data
 	.keep_i(keep_i),
@@ -79,7 +79,7 @@ m_pcs_enc(
 	.data_o(data_enc)	
 );
 // scramble
-scrambler_64b66b_tx #(.LEN(XGMII_DATA_W))
+scrambler_64b66b_tx #(.LEN(DATA_W))
 m_64b66b_tx(
 	.clk(clk),
 	.nreset(nreset),
@@ -88,7 +88,7 @@ m_64b66b_tx(
 );
 
 // gearbox
-gearbox_tx #( .DATA_W(XGMII_DATA_W))
+gearbox_tx #( .DATA_W(DATA_W))
 m_gearbox_tx (
 	.clk(clk),
 	.nreset(nreset),

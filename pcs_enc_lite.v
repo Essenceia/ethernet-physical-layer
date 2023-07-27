@@ -20,9 +20,9 @@ module pcs_enc_lite #(
 
 	input                    ctrl_v_i,
 	input                    idle_v_i,
-	input [LANE0_CNT_N-1:0]  start_i,
-	input                    term_i,
-	input                    err_i,
+	input [LANE0_CNT_N-1:0]  start_v_i,
+	input                    term_v_i,
+	input                    err_v_i,
 	input [DATA_W-1:0] data_i, // tx data
 	input [KEEP_W-1:0] keep_i,
 
@@ -63,17 +63,17 @@ logic                    keep_full;
 // block type field
 logic                    block_type_v;
 logic [BLOCK_TYPE_W-1:0] block_type;
-assign block_type_v = ctrl_v;
+assign block_type_v = ctrl_v_i;
 if ( !IS_40G ) begin	
-assign block_type   = {BLOCK_TYPE_W{start_i[0] & ~last_v}} & BLOCK_TYPE_START_0
-					| {BLOCK_TYPE_W{start_i[1] & ~last_v}} & BLOCK_TYPE_START_4
-					| {BLOCK_TYPE_W{last_v}} & term_block_type
-					| {BLOCK_TYPE_W{idle_v}} & BLOCK_TYPE_CTRL;
+assign block_type   = {BLOCK_TYPE_W{start_v_i[0] }} & BLOCK_TYPE_START_0
+					| {BLOCK_TYPE_W{start_v_i[1] }} & BLOCK_TYPE_START_4
+					| {BLOCK_TYPE_W{term_v_i}} & term_block_type
+					| {BLOCK_TYPE_W{idle_v_i}} & BLOCK_TYPE_CTRL;
 end else begin
 // start signal can only be sent on lower order byte
-assign block_type   = {BLOCK_TYPE_W{start_i & ~last_v}} & BLOCK_TYPE_START_0
-					| {BLOCK_TYPE_W{last_v}} & term_block_type
-					| {BLOCK_TYPE_W{idle_v}} & BLOCK_TYPE_CTRL;
+assign block_type   = {BLOCK_TYPE_W{start_v_i}} & BLOCK_TYPE_START_0
+					| {BLOCK_TYPE_W{term_v_i}} & term_block_type
+					| {BLOCK_TYPE_W{idle_v_i}} & BLOCK_TYPE_CTRL;
 end
 
 // terminate block type
@@ -109,7 +109,7 @@ assign part_zero = part_i == 'd0;
 `ifdef FORMAL 
 
 logic data_v_f;
-assert data_v_f = ~(idle_v_i | err_i );
+assert data_v_f = ~(idle_v_i | err_v_i );
 initial begin
 	// assume reset
 	a_nreset : assume( ~nreset );
@@ -117,7 +117,7 @@ end
 
 always_comb begin
 	// xcheck
-	sva_xcheck_ctrl_i : assert( ~$isunknown({idle_v_i, start_i, term_i, err_i }));
+	sva_xcheck_ctrl_i : assert( ~$isunknown({idle_v_i, start_v_i, term_v_i, err_v_i }));
 	sva_xcheck_keep_i : assert ( ~data_v_f | data_v_f & ~$isunknown( keep_i )); 
 	genvar f;
 	generate 
@@ -129,8 +129,8 @@ always_comb begin
 	sva_xcheck_part_i : assert( ~data_v_f | data_v_f & ~$isunknown( part_i ));
 	sva_xcheck_keep_next_i : assert( ~data_v_f | data_v_f & ~$isunknown( keep_next_i ));
 	end
-	// fsm
-	sva_fsm_onehote : assert( $onehot( { fsm_idle_q, fsm_data_q, fsm_end_delay_q });
+	// control signals
+	sva_ctrl_onehot: assert( ~(part_zero & ctrl_v_i)  | part_zer & ctrl_v_i & ~$onehot({idle_v_i, start_v_i, term_v_i, err_v_i }));
 end
 `endif
 endmodule

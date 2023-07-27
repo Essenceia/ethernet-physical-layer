@@ -6,7 +6,7 @@ module alignement_marker_lane_tx #(
 	parameter DATA_W  = 64,
 	parameter BLOCK_W = HEAD_W + DATA_W,
 	// fixed encoding for this lane
-	parameter LANE_ENC = { 8{1'bx},8'hb8, 8'h89,8'h6f,{8{1'bx}}, 8'h47, 8'h76, 8'h90 }
+	parameter LANE_ENC = { {8{1'bx}},8'hb8, 8'h89,8'h6f,{8{1'bx}}, 8'h47, 8'h76, 8'h90 }
 )(
 	input nreset,
 	input clk,
@@ -17,7 +17,7 @@ module alignement_marker_lane_tx #(
 	output [BLOCK_W-1:0] data_o
 );
 localparam BIP_W = 8;
-localparam SYNC_HEAD_CTRL = 2'10;
+localparam SYNC_HEAD_CTRL = 2'b10;
 
 reg   [BIP_W-1:0] bip_q;
 logic [BIP_W-1:0] bip_next;
@@ -54,6 +54,7 @@ assign bip_res[5] = bip_q[5] ^ data_i[7] ^ data_i[15] ^ data_i[23] ^ data_i[31] 
 assign bip_res[6] = bip_q[6] ^ data_i[8] ^ data_i[16] ^ data_i[24] ^ data_i[32] ^ data_i[40] ^ data_i[48] ^ data_i[56] ^ data_i[64];
 assign bip_res[7] = bip_q[7] ^ data_i[9] ^ data_i[17] ^ data_i[25] ^ data_i[33] ^ data_i[41] ^ data_i[49] ^ data_i[57] ^ data_i[65];
 
+assign bip3 = bip_res;
 assign bip7 = ~bip3;
 
 // create new marker
@@ -61,13 +62,12 @@ logic [DATA_W-1:0] marker_data;
 logic [HEAD_W-1:0] market_head;
 
 assign market_head = SYNC_HEAD_CTRL;
+genvar i;
 generate 
 	for( i = 0; i < 8; i++ ) begin
-		case ( i ) begin
-			3 : marker_data[i*8+7:i*8] = dip3;
-			7 : marker_data[i*8+7:i*8] = dip7;
-			default : marker_data[i*8+7:i*8] = LANE_ENC[i*8+7:i*8];
-		end
+		if ( i == 3 ) assign marker_data[i*8+7:i*8] = bip3;
+		else if ( i == 7 ) assign marker_data[i*8+7:i*8] = bip7;
+		else assign marker_data[i*8+7:i*8] = LANE_ENC[i*8+7:i*8];
 	end
 endgenerate 
 

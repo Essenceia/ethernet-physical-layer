@@ -20,23 +20,32 @@ logic [S_W-1:0] s_next;
 genvar i;
 generate
 	for (  i = 0; i < LEN; i++ ) begin : xor_loop
-		if ( LEN <= I0 ) begin
+		if ( i <= I0 ) begin
 			assign scram_o[i] = data_i[i] ^ ( s_q[I0-i] ^ s_q[I1-i] ); 
-		end else if ( LEN <= I1 ) begin 
-			assign scram_o[i] = data_i[i] ^ ( scram_o[I0-i] ^ s_q[I1-i] ); 
+		end else if ( i <= I1 ) begin 
+			assign scram_o[i] = data_i[i] ^ ( scram_o[-I0+i] ^ s_q[I1-i] ); 
 		end else begin
-			assign scram_o[i] = data_i[i] ^ ( scram_o[I0-i] ^  scram_o[I1-i]); 
+			assign scram_o[i] = data_i[i] ^
+							 ( scram_o[-I0+i] 
+							^  scram_o[-I1+i]); 
 		end
 	end
-endgenerate
 
 // flop prviously scrambled data
-assign s_next[S_W-1:LEN] = s_q[LEN-1:0];
-generate
-	for ( i = 0; i < LEN; i++) begin
-		assign s_next[LEN-i-1] = scram_o[i];
+for( i = 0; i < S_W; i++ ) begin
+	if ( LEN < S_W ) begin
+		if( i < LEN ) begin 
+			assign s_next[i] = scram_o[LEN-1-i];
+		end else begin 
+			assign s_next[i] = scram_q[LEN-1-i];
+		end
+	end else begin
+		// LEN >= S_W
+		assign s_next[i] = scram_o[LEN-1-i];
 	end
+end
 endgenerate
+
 always @(posedge clk) begin
 	if ( ~nreset ) begin
 		// scrambler's initial start is set to all 1's
