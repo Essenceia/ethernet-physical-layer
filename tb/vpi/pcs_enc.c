@@ -8,7 +8,7 @@ uint8_t enc_block( ctrl_lite_s ctrl, uint64_t data, block_s *block_enc ){
 			data = BLOCK_CTRL_IDLE;
 		}
 		if ( ctrl.start_v[0] )type = BLOCK_TYPE_START_0;
-		#ifndef 40GBASE
+		#ifndef _40GBASE
 		if ( ctrl.start_v[1]) type = BLOCK_TYPE_START_4;
 		#endif
 		if ( ctrl.err_v ){

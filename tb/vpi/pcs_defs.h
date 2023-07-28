@@ -1,15 +1,15 @@
 #ifndef PCS_DEFS_H
 #define PCS_DEFS_H
 #include <stdint.h>
-
-#ifdef 40GBASE-R
+#include <stdbool.h>
+#include <stddef.h>
+#ifdef _40GBASE
 #define START_W 1
 #define LANE_N  4
 #else
 #define START_W 2	
 #define LANE_N  1
 #endif
-
 #define    XGMII_CTRL_IDLE      (uint8_t) 0x07
 #define    XGMII_CTRL START     (uint8_t) 0xfb
 #define    XGMII_CTRL_TERMINATE (uint8_t) 0xfb
@@ -39,6 +39,8 @@
 
 #define I0_64b66b 38
 #define I1_64b66b 58
+
+typedef unsigned __int128 uint128_t;
 
 typedef struct {
 	uint8_t  head;
