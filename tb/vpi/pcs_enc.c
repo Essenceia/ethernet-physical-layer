@@ -30,7 +30,7 @@ uint8_t enc_block( ctrl_lite_s ctrl, uint64_t data, block_s *block_enc ){
 		}
 		if ( !type ) return 1;
 		block_enc->head = SYNC_HEAD_CTRL;
-		block_enc->data = data;
+		block_enc->data = ( data & ~0xff) | ( type & 0xff);
 	}else{
 		block_enc->head = SYNC_HEAD_DATA;
 		block_enc->data = data;

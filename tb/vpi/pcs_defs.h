@@ -57,8 +57,8 @@ typedef struct{
 }ctrl_lite_s;
 
 typedef struct{
-	uint128_t buff;
-	size_t    len;
+	uint64_t buff[2];
+	size_t   len;
 }gearbox_s;
 
 typedef struct{
