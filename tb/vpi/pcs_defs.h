@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+
+#define TXD_W 8
+
 #ifdef _40GBASE
 #define START_W 1
 #define LANE_N  4
@@ -68,5 +71,14 @@ typedef struct{
 	gearbox_s   gearbox_state[LANE_N];
 }pcs_tx_s;
 
-
+#define LEN_TO_KEEP(len,x) switch (len) {\
+	case 0: x = 0x00; \
+	case 1: x = 0x01; \
+	case 2: x = 0x03; \
+	case 3: x = 0x07; \
+	case 4: x = 0x0f; \
+	case 5: x = 0x1f; \
+	case 6: x = 0x3f; \
+	case 7: x = 0x7f; \
+}
 #endif // PCS_DEFS_H

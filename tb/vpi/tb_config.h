@@ -10,5 +10,7 @@
 #define PACKET_LEN_MIN 100
 #define PACKET_LEN_MAX 1500
 
+#define PACKET_IDLE_CNT_MIN 2
+#define PACKET_IDLE_CNT_MAX 4
 
 #endif//TB_CONFIG_H

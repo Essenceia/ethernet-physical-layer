@@ -1,18 +1,17 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
-#include "tb_itch.h"
-#include "tb_utils.h"
-
+#include "tb_fifo.h"
 /*
- * Construct and return an itch fifo.
+ * Construct and return an pma fifo.
  */
-tv_itch5_fifo_t *tb_itch_fifo_alloc(
+tv_pma_fifo_t *tb_pma_fifo_alloc(
 	void
 )
 {
-	tv_itch5_fifo_t *fifo = malloc_(tv_itch5_fifo_t);
+	tv_pma_fifo_t *fifo = malloc_(tv_pma_fifo_t);
 	slisth_init(&fifo->elems);
 	return fifo;
 }
@@ -20,16 +19,16 @@ tv_itch5_fifo_t *tb_itch_fifo_alloc(
 /*
  * Delete @fifo.
  */
-void tb_itch_fifo_free(
-	tv_itch5_fifo_t *fifo
+void tb_pma_fifo_free(
+	tv_pma_fifo_t *fifo
 )
 {
 	assert(fifo);
 	slist *nod = 0;
 	while((nod = slisth_pull(&fifo->elems))) {
 		assert(nod);
-		tv_itch5_fifo_elem_t *elem = cntof(nod, tv_itch5_fifo_elem_t, elems);
-		free(elem->d);
+		tv_pma_fifo_elem_t *elem = cntof(nod, tv_pma_fifo_elem_t, elems);
+		free(elem->data);
 		free(elem);
 	}
 	free(fifo);
@@ -38,21 +37,21 @@ void tb_itch_fifo_free(
 /*
  * Construct and push an element in @fifo.
  */
-void tb_itch_fifo_push(
-	tv_itch5_fifo_t *fifo,
-	tv_itch5_s *new,
-	uint8_t debug_id[18]
+void tb_pma_fifo_push(
+	tv_pma_fifo_t *fifo,
+	uint64_t *new,
+	uint64_t  debug_id
 )
 {
 	assert(fifo);
-	tv_itch5_fifo_elem_t *elem = malloc_(tv_itch5_fifo_elem_t);
-	elem->d = new;
-	memcpy(elem->debug_id, debug_id, sizeof(uint8_t) * 18);
+	tv_pma_fifo_elem_t *elem = malloc_(tv_pma_fifo_elem_t);
+	elem->data = new;
+	elem->debug_id = debug_id;
 	slisth_push(&fifo->elems, &elem->elems);
 	#if 0
 	//#ifdef DEBUG
-	printf("Itch fifo push :\n");
-	tb_itch_print_fifo(fifo);
+	printf("pma fifo push :\n");
+	tb_pma_print_fifo(fifo);
 	#endif
 }
 
@@ -60,9 +59,9 @@ void tb_itch_fifo_push(
  * If @fifo is not empty, pop an element and return it.
  * Otherwise, return 0.
  */
-tv_itch5_s* tb_itch_fifo_pop(
-	tv_itch5_fifo_t *fifo,
-	uint8_t debug_id[18]
+uint64_t* tb_pma_fifo_pop(
+	tv_pma_fifo_t *fifo,
+	uint64_t debug_id
 )
 {
 
@@ -71,23 +70,20 @@ tv_itch5_s* tb_itch_fifo_pop(
 	assert(debug_id);
 	slist *nod = slisth_pull(&fifo->elems);
 	if (!nod) return NULL;
-	tv_itch5_fifo_elem_t *pop = cntof(nod, tv_itch5_fifo_elem_t, elems);
+	tv_pma_fifo_elem_t *pop = cntof(nod, tv_pma_fifo_elem_t, elems);
 	assert(!pop->elems.next);
 
 	/* Read data, delete @pop. */	
-	memcpy(debug_id, pop->debug_id, sizeof(uint8_t) * 18 );
-	tv_itch5_s *ret = pop->d;
+	debug_id = pop->debug_id;
+	uint64_t *ret = pop->data;
 	free(pop);
 	#ifdef DEBUG
-	printf("ITCH pop, debug id : 0x");
-	for(int i = 17; i--;)
-		printf("%02hhx",debug_id[i]);
-	printf("\n");
-	printf("Itch poped structure :\n");
-	print_tv_itch5(ret);
-	
+	printf("pma pop, debug id : 0x");
+	printf("id %016lhhx\n",debug_id);
+	printf("pma poped structure :\n");
+	tb_pma_print_elem(ret);	
 	// print fifo
-	tb_itch_print_fifo(fifo);
+	tb_pma_print_fifo(fifo);
 	#endif	
 
 	/* Complete. */	
@@ -98,8 +94,8 @@ tv_itch5_s* tb_itch_fifo_pop(
 /*
  * Print a descriptor for all elements of @fifo.
  */
-void tb_itch_print_fifo(
-	tv_itch5_fifo_t *fifo
+void tb_pma_print_fifo(
+	tv_pma_fifo_t *fifo
 )
 {
 	if (!fifo) return;
@@ -107,40 +103,21 @@ void tb_itch_print_fifo(
 	int e = 0;
 	slist *nod = fifo->elems.read;
 	while (nod) {
-		tv_itch5_fifo_elem_t *elem = cntof(nod, tv_itch5_fifo_elem_t, elems);
-		uint8_t db_id[18];
-		memcpy(db_id, elem->debug_id, sizeof(uint8_t) * 18 );
-		printf("- elem %d debug id 0x",e);
-		for(int i = 17; i--;)printf("%02hhx",db_id[i]); 
-		printf("\n");
+		tv_pma_fifo_elem_t *elem = cntof(nod, tv_pma_fifo_elem_t, elems);
+		tb_pma_print_elem(elem);	
 		nod = nod->next;
 	}
 	printf("\n");
 }
 
-tv_itch5_s *tb_itch_create_struct(const uint8_t *data, size_t data_len){
-	tv_itch5_s *rptr;
-	uint8_t msg_type;
-	uint8_t *data_inner;
-	assert(data != NULL);
-	assert(data_len > 0);
-	msg_type = data[0];
-	rptr = (tv_itch5_s*) calloc( 1, sizeof(tv_itch5_s));
-	data_inner = (uint8_t *) (data + sizeof(char_t));
-	fill_tv_itch5((char)msg_type, data_inner, data_len-1, rptr);
-	#if 0
-	//#ifdef DEBUG
-	printf("Data used to create itch struct :\n");
-	for(int i = (int)data_len-2; i>-1; i--){
-		printf("byte %02d %02hhx (%c)\n", i, data_inner[i], isalpha(data_inner[i])? data_inner[i] : ' ' );
-	}
-	print_tv_itch5( rptr);
-	#endif
-	return rptr;
+/*
+ * Print the content of a fifo element @elem
+ */
+void tb_pma_print_elem(
+	tv_pma_fifo_elem_t *elem
+){
+	printf("id %016lhhx data %016lhhx\n", elem->debug_id, *elem->data);	
 }
 
 
-void tb_itch_put_struct(vpiHandle argv, tv_itch5_s *itch_s){
-	#include "gen/tb_itch_msg_put_head.h"
-	#include "gen/tb_itch_msg_put_inner.h"
-}
+

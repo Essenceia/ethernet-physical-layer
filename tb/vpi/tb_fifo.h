@@ -1,10 +1,8 @@
 #ifndef TB_ITCH_H
 #define TB_ITCH_H
 
-#include <vpi_user.h>
-#include "itch_s.h"
-#include "itch.h"
-
+#include <stdint.h>
+#include <assert.h>
 /*********
  * Utils *
  *********/
@@ -209,7 +207,7 @@ static inline void slisth_unpull(
  *******/
 
 /*
- * Itch structre fifo, simply linked list.
+ * PMA data buffer fifo, simply linked list.
  */
 typedef struct{
 
@@ -217,59 +215,66 @@ typedef struct{
 	slist elems;
 
 	/* Debug id. */
-	uint8_t debug_id[18];
+	uint64_t debug_id;
 
-	/* Itch struct. */
-	tv_itch5_s *d;
+	/* pma data. */
+	uint64_t *data;
 
-} tv_itch5_fifo_elem_t;
+} tv_pma_fifo_elem_t;
 
 typedef struct{
 	slisth elems;
-} tv_itch5_fifo_t;
+} tv_pma_fifo_t;
 
 /*
  * Construct and return an itch fifo.
  */
-tv_itch5_fifo_t * tb_itch_fifo_alloc(
+tv_pma_fifo_t * tb_pma_fifo_alloc(
 	void
 );
 
 /*
  * Delete @fifo.
  */
-void tb_itch_fifo_free(
-	tv_itch5_fifo_t *fifo
+void tb_pma_fifo_free(
+	tv_pma_fifo_t *fifo
 );
 
 /*
  * Construct and push an element in @fifo.
  */
-void tb_itch_fifo_push(
-	tv_itch5_fifo_t *fifo,
-	tv_itch5_s *new,
-	uint8_t debug_id[18]
+void tb_pma_fifo_push(
+	tv_pma_fifo_t *fifo,
+	uint64_t *new,
+	uint64_t debug_id
 );
 
 /*
  * If @fifo is not empty, pop an element and return it.
  * Otherwise, return 0.
  */
-tv_itch5_s* tb_itch_fifo_pop(
-	tv_itch5_fifo_t *fifo,
-	uint8_t debug_id[18]
+uint64_t* tb_pma_fifo_pop(
+	tv_pma_fifo_t *fifo,
+	uint64_t debug_id
 );
 
 /*
  * Print a descriptor for all elements of @fifo.
  */
-void tb_itch_print_fifo(
-	tv_itch5_fifo_t *fifo
+void tb_pma_print_fifo(
+	tv_pma_fifo_t *fifo
 );
 
-void tb_itch_put_struct(vpiHandle argv, tv_itch5_s *itch_s);
 
-tv_itch5_s *tb_itch_create_struct(const uint8_t *data, size_t data_len);
+/*
+ * Print the content of a fifo element @elem
+ */
+void tb_pma_print_elem(
+	tv_pma_fifo_elem_t *elem
+);
+
+
+
 
 #endif // TB_ITCH_H
 

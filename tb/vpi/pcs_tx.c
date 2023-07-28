@@ -39,14 +39,12 @@ bool get_next_64b(pcs_tx_s *state, size_t lane, ctrl_lite_s ctrl, uint64_t data,
 	}
 	// gearbox 
 	gb_full_next = gearbox(&state->gearbox_state[lane], state->block_scram[lane], pma);
-	if ( gb_full_next != gb_full ){
+	if ( gb_full && ( gb_full_next == gb_full )){
 		fprintf(stderr, "Error, full state next should not match current state q %d next %d\n",
 			gb_full, gb_full_next);
 		assert(0);
 		
 	}
-	
-
 
 	return gb_full;	
 }
