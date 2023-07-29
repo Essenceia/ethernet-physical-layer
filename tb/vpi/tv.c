@@ -11,6 +11,7 @@
 
 #include "tv.h"
 #include "tb_rand.h"
+#include "defs.h"
 
 tv_t * tv_alloc(){
 	tv_t *tv;
@@ -33,8 +34,8 @@ void tv_create_packet(tv_t *t ){
 	uint64_t *pma;
 	uint64_t data;
 	size_t lane = 0;
-	size_t idle;
-	size_t len; 
+	int idle;
+	int len; 
 	bool accept;	
 	ctrl_lite_s ctrl;
 	
@@ -55,6 +56,7 @@ void tv_create_packet(tv_t *t ){
 		pma = (uint64_t*)malloc(sizeof(uint64_t));
 		accept = get_next_64b(t->tx, lane , ctrl, 0, pma);
 		if ( accept ) idle--;
+		info("Idle %d\n", idle);
 		// add to fifo 
 		t->debug_id ++; 
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
@@ -76,7 +78,7 @@ void tv_create_packet(tv_t *t ){
 	if ( !accept ) goto START;
 
 	len -= TXD_W-1;
-	while( len >= t->len % (TXD_W-1)){
+	while( len >= (t->len % (TXD_W-1))){
 		memset(&ctrl, 0, sizeof(ctrl_lite_s));	
 		data = 0;
 		for(size_t i=1; i< TXD_W; i++){
@@ -89,6 +91,7 @@ void tv_create_packet(tv_t *t ){
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
 		if ( accept ){ 
 			len -= TXD_W;
+			info("len %d\n", len);
 		}
 	}
 	// terminate

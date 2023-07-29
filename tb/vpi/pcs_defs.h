@@ -73,12 +73,21 @@ typedef struct{
 
 #define LEN_TO_KEEP(len,x) switch (len) {\
 	case 0: x = 0x00; \
+		break; \
 	case 1: x = 0x01; \
+		break; \
 	case 2: x = 0x03; \
+		break; \
 	case 3: x = 0x07; \
+		break; \
 	case 4: x = 0x0f; \
+		break; \
 	case 5: x = 0x1f; \
+		break; \
 	case 6: x = 0x3f; \
+		break; \
 	case 7: x = 0x7f; \
+		break; \
+	default : asssert(0);\
 }
 #endif // PCS_DEFS_H

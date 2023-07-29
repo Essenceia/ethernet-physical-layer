@@ -27,9 +27,18 @@ pcs_tx.o: pcs_tx.h pcs_tx.c pcs_defs.h
 tb_fifo.o: tb_fifo.h tb_fifo.c
 	$(CC) -c tb_fifo.c $(FLAGS)
 
-tv.o: tv.h tv.c
-	$(CC) -c tv.c $(FLAGS)
- 
+tv.o: tv.c tv.h
+	$(CC) -I$(INC) -I$(IVERILOG) -c tv.c $(FLAGS)
+
+tb_utils.o: tb_utils.c tb_utils.h
+	$(CC) -I$(INC) -I$(IVERILOG) -c tb_utils.c $(FLAGS)
+
+tb.o: tb.c tb.h
+	$(CC) -I$(INC) -I$(IVERILOG) -c tb.c $(FLAGS)
+
+tb.vpi: tb.o tb_utils.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o tv.o
+	$(LD) -shared -o tb.vpi tb.o tv.o tb_utils.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o -lvpi
+
 clean:
 	rm -f test	
 	rm -f *.o

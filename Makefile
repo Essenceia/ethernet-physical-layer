@@ -3,12 +3,14 @@ ifndef debug
 endif
 
 TB_DIR=tb
+VPI_DIR=$(TB_DIR)/vpi
 BUILD=build
 CONF=conf
 FLAGS=-Wall -g2012 -gassertions -gstrict-expr-width
 WAVE_FILE=wave.vcd
 VIEW=gtkwave
 WAVE_CONF=wave.conf
+DEBUG_FLAG=$(if $(debug), debug=1)
 
 all: wave
 
@@ -43,12 +45,22 @@ run_64b66b: 64b66b_tb
 run_gearbox_tx: gearbox_tx_tb
 	vvp ${BUILD}/gearbox_tx_tb
 
-run_pcs_40g_tx: pcs_40g_tx_tb
-	vvp ${BUILD}/pcs_40g_tx_tb
+run_pcs_40g_tx: pcs_40g_tx_tb vpi
+	vvp -M $(VPI_DIR) -mtb ${BUILD}/pcs_40g_tx_tb
+
+vpi:
+	cd $(VPI_DIR) && $(MAKE) tb.vpi $(DEBUG_FLAG) 40GBASE=1 
 
 wave:
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
+valgrind: test vpi
+	valgrind vvp -M $(VPI_DIR) -mtb $(BUILD)/hft_tb
+
+gdb: test vpi
+	gdb --args vvp -M $(VPI_DIR) -mtb $(BUILD)/hft_tb
+  
 clean:
+	cd $(VPI_DIR) && $(MAKE) clean
 	rm -fr ${BUILD}/*
 	

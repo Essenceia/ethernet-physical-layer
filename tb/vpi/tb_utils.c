@@ -21,7 +21,7 @@ void tb_vpi_put_logic_1b_t(vpiHandle argv, uint8_t var){
 	vpi_put_value(h, &v, 0, vpiNoDelay);
 }
 
-void tb_vpi_put_logic_u8_t(vpiHandle argv, u8_t var){
+void tb_vpi_put_logic_uint8_t(vpiHandle argv, uint8_t var){
 	vpiHandle h;
 	s_vpi_value v;
 	h = vpi_scan(argv);
@@ -33,7 +33,7 @@ void tb_vpi_put_logic_u8_t(vpiHandle argv, u8_t var){
 	vpi_put_value(h, &v, 0, vpiNoDelay);
 	free(v.value.vector);	
 }
-void tb_vpi_put_logic_u32_t(vpiHandle argv, u32_t var){
+void tb_vpi_put_logic_uint32_t(vpiHandle argv, uint32_t var){
 	vpiHandle h;
 	s_vpi_value v;
 	h = vpi_scan(argv);
@@ -46,7 +46,7 @@ void tb_vpi_put_logic_u32_t(vpiHandle argv, u32_t var){
 	free(v.value.vector);	
 }
 
-void tb_vpi_put_logic_u64_t(vpiHandle argv, u64_t var){
+void tb_vpi_put_logic_uint64_t(vpiHandle argv, uint64_t var){
 	vpiHandle h;
 	s_vpi_value v;
 	assert(argv);
@@ -62,30 +62,7 @@ void tb_vpi_put_logic_u64_t(vpiHandle argv, u64_t var){
 	free(v.value.vector);	
 }
 
-void tb_vpi_put_logic_u48_t(vpiHandle argv, u48_t var){
-	vpiHandle h;
-	s_vpi_value v;
-	h = vpi_scan(argv);
-	assert(h);
-	u64_t var64 = 0;
-	v.format = vpiVectorVal;
-	v.value.vector = calloc(2, sizeof(s_vpi_vecval));
-	// convert 8b array to 64b variable for ease of use 
-	for( int i=0; i < 6; i++){
-		var64 |= (u64_t)var[i] << i*8; 
-	}
-	/* bit encoding: ab: 00=0, 10=1, 11=X, 01=Z 
- 	*  set 16 msb to X, keep only 48 lsb */
-	v.value.vector[0].aval =(PLI_INT32) var64; //32 lsb 
-	v.value.vector[0].bval = 0;
-	v.value.vector[1].aval =(PLI_INT32) ( 0xffff0000 | ( var64 >> 32 )); //32 msb
-	v.value.vector[1].bval =(PLI_INT32)  0xffff0000;
-	vpi_put_value(h, &v, 0, vpiNoDelay);	
-	free(v.value.vector);	
-}
-
-
-void _tb_vpi_put_logic_char_var_arr(vpiHandle argv, char_t *arr, size_t len){
+void _tb_vpi_put_logic_char_var_arr(vpiHandle argv, char *arr, size_t len){
 	size_t w_cnt; // word count, vpi vector val elems are only of 32b wide each
 	size_t off;
 	vpiHandle h;

@@ -3,7 +3,7 @@
 `endif
 module pcs_40g_tx_tb;
 
-localparam LANE_N = 4;
+localparam LANE_N = 1;
 localparam DATA_W = 64;
 localparam KEEP_W = $clog2(DATA_W);
 	
@@ -28,18 +28,15 @@ logic nreset;
 always clk = #5 ~clk;
 
 initial begin
-	$dumpfile("build/pcs_40g_tx_tb.vcd");
+	$dumpfile("build/wave.vcd");
 	$dumpvars(0, pcs_40g_tx_tb);
 	nreset = 1'b0;
 	#10
 	nreset = 1'b1;
-	ctrl_v_i  = {LANE_N{1'b1}};
-	idle_v_i  = {LANE_N{1'b1}};
-	term_v_i  = {LANE_N{1'b0}};
-	err_v_i   = {LANE_N{1'b0}};	
-	start_v_i = {LANE_N{1'b0}};
-	#10
+	
 	for ( int i= 0; i < `TB_LOOP_CNT_N; i ++ ) begin
+		$tb(ctrl_v_i, idle_v_i, start_v_i,term_v_i, keep_i, 
+			err_v_i , data_i);	
 		#10
 		`ifdef DEBUG
 		$display("Seq cnt %d, align marker gap %d", m_pcs_40g_tx.seq_q, m_pcs_40g_tx.m_align_market.gap_q );
@@ -49,6 +46,7 @@ initial begin
 		`endif
 		
 	end
+	$tb_end();
 	
 	$display("Sucess");	
 	$finish;
