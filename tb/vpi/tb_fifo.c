@@ -79,9 +79,9 @@ uint64_t* tb_pma_fifo_pop(
 	free(pop);
 	#ifdef DEBUG
 	printf("pma pop, debug id : 0x");
-	printf("id %016lhhx\n",debug_id);
+	printf("id %016lx\n",debug_id);
 	printf("pma poped structure :\n");
-	tb_pma_print_elem(ret);	
+	//tb_pma_print_elem(ret);	
 	// print fifo
 	tb_pma_print_fifo(fifo);
 	#endif	
@@ -100,7 +100,6 @@ void tb_pma_print_fifo(
 {
 	if (!fifo) return;
 	printf("Fifo :\n");
-	int e = 0;
 	slist *nod = fifo->elems.read;
 	while (nod) {
 		tv_pma_fifo_elem_t *elem = cntof(nod, tv_pma_fifo_elem_t, elems);
@@ -116,7 +115,7 @@ void tb_pma_print_fifo(
 void tb_pma_print_elem(
 	tv_pma_fifo_elem_t *elem
 ){
-	printf("id %016lhhx data %016lhhx\n", elem->debug_id, *elem->data);	
+	printf("id %016lx data %016lx\n", elem->debug_id, *elem->data);	
 }
 
 

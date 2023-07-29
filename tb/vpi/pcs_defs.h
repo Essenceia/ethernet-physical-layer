@@ -88,6 +88,8 @@ typedef struct{
 		break; \
 	case 7: x = 0x7f; \
 		break; \
-	default : asssert(0);\
+	case 8: x = 0xff; \
+		break; \
+	default : printf("undexpected length : %ld.\n", len); assert(0);\
 }
 #endif // PCS_DEFS_H

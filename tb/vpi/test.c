@@ -11,13 +11,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "defs.h"
 
 int main(){
 	tv_t *t;
 	bool accept;
 	uint8_t *data;
-	uint64_t pma;
 	ctrl_lite_s ctrl;
 
 	memset( &ctrl, 0, sizeof(ctrl_lite_s ));
@@ -31,10 +30,12 @@ int main(){
 	data = (uint8_t*) malloc(sizeof(uint8_t) * TXD_W);
 	for(int i=0; i < 2; i++){
 		if (!tv_txd_has_data(t))	tv_create_packet(t);
+		info("Reading data\n");
 		tv_get_next_txd(t, &ctrl, data ); 
 	}	
 	
-	printf("raw data x%016lX\npma data x%016lX\n", data, pma);
+	printf("raw data 0x%016lX\n\n", (size_t) data);
+	free(data);
 
 	tv_free(t);	
 	return 0;

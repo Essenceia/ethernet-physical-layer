@@ -6,6 +6,7 @@
  * This code is provided "as is" without any express or implied warranties. */ 
 
 #include "tv.h"
+#include "defs.h"
 #include "tb.h"
 #include <assert.h>
 #include <string.h>
@@ -28,7 +29,9 @@ static int tb_compiletf(char*user_data)
 static int tb_calltf(char*user_data)
 {
 
-	uint8_t *data;
+	uint8_t data[TXD_W] = {0};
+	//uint8_t *data = malloc(TXD_W);
+	memset(data, 0, TXD_W);
 	ctrl_lite_s ctrl;
 	
 	vpiHandle sys;
@@ -45,9 +48,10 @@ static int tb_calltf(char*user_data)
 	
 	// create a new packet if none exist
 	if (!tv_txd_has_data(tv_s))	tv_create_packet(tv_s);
+	info("Getting next txd");
 	// get ctrl and data to drive tx pcs
-	tv_get_next_txd(tv_s, &ctrl, data ); 
-	
+	tv_get_next_txd(tv_s, &ctrl, data);
+ 
 	// write signals through vpi interface
 	// ctrl
 	tb_vpi_put_logic_1b_t(argv, ctrl.ctrl_v);
@@ -55,14 +59,16 @@ static int tb_calltf(char*user_data)
 	// start 
 	uint8_t s = 0;
 	for(int l=START_W-1; l>-1 ;l--)
-		s= (s<<1) & ctrl.start_v[l]; 
-	tb_vpi_put_logic_uint8_t(argv, ctrl.start_v);
+		s= (s<<1) | ctrl.start_v[l]; 
+	tb_vpi_put_logic_uint8_t(argv, s);
 	tb_vpi_put_logic_1b_t(argv, ctrl.term_v);
 	tb_vpi_put_logic_uint8_t(argv, ctrl.term_keep);
 	tb_vpi_put_logic_1b_t(argv, ctrl.err_v);
+
 	// data
-	_tb_vpi_put_logic_char_var_arr(argv, data,TXD_W);
+	_tb_vpi_put_logic_char_var_arr(argv, (char *) data, TXD_W);
 	//vpi_free_handle(argv);
+	//free(data);
 	return 0;
 }
 void tb_register()

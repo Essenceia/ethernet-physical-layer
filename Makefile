@@ -3,8 +3,8 @@ ifndef debug
 endif
 
 TB_DIR=tb
-VPI_DIR=$(TB_DIR)/vpi
 BUILD=build
+VPI_DIR=$(TB_DIR)/vpi
 CONF=conf
 FLAGS=-Wall -g2012 -gassertions -gstrict-expr-width
 WAVE_FILE=wave.vcd
@@ -49,16 +49,19 @@ run_pcs_40g_tx: pcs_40g_tx_tb vpi
 	vvp -M $(VPI_DIR) -mtb ${BUILD}/pcs_40g_tx_tb
 
 vpi:
-	cd $(VPI_DIR) && $(MAKE) tb.vpi $(DEBUG_FLAG) 40GBASE=1 
+	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEBUG_FLAG) 40GBASE=1
 
 wave:
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
-valgrind: pcs_40g_tx_tb
-	valgrind vvp -M $(VPI_DIR) -mtb $(BUILD)/pcs_40g_tx_tb
+valgrind: pcs_40g_tx_tb vpi
+	valgrind vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
 
-gdb: pcs_40g_tx_tb
-	gdb --args vvp -M $(VPI_DIR) -mtb $(BUILD)/pcs_40g_tx_tb
+valgrind2: pcs_40g_tx_tb vpi
+	valgrind --leak-check=full --log-file=vgd.log --fullpath-after=. vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
+
+gdb: pcs_40g_tx_tb vpi
+	gdb --args vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
   
 clean:
 	cd $(VPI_DIR) && $(MAKE) clean
