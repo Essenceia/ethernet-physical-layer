@@ -54,11 +54,11 @@ vpi:
 wave:
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
-valgrind: test vpi
-	valgrind vvp -M $(VPI_DIR) -mtb $(BUILD)/hft_tb
+valgrind: pcs_40g_tx_tb
+	valgrind vvp -M $(VPI_DIR) -mtb $(BUILD)/pcs_40g_tx_tb
 
-gdb: test vpi
-	gdb --args vvp -M $(VPI_DIR) -mtb $(BUILD)/hft_tb
+gdb: pcs_40g_tx_tb
+	gdb --args vvp -M $(VPI_DIR) -mtb $(BUILD)/pcs_40g_tx_tb
   
 clean:
 	cd $(VPI_DIR) && $(MAKE) clean
