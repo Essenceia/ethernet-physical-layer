@@ -41,6 +41,7 @@ void tv_create_packet(tv_t *t ){
 	t->idle_cntdown = tb_rand_packet_idle_cntdown();
 	// fill packet with real random data
 	t->len = tb_rand_get_packet_len();
+	t->rd_idx = 0;
 	t->packet = (t->packet) ?
 		realloc(t->packet, sizeof(uint8_t) * t->len) : 
 		malloc(sizeof(uint8_t) * t->len);
@@ -56,7 +57,7 @@ void tv_create_packet(tv_t *t ){
 		uint64_t *pma = malloc(sizeof(uint64_t));
 		accept = get_next_64b(t->tx, lane , ctrl, 0, pma);
 		if ( accept ) idle--;
-		info("Idle %ld\n", idle);
+		info("Idle %ld accept %d\n", idle, accept);
 		// add to fifo 
 		t->debug_id ++; 
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
@@ -109,7 +110,10 @@ void tv_create_packet(tv_t *t ){
 		t->debug_id ++; 
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
 	} while (!accept);
-	
+
+	#ifdef DEBUG
+	tb_pma_print_fifo(t->fifo);
+	#endif	
 }
 
 void tv_get_next_txd(
@@ -120,6 +124,8 @@ void tv_get_next_txd(
 {
 	assert(TXD_W < 9 );// not supported yet
 	memset(ctrl, 0, sizeof(ctrl_lite_s));
+	info("TXD :\nidle countdown %d\nrd_idx/len %ld/%ld\n",
+		t->idle_cntdown, t->rd_idx, t->len);
 	if ( t->idle_cntdown ){
 		t->idle_cntdown--;
 		// write ctrl
@@ -135,7 +141,7 @@ void tv_get_next_txd(
 			for(size_t i=0; i < TXD_W-1; i++){
 				tx[i+1] = t->packet[i];
 			}
-			t->rd_idx += TXD_W-1;	
+			t->rd_idx += TXD_W-1;
 		}else if ( left < 8 ){
 			// term : this is the last packert 
 			ctrl->ctrl_v = 1;

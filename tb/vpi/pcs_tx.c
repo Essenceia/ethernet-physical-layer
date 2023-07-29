@@ -46,6 +46,6 @@ bool get_next_64b(pcs_tx_s *state, size_t lane, ctrl_lite_s ctrl, uint64_t data,
 		
 	}
 
-	return gb_full;	
+	return !gb_full;	
 }
 
