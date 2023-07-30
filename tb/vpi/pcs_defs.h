@@ -9,6 +9,7 @@
 #ifdef _40GBASE
 #define START_W 1
 #define LANE_N  4
+#define MARKER_GAP_N 16383
 #else
 #define START_W 2	
 #define LANE_N  1
@@ -43,6 +44,11 @@
 #define I0_64b66b 38
 #define I1_64b66b 58
 
+#define MARK_LANE0 {0x90, 0x76, 0x47, bip3[0], 0x6F, 0x89, 0xB8, bip7[0]} 
+#define MARK_LANE1 {0xF0, 0xC4, 0xE6, bip3[1], 0x0F, 0x3B, 0x19, bip7[1]}
+#define MARK_LANE2 {0xC5, 0x65, 0x9B, bip3[2], 0x3A, 0x9A, 0x64, bip7[2]}
+#define MARK_LANE3 {0xA2, 0x79, 0x3D, bip3[3], 0x5D, 0x86, 0xC2, bip7[3]}
+
 typedef unsigned __int128 uint128_t;
 
 typedef struct {
@@ -65,9 +71,19 @@ typedef struct{
 }gearbox_s;
 
 typedef struct{
+	uint8_t bip[LANE_N];
+	uint16_t gap;
+}marker_s;
+
+typedef struct{
 	block_s     block_enc[LANE_N];
-	uint64_t    scrambler_state[LANE_N];
+	// only 1 scrambler shared amoung all lanes
+	uint64_t    scrambler_state;
 	block_s     block_scram[LANE_N];
+	#ifdef _40GBASE
+	marker_s    marker_state;
+	block_s     block_mark[LANE_N];	
+	#endif
 	gearbox_s   gearbox_state[LANE_N];
 }pcs_tx_s;
 

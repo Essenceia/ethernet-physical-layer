@@ -12,7 +12,7 @@ VIEW=gtkwave
 WAVE_CONF=wave.conf
 DEBUG_FLAG=$(if $(debug), debug=1)
 
-all: wave
+all: run wave
 
 build:
 	@mkdir -p ${BUILD}
@@ -47,6 +47,8 @@ run_gearbox_tx: gearbox_tx_tb
 
 run_pcs_40g_tx: pcs_40g_tx_tb vpi
 	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/pcs_40g_tx_tb
+
+run: run_pcs_40g_tx
 
 vpi:
 	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEBUG_FLAG) 40GBASE=1

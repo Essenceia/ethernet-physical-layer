@@ -38,6 +38,11 @@ $(BUILD)/64b66b.o : 64b66b.c 64b66b.h
 	@mkdir -p $(@D)
 	$(CC) -o $@ -c 64b66b.c $(FLAGS)
 
+$(BUILD)/pcs_marker.o : pcs_marker.c pcs_marker.h pcs_defs.h
+	@mkdir -p $(@D)
+	$(CC) -o $@ -c pcs_marker.c $(FLAGS)
+
+
 $(BUILD)/pcs_tx.o: pcs_tx.h pcs_tx.c pcs_defs.h 
 	@mkdir -p $(@D)
 	$(CC) -o $@ -c pcs_tx.c $(FLAGS)
@@ -58,10 +63,11 @@ $(BUILD)/tb.o: tb.c tb.h
 	@mkdir -p $(@D)
 	$(CC) -o $@ -I$(INC) -I$(IVERILOG) -c tb.c $(FLAGS)
 
-test_deps_ := test.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o tv.o
+40g_deps := $(if $(40GBASE),pcs_marker.o)
+test_deps_ := test.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o tv.o $(40g_deps)
 test_deps := $(foreach x,$(test_deps_),$(BUILD)/$x)
 
-tb_deps_ := tb.o tv.o tb_utils.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o
+tb_deps_ := tb.o tv.o tb_utils.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o $(40g_deps)
 tb_deps := $(foreach x,$(tb_deps_),$(BUILD)/$x)
 $(info TB DEPS $(tb_deps))
 
