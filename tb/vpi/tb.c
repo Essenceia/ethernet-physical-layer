@@ -85,6 +85,52 @@ void tb_register()
       vpi_register_systf(&tf_data);
 }
 
+
+static int tb_exp_compiletf(char* path)
+{
+    return 0;
+}
+/* Produce the expected output of the PCS and write it
+ * to signals passed as parameter  */
+static PLI_INT32 tb_exp_calltf(char*user_data){
+	vpiHandle sys;
+	vpiHandle argv;
+	uint64_t *pma;
+	uint64_t debug_id = 0;	
+	
+	sys = vpi_handle(vpiSysTfCall, 0);
+	assert(sys);
+	argv = vpi_iterate(vpiArgument, sys);
+	assert(argv);
+	// pop fifo
+	pma = tb_pma_fifo_pop( tv_s->fifo, &debug_id);
+	
+	// write pma
+	tb_vpi_put_logic_uint64_t(argv, *pma);
+		
+	// write debug id 
+	tb_vpi_put_logic_uint64_t(argv, debug_id);
+
+	free(pma); 
+	return 0;
+}
+
+void tb_exp_register()
+{
+	s_vpi_systf_data tf_end_data;
+	
+	tf_end_data.type      = vpiSysFunc;
+	tf_end_data.sysfunctype  = vpiSysFuncInt;
+	tf_end_data.tfname    = "$tb_exp";
+	tf_end_data.calltf    = tb_exp_calltf;
+	tf_end_data.compiletf = tb_exp_compiletf;
+	tf_end_data.sizetf    = 0;
+	tf_end_data.user_data = 0;
+	vpi_register_systf(&tf_end_data);
+}
+
+
+
 // de-init routine
 static int tb_end_compiletf(char* path)
 {
@@ -113,6 +159,7 @@ void tb_end_register()
 
 void (*vlog_startup_routines[])() = {
     tb_end_register,
+    tb_exp_register,
     tb_register,
     0
 };

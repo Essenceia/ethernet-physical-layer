@@ -19,7 +19,7 @@ IVERILOG=/home/pitchu/AUR/iverilog
 FLAGS = -std=gnu99 -Wall -Wextra -Wconversion -Wshadow -Wundef -fno-common -Wno-unused-parameter -Wno-type-limits -fpic
 DEFINES = $(if $(debug),-DDEBUG -g) $(if $(40GBASE), -D_40GBASE)
 CC = cc -g $(DEFINES)
-LD = cc -g $(if $(debug),-DDEBUG -g)  
+LD = cc -g $(DEFINES)  
 
 
 $(BUILD)/test.o:test.c

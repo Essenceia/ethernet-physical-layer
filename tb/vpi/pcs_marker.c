@@ -47,7 +47,7 @@ uint8_t calculate_bip_per_lane(const block_s out){
 */
 #define SET_U64_MARK_LANE(u, l) {uint8_t tmp[8] = MARK_LANE##l ; \
 	memcpy(&u, tmp, 8 ); }	
-void _create_alignement_marker(const uint8_t bip3[LANE_N], const block_s in[LANE_N], block_s out[LANE_N]){
+void _create_alignement_marker(const uint8_t bip3[LANE_N], block_s out[LANE_N]){
 	uint8_t bip7[LANE_N];
 	for(size_t i=0; i<LANE_N;i++)
 		bip7[i] = ~bip3[i];
@@ -69,10 +69,12 @@ bool alignement_marker(marker_s *state, block_s in[LANE_N], block_s out[LANE_N])
 	need_marker = state->gap == MARKER_GAP_N+1;
 	if ( need_marker ){
 		// add alignement data
-		_create_alignement_marker(state->bip, in, out);
+		_create_alignement_marker(state->bip, out);
 		// reset gap counter and bip
 		state->gap = 0;
 		memset( state->bip, 0, sizeof(uint8_t) * LANE_N );// TODO : confirm we need to reset bip to 0
+	}else{
+		memcpy(out, in, sizeof(block_s) *LANE_N);	
 	}
 	// continue calculating bip value
 	state->gap ++;

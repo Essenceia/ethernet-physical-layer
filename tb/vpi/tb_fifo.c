@@ -61,7 +61,7 @@ void tb_pma_fifo_push(
  */
 uint64_t* tb_pma_fifo_pop(
 	tv_pma_fifo_t *fifo,
-	uint64_t debug_id
+	uint64_t *debug_id
 )
 {
 
@@ -74,12 +74,12 @@ uint64_t* tb_pma_fifo_pop(
 	assert(!pop->elems.next);
 
 	/* Read data, delete @pop. */	
-	debug_id = pop->debug_id;
+	*debug_id = pop->debug_id;
 	uint64_t *ret = pop->data;
 	free(pop);
 	#ifdef DEBUG
 	printf("pma pop, debug id : 0x");
-	printf("id %016lx\n",debug_id);
+	printf("id %016lx\n",*debug_id);
 	printf("pma poped structure :\n");
 	//tb_pma_print_elem(ret);	
 	// print fifo

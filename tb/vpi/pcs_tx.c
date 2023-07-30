@@ -36,10 +36,11 @@ bool get_next_64b(pcs_tx_s *state, ctrl_lite_s ctrl, uint64_t data, uint64_t *pm
 	marker_v = is_alignement_marker(state->marker_state);
 	
 	accept = !( gb_full || marker_v );
+	info("accpet %d full %d marker %d\n", accept, gb_full, marker_v);
 
 	// if gearbox is full next block will not be accpted anyways
 	// so there is no need to compute the expected result	
-	if ( !accept ){
+	if ( accept ){
 		// enc
 		for(size_t l=0; l<LANE_N; l++){
 			err = enc_block(ctrl, data, &(state->block_enc[l]));
@@ -54,17 +55,21 @@ bool get_next_64b(pcs_tx_s *state, ctrl_lite_s ctrl, uint64_t data, uint64_t *pm
 		for(size_t l=0; l<LANE_N; l++){
 			state->block_scram[l].data = scramble(&state->scrambler_state, state->block_enc[l].data, 64);
 			state->block_scram[l].head = state->block_enc[l].head;
-			info("scr data x%016lx\n", state->block_scram[l].data);
+			info("Scramm in x%016lx out x%016lx\n", state->block_enc[l].data, state->block_scram[l].data);
 		}
 		#ifdef _40GBASE
 		// alignment marker
 		alignement_marker(&state->marker_state, state->block_scram, state->block_mark ); 
+		for(size_t l=0; l<LANE_N; l++)
+			info("Marker in x%016lx out x%016lx\n", state->block_scram[l].data,state->block_mark[l].data);
 		#endif
 	}
 	// gearbox 
 	#ifdef _40GBASE
-	for(size_t l=0; l<LANE_N; l++)
+	for(size_t l=0; l<LANE_N; l++){
 		gb_full_next &= gearbox(&state->gearbox_state[l], state->block_mark[l], pma);
+		info("Gearbox in x%016lx out x%016lx\n", state->block_mark[l].data, pma[l]);
+	}
 	#else
 	gb_full_next = gearbox(&state->gearbox_state[0], state->block_scram[0], pma);
 	#endif

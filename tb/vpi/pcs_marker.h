@@ -4,7 +4,7 @@
 
 uint8_t calculate_bip_per_lane(const block_s out);
 
-void _create_alignement_marker(const uint8_t bip3[LANE_N], const block_s in[LANE_N], block_s out[LANE_N]);
+void _create_alignement_marker(const uint8_t bip3[LANE_N],block_s out[LANE_N]);
 
 // Add alignement marker to data block, return true if an alignement
 // marker was added to the block in place of the datad, false if not.

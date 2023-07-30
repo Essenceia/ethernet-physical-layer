@@ -11,7 +11,7 @@ WAVE_FILE=wave.vcd
 VIEW=gtkwave
 WAVE_CONF=wave.conf
 DEBUG_FLAG=$(if $(debug), debug=1)
-
+DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 all: run wave
 
 build:
@@ -51,7 +51,7 @@ run_pcs_40g_tx: pcs_40g_tx_tb vpi
 run: run_pcs_40g_tx
 
 vpi:
-	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEBUG_FLAG) 40GBASE=1
+	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEFINES)
 
 wave:
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}

@@ -255,7 +255,7 @@ void tb_pma_fifo_push(
  */
 uint64_t* tb_pma_fifo_pop(
 	tv_pma_fifo_t *fifo,
-	uint64_t debug_id
+	uint64_t *debug_id
 );
 
 /*
