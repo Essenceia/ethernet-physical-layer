@@ -48,8 +48,9 @@ logic [LANE_N*HEAD_W-1:0] sync_head;
 logic [LANE_N*HEAD_W-1:0] sync_head_mark;
 // gearbox full has the same value every gearbox
 // regardless of the lane, we can ignore all of them but 1
-logic [LANE_N-1:0]        gearbox_full;
-logic                     marker_v;
+logic [LANE_N-1:0] gearbox_full;
+logic              marker_v;
+logic              scram_v; 
 // pcs fsm
 logic             seq_rst;
 logic [SEQ_W-1:0] seq_next;
@@ -90,14 +91,6 @@ m_pcs_enc(
 	.sync_head_o(sync_head[l*HEAD_W+HEAD_W-1:l*HEAD_W]), 
 	.data_o(data_enc[l*DATA_W+DATA_W-1:l*DATA_W])	
 );
-// scramble
-scrambler_64b66b_tx #(.LEN(DATA_W))
-m_64b66b_tx(
-	.clk(clk),
-	.nreset(nreset),
-	.data_i(data_enc[l*DATA_W+DATA_W-1:l*DATA_W]),
-	.scram_o(data_scram[l*DATA_W+DATA_W-1:l*DATA_W])
-);
 // gearbox
 gearbox_tx #( .DATA_W(DATA_W), .BLOCK_DATA_W(DATA_W))
 m_gearbox_tx (
@@ -112,6 +105,16 @@ m_gearbox_tx (
 end
 endgenerate
 
+// scramble
+scrambler_64b66b_tx #(.LEN(XGMII_DATA_W))
+m_64b66b_tx(
+	.clk(clk),
+	.nreset(nreset),
+	.valid_i(scram_v),
+	.data_i (data_enc  ),
+	.scram_o(data_scram)
+);
+
 // alignement marker
 alignement_marker_tx #(.LANE_N(LANE_N), .HEAD_W( HEAD_W ), .DATA_W(DATA_W))
 m_align_market(
@@ -123,7 +126,7 @@ m_align_market(
 	.head_o(sync_head_mark ),
 	.data_o(data_mark )
 );
-
-assign ready_o = ~gearbox_full[0] & ~marker_v;
+assign scram_v = ~gearbox_full[0] & ~marker_v; 
+assign ready_o = scram_v;
 
 endmodule
