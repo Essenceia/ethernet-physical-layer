@@ -53,7 +53,7 @@ void tv_create_packet(tv_t *t ){
 	ctrl.idle_v = 1;
 	while( idle >= 0){
 		// idle frames
-		uint64_t *pma = malloc(sizeof(uint64_t)*LANE_N);
+		uint64_t *pma = malloc(sizeof(uint64_t));
 		accept = get_next_pma(t->tx, ctrl, 0, pma);
 		if ( accept ) idle--;
 		info("Idle %ld accept %d\n", idle, accept);
@@ -71,7 +71,7 @@ void tv_create_packet(tv_t *t ){
 		data =  data  |  (((uint64_t) t->packet[i-1])<< i*8 );  
 	}
 	do {
-		uint64_t *pma = malloc(sizeof(uint64_t)*LANE_N);
+		uint64_t *pma = malloc(sizeof(uint64_t));
 		accept = get_next_pma(t->tx, ctrl, data, pma);
 		t->debug_id ++; 
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
@@ -84,7 +84,7 @@ void tv_create_packet(tv_t *t ){
 		for(size_t i=1; i< TXD_W; i++){
 			data =  data  |  (((uint64_t) t->packet[i-1])<< i*8 );  
 		}
-		uint64_t *pma = malloc(sizeof(uint64_t)*LANE_N);
+		uint64_t *pma = malloc(sizeof(uint64_t));
 		accept = get_next_pma(t->tx, ctrl, data, pma);
 		t->debug_id ++; 
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
@@ -104,7 +104,7 @@ void tv_create_packet(tv_t *t ){
 	}
 
 	do {
-		uint64_t *pma = malloc(sizeof(uint64_t)*LANE_N);
+		uint64_t *pma = malloc(sizeof(uint64_t));
 		accept = get_next_pma(t->tx,  ctrl, data, pma);
 		t->debug_id ++; 
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);

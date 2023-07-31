@@ -58,7 +58,7 @@ bool get_next_pma(pcs_tx_s *state, ctrl_lite_s ctrl, uint64_t data, uint64_t *pm
 			info("Scramm in x%016lx out x%016lx\n", state->block_enc.data, state->block_scram.data);
 		#ifdef _40GBASE
 		// alignment marker
-		alignement_marker(&state->marker_state, state->lane_idx, state->block_scram, state->block_mark ); 
+		alignement_marker(&state->marker_state, state->lane_idx, state->block_scram, &state->block_mark[l] ); 
 		info("Marker in x%016lx out x%016lx\n", state->block_scram.data,state->block_mark[l].data);
 		#endif
 	}

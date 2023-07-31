@@ -57,7 +57,7 @@ void _create_alignement_marker(const size_t lane, const uint8_t bip3, block_s *o
 bool alignement_marker(marker_s *state, const size_t lane, const block_s in, block_s *out){
 	bool need_marker;
 	// check if we need to add marker
-	need_marker = state->gap == MARKER_GAP_N+1;
+	need_marker = is_alignement_marker(*state);
 	if ( need_marker ){
 		// add alignement data
 		_create_alignement_marker(lane, state->bip[lane], out);
