@@ -43,11 +43,9 @@ generate
 				err_v_i[i] , data_i[i*DATA_W+DATA_W-1:i*DATA_W]);	
 					// expected result
 				$tb_exp(tb_pma[i*DATA_W+DATA_W-1:i*DATA_W], tb_debug_id[i*DEBUG_ID_W+DEBUG_ID_W-1:i*DEBUG_ID_W]);
-			end
-		end
-		// check : experiemtnation, don't know if this would work
-		always @(posedge clk) begin
-			assert( pma_o[i*DATA_W+DATA_W-1:i*DATA_W] == tb_pma[i*DATA_W+DATA_W-1:i*DATA_W]); 
+				// check : experiemtnation, don't know if this would work
+				assert( pma_o[i*DATA_W+DATA_W-1:i*DATA_W] == tb_pma[i*DATA_W+DATA_W-1:i*DATA_W]); 
+			end		
 		end
 	end
 endgenerate
