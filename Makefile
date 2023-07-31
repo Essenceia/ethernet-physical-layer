@@ -68,4 +68,5 @@ gdb: pcs_40g_tx_tb vpi
 clean:
 	cd $(VPI_DIR) && $(MAKE) clean
 	rm -fr ${BUILD}/*
+	rm vgcore.* vgd.log*
 	
