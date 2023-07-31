@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 1
+`define TB_LOOP_CNT_N 100
 `endif
 module pcs_40g_tx_tb;
 
@@ -36,15 +36,19 @@ always clk = #5 ~clk;
 genvar i;
 generate
 for( i=0; i < LANE_N; i++) begin
-always @(posedge clk) begin
-	if( nreset ) begin
-		// next block driver
-		$tb(ctrl_v_i[i], idle_v_i[i], start_v_i[i],term_v_i[i], keep_i[i*KEEP_W+KEEP_W-1:i*KEEP_W], 
-		err_v_i[i] , data_i[i*DATA_W+DATA_W-1:i*DATA_W]);	
-			// expected result
-		$tb_exp(tb_pma[i*DATA_W+DATA_W-1:i*DATA_W], tb_debug_id[i*DEBUG_ID_W+DEBUG_ID_W-1:i*DEBUG_ID_W]);
+	always @(posedge clk) begin
+		if( nreset ) begin
+			// next block driver
+			$tb(ctrl_v_i[i], idle_v_i[i], start_v_i[i],term_v_i[i], keep_i[i*KEEP_W+KEEP_W-1:i*KEEP_W], 
+			err_v_i[i] , data_i[i*DATA_W+DATA_W-1:i*DATA_W]);	
+				// expected result
+			$tb_exp(tb_pma[i*DATA_W+DATA_W-1:i*DATA_W], tb_debug_id[i*DEBUG_ID_W+DEBUG_ID_W-1:i*DEBUG_ID_W]);
+		end
 	end
-end
+	// check : experiemtnation, don't know if this would work
+	always @(posedge clk) begin
+		assert( pma[i*DATA_W+DATA_W-1:i*DATA_W] == tb_pma[i*DATA_W+DATA_W-1:i*DATA_W]); 
+	end
 end
 endgenerate
 initial begin
