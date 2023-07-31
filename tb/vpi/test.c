@@ -15,7 +15,6 @@
 
 int main(){
 	tv_t *t;
-	bool accept;
 	uint8_t *data;
 	ctrl_lite_s ctrl;
 
@@ -27,7 +26,7 @@ int main(){
 
 	t = tv_alloc();
 	
-	data = (uint8_t*) malloc(sizeof(uint8_t) * TXD_W);
+	data = (uint8_t*) malloc(sizeof(uint8_t) * TXD_W*LANE_N);
 	for(int i=0; i < 2; i++){
 		if (!tv_txd_has_data(t))	tv_create_packet(t);
 		info("Reading data\n");

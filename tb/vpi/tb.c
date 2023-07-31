@@ -106,7 +106,7 @@ static PLI_INT32 tb_exp_calltf(char*user_data){
 	pma = tb_pma_fifo_pop( tv_s->fifo, &debug_id);
 	
 	// write pma
-	tb_vpi_put_logic_uint64_t(argv, *pma);
+	tb_vpi_put_logic_uint64_t_var_arr(argv, *pma, LANE_N);
 		
 	// write debug id 
 	tb_vpi_put_logic_uint64_t(argv, debug_id);

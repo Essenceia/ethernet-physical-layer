@@ -45,43 +45,32 @@ uint8_t calculate_bip_per_lane(const block_s out){
  *      3     0xA2, 0x79, 0x3D, BIP3,  0x5D, 0x86, 0xC2, BIP7
  *  Each octet is transmitted LSB to MSB.
 */
-#define SET_U64_MARK_LANE(u, l) {uint8_t tmp[8] = MARK_LANE##l ; \
-	memcpy(&u, tmp, 8 ); }	
-void _create_alignement_marker(const uint8_t bip3[LANE_N], block_s out[LANE_N]){
-	uint8_t bip7[LANE_N];
-	for(size_t i=0; i<LANE_N;i++)
-		bip7[i] = ~bip3[i];
+void _create_alignement_marker(const size_t lane, const uint8_t bip3, block_s *out){
+	uint8_t bip7;
+	bip7 = ~bip3;
 	// encoded values
-	uint64_t data_mark[LANE_N];
-	SET_U64_MARK_LANE( data_mark[0], 0);
-	SET_U64_MARK_LANE( data_mark[1], 1);
-	SET_U64_MARK_LANE( data_mark[2], 2);
-	SET_U64_MARK_LANE( data_mark[3], 3);
-	for( size_t l=0; l< LANE_N; l++){
-		out[l].data = data_mark[l];
-		out[l].head = SYNC_HEAD_CTRL;
-	}
+	const uint8_t mark_arr[LANE_N][8] = MARK_LANE_ARR;
+	memcpy(&out->data ,mark_arr[lane], sizeof(uint64_t));
+	out->head = SYNC_HEAD_CTRL;
 }
 
-bool alignement_marker(marker_s *state, block_s in[LANE_N], block_s out[LANE_N]){
+bool alignement_marker(marker_s *state, const size_t lane, const block_s in, block_s *out){
 	bool need_marker;
 	// check if we need to add marker
 	need_marker = state->gap == MARKER_GAP_N+1;
 	if ( need_marker ){
 		// add alignement data
-		_create_alignement_marker(state->bip, out);
+		_create_alignement_marker(lane, state->bip[lane], out);
 		// reset gap counter and bip
 		state->gap = 0;
 		memset( state->bip, 0, sizeof(uint8_t) * LANE_N );// TODO : confirm we need to reset bip to 0
 	}else{
-		memcpy(out, in, sizeof(block_s) *LANE_N);	
+		memcpy(out, &in, sizeof(block_s));	
 	}
 	// continue calculating bip value
-	state->gap ++;
-	for(size_t l=0; l<LANE_N; l++){
-		state->bip[l] = calculate_bip_per_lane(in[l]);	
-
-	}
+	state->bip[lane] = calculate_bip_per_lane(in);	
+	// update gap on last lane
+	if ( lane == LANE_N-1) state->gap ++;
 	
 	return need_marker;
 }

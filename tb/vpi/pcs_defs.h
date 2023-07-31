@@ -44,10 +44,11 @@
 #define I0_64b66b 38
 #define I1_64b66b 58
 
-#define MARK_LANE0 {0x90, 0x76, 0x47, bip3[0], 0x6F, 0x89, 0xB8, bip7[0]} 
-#define MARK_LANE1 {0xF0, 0xC4, 0xE6, bip3[1], 0x0F, 0x3B, 0x19, bip7[1]}
-#define MARK_LANE2 {0xC5, 0x65, 0x9B, bip3[2], 0x3A, 0x9A, 0x64, bip7[2]}
-#define MARK_LANE3 {0xA2, 0x79, 0x3D, bip3[3], 0x5D, 0x86, 0xC2, bip7[3]}
+#define MARK_LANE0 {0x90, 0x76, 0x47, bip3, 0x6F, 0x89, 0xB8, bip7} 
+#define MARK_LANE1 {0xF0, 0xC4, 0xE6, bip3, 0x0F, 0x3B, 0x19, bip7}
+#define MARK_LANE2 {0xC5, 0x65, 0x9B, bip3, 0x3A, 0x9A, 0x64, bip7}
+#define MARK_LANE3 {0xA2, 0x79, 0x3D, bip3, 0x5D, 0x86, 0xC2, bip7}
+#define MARK_LANE_ARR { MARK_LANE0, MARK_LANE1, MARK_LANE2, MARK_LANE3 }
 
 typedef unsigned __int128 uint128_t;
 
@@ -76,11 +77,12 @@ typedef struct{
 }marker_s;
 
 typedef struct{
-	block_s     block_enc[LANE_N];
+	block_s     block_enc;
 	// only 1 scrambler shared amoung all lanes
 	uint64_t    scrambler_state;
-	block_s     block_scram[LANE_N];
+	block_s     block_scram;
 	#ifdef _40GBASE
+	size_t      lane_idx; //current lane index
 	marker_s    marker_state;
 	block_s     block_mark[LANE_N];	
 	#endif

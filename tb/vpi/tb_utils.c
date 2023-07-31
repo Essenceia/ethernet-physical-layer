@@ -89,3 +89,29 @@ void _tb_vpi_put_logic_char_var_arr(vpiHandle argv, char *arr, size_t len){
 	vpi_put_value(h, &v, 0, vpiNoDelay);	
 	free(v.value.vector);	
 }
+
+
+void tb_vpi_put_logic_uint64_t_var_arr(vpiHandle argv, uint64_t *arr, size_t len){
+	size_t w_cnt; // word count, vpi vector val elems are only of 32b wide each
+	size_t off;
+	vpiHandle h;
+	s_vpi_value v;
+	h = vpi_scan(argv);
+	assert(h);
+	w_cnt = len*2;
+	v.format = vpiVectorVal;
+	v.value.vector = calloc(w_cnt, sizeof(s_vpi_vecval));
+	for (size_t i = 0; i < w_cnt; i++){
+		v.value.vector[i].aval = 0;
+	}	
+	
+	for (size_t i = 0; i < w_cnt; i++){
+		off = (i%2)*32;
+		v.value.vector[i].aval = (PLI_INT32)arr[i] >> off;	
+		v.value.vector[i].bval = (PLI_INT32)0x00 ;
+	}
+	vpi_put_value(h, &v, 0, vpiNoDelay);	
+	free(v.value.vector);	
+}
+
+
