@@ -66,7 +66,7 @@ bool get_next_pma(pcs_tx_s *state, ctrl_lite_s ctrl, uint64_t data, uint64_t *pm
 	#ifdef _40GBASE
 	if(!gb_full) state->lane_idx = (state->lane_idx+1) % LANE_N;
 	gb_full_next &= gearbox(&state->gearbox_state[l], state->block_mark[l], pma);
-	info("Gearbox in x%016lx out x%016lx  state %d\n", state->block_mark[l].data, pma, state->gearbox_state[l].len);
+	info("Gearbox in x%016lx out x%016lx  state %d\n", state->block_mark[l].data, *pma, state->gearbox_state[l].len);
 	#else
 	gb_full_next = gearbox(&state->gearbox_state[l], state->block_scram[l], pma);
 	#endif
