@@ -41,7 +41,7 @@
 #define SYNC_HEAD_CTRL (uint8_t) 0x02
 #define SYNC_HEAD_DATA (uint8_t) 0x01
 
-#define I0_64b66b 38
+#define I0_64b66b 39
 #define I1_64b66b 58
 
 #define MARK_LANE0 {0x90, 0x76, 0x47, bip3, 0x6F, 0x89, 0xB8, bip7} 

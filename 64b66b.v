@@ -10,9 +10,9 @@ module scrambler_64b66b_tx #(
 	input  [LEN-1:0] data_i,
 	output [LEN-1:0] scram_o
 );
-localparam S_W = 58;
-localparam I0 = 38;
-localparam I1 = 57;
+localparam I0 = 39;
+localparam I1 = 58;
+localparam S_W = I1+1;
 // S_58 to S_0, previously scrambled data
 reg   [S_W-1:0] s_q;
 logic [S_W-1:0] s_next;

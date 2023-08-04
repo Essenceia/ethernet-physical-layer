@@ -30,6 +30,7 @@ static int tb_calltf(char*user_data)
 {
 
 	uint8_t data[TXD_W] = {0};
+	uint8_t debug_id[TXD_W];
 	//uint8_t *data = malloc(TXD_W);
 	memset(data, 0, TXD_W);
 	ctrl_lite_s ctrl;
@@ -66,7 +67,9 @@ static int tb_calltf(char*user_data)
 	tb_vpi_put_logic_1b_t(argv, ctrl.err_v);
 
 	// data
-	_tb_vpi_put_logic_char_var_arr(argv, (char *) data, TXD_W);
+	tb_vpi_put_logic_uint64_t_var_arr(argv, (char *) data, TXD_W);
+	// debug id
+//	tb_vpi_put_logic_uint64_t(argv, tv_s);
 	//vpi_free_handle(argv);
 	//free(data);
 	return 0;

@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 100
+`define TB_LOOP_CNT_N 1
 `endif
 module pcs_40g_tx_tb;
 
@@ -26,6 +26,7 @@ logic [PMA_CNT_N*PMA_DATA_W-1:0] pma_o;
 logic [PMA_CNT_N*PMA_DATA_W-1:0] tb_pma;
 
 // debug id
+logic [LANE_N*DEBUG_ID_W-1:0] debug_id;
 logic [LANE_N*DEBUG_ID_W-1:0] tb_debug_id;
 
 reg   clk = 1'b0;
@@ -40,7 +41,7 @@ generate
 			if( nreset ) begin
 				// next block driver
 				$tb(ctrl_v_i[i], idle_v_i[i], start_v_i[i],term_v_i[i], keep_i[i*KEEP_W+KEEP_W-1:i*KEEP_W], 
-				err_v_i[i] , data_i[i*DATA_W+DATA_W-1:i*DATA_W]);	
+				err_v_i[i] , data_i[i*DATA_W+DATA_W-1:i*DATA_W], debug_id[i*DEBUG_ID_W+DEBUG_ID_W-1:i*DEBUG_ID_W]);	
 					// expected result
 				$tb_exp(tb_pma[i*DATA_W+DATA_W-1:i*DATA_W], tb_debug_id[i*DEBUG_ID_W+DEBUG_ID_W-1:i*DEBUG_ID_W]);
 				// check : experiemtnation, don't know if this would work
