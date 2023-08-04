@@ -51,22 +51,22 @@ bool get_next_pma(pcs_tx_s *state, ctrl_lite_s ctrl, uint64_t data, uint64_t *pm
 				fprintf(stderr, "Error in encoding\n");
 				assert(0); // die with coredump
 			}
-		//scramble
-		//skip scrambler on gearbox pause
+			//scramble
+			//skip scrambler on gearbox pause
 			state->block_scram.data = scramble(&state->scrambler_state, state->block_enc.data, 64);
 			state->block_scram.head = state->block_enc.head;
 			info("Scramm in x%016lx out x%016lx\n", state->block_enc.data, state->block_scram.data);
-		#ifdef _40GBASE
-		// alignment marker
-		alignement_marker(&state->marker_state, state->lane_idx, state->block_scram, &state->block_mark[l] ); 
-		info("Marker in x%016lx out x%016lx\n", state->block_scram.data,state->block_mark[l].data);
-		#endif
+			#ifdef _40GBASE
+			// alignment marker
+			alignement_marker(&state->marker_state, state->lane_idx, state->block_scram, &state->block_mark[l] ); 
+			info("Marker in x%016lx out x%016lx\n", state->block_scram.data,state->block_mark[l].data);
+			#endif
 	}
 	// gearbox 
 	#ifdef _40GBASE
 	if(!gb_full) state->lane_idx = (state->lane_idx+1) % LANE_N;
 	gb_full_next &= gearbox(&state->gearbox_state[l], state->block_mark[l], pma);
-	info("Gearbox in x%016lx out x%016lx\n", state->block_mark[l].data, pma[l]);
+	info("Gearbox in x%016lx out x%016lx  state %d\n", state->block_mark[l].data, pma, state->gearbox_state[l].len);
 	#else
 	gb_full_next = gearbox(&state->gearbox_state[l], state->block_scram[l], pma);
 	#endif

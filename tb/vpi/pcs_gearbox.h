@@ -8,7 +8,7 @@
 uint8_t gearbox( gearbox_s * state, block_s block, uint64_t *pma );  
 
 static inline bool gearbox_full(gearbox_s state){
-	return state.len == 32;
+	return state.len == 64;
 };
 #endif // PCS_GEARBOX_H
  

@@ -38,8 +38,8 @@
 #define BLOCK_CTRL_IDLE (uint64_t) 0x00
 #define BLOCK_CTRL_ERR  (uint64_t) 0b00111100011110001111000111100011110001111000111100011110// 8{7'h1e}
 
-#define SYNC_HEAD_CTRL (uint8_t) 0x02
-#define SYNC_HEAD_DATA (uint8_t) 0x01
+#define SYNC_HEAD_CTRL (uint8_t) 0x02 //10b 
+#define SYNC_HEAD_DATA (uint8_t) 0x01 //01b
 
 #define I0_64b66b 39
 #define I1_64b66b 58
