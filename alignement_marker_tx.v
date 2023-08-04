@@ -43,7 +43,7 @@ assign add_market_v_next = gap_add_overflow;
 always @(posedge clk) begin
 	if ( ~nreset ) begin
 		gap_q <= {GAP_W{1'b0}};
-		add_market_v_q <= 1'b1;// add alignement market on reset
+		add_market_v_q <= 1'b0;// don't add alignement market on reset
 	end else begin
 		gap_q <= gap_next;
 		add_market_v_q <= add_market_v_next;
