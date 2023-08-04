@@ -14,6 +14,9 @@ DEBUG_FLAG=$(if $(debug), debug=1)
 DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 all: run wave
 
+config:
+	@mkdir -p ${CONF}
+
 build:
 	@mkdir -p ${BUILD}
 
@@ -53,7 +56,7 @@ run: run_pcs_40g_tx
 vpi:
 	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEFINES)
 
-wave:
+wave: config
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
 valgrind: pcs_40g_tx_tb vpi

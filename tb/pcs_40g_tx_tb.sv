@@ -60,22 +60,8 @@ initial begin
 	start_v_i  = {LANE_N{1'b0}};
 	term_v_i  = {LANE_N{1'b0}};
 	err_v_i  = {LANE_N{1'b0}};	
-	for ( int i= 0; i < `TB_LOOP_CNT_N; i ++ ) begin
-		//new_block();		
-		#10
-		`ifdef DEBUG
-		$display("Seq cnt %d, align marker gap %d", m_pcs_40g_tx.seq_q, m_pcs_40g_tx.m_align_market.gap_q );
-		`else
-		// have to add something to make iverilog happy
-		ctrl_v_i  = {LANE_N{1'b1}};
-		//idle_v_i  = {LANE_N{1'b1}};
-		//start_v_i  = {LANE_N{1'b0}};
-		//term_v_i  = {LANE_N{1'b0}};
-		//err_v_i  = {LANE_N{1'b0}};
-		`endif
-		
-	end
-	$tb_end();
+
+	#( `TB_LOOP_CNT_N*10) $tb_end();
 	
 	$display("Sucess");	
 	$finish;
