@@ -10,8 +10,8 @@ module scrambler_64b66b_tx #(
 	input  [LEN-1:0] data_i,
 	output [LEN-1:0] scram_o
 );
-localparam I0 = 39;
-localparam I1 = 58;
+localparam I0 = 38;
+localparam I1 = 57;
 localparam S_W = I1+1;
 // S_58 to S_0, previously scrambled data
 reg   [S_W-1:0] s_q;
@@ -24,11 +24,11 @@ generate
 		if ( i <= I0 ) begin
 			assign scram_o[i] = data_i[i] ^ ( s_q[I0-i] ^ s_q[I1-i] ); 
 		end else if ( i <= I1 ) begin 
-			assign scram_o[i] = data_i[i] ^ ( scram_o[-I0+i] ^ s_q[I1-i] ); 
+			assign scram_o[i] = data_i[i] ^ ( scram_o[i-(I0+1)] ^ s_q[I1-i] ); 
 		end else begin
 			assign scram_o[i] = data_i[i] ^
-							 ( scram_o[-I0+i] 
-							^  scram_o[-I1+i]); 
+							 ( scram_o[i-(I0+1)] 
+							^  scram_o[i-(I1+1)]); 
 		end
 	end
 

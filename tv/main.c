@@ -19,6 +19,7 @@ int main(){
 		t = ( i57 ^ i38 ) ^ ti0 ;
 		res |= t << i;
 		reg = (reg << 1)| t;
+		printf("[%02d] %d ; d %d i0 %d i1 %d\n", i, t, ti0, i38 , i57);
 	}
 	printf("output:%016lx\n",  res);
 }
