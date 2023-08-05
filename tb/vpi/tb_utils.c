@@ -107,7 +107,7 @@ void tb_vpi_put_logic_uint64_t_var_arr(vpiHandle argv, uint64_t *arr, size_t len
 	
 	for (size_t i = 0; i < w_cnt; i++){
 		off = (i%2)*32;
-		v.value.vector[i].aval = (PLI_INT32)arr[i] >> off;	
+		v.value.vector[i].aval = (PLI_INT32)(arr[i/2] >> off);	
 		v.value.vector[i].bval = (PLI_INT32)0x00 ;
 	}
 	vpi_put_value(h, &v, 0, vpiNoDelay);	

@@ -67,7 +67,7 @@ static int tb_calltf(char*user_data)
 	tb_vpi_put_logic_1b_t(argv, ctrl.err_v);
 
 	// data
-	tb_vpi_put_logic_uint64_t_var_arr(argv, (char *) data, TXD_W);
+	_tb_vpi_put_logic_char_var_arr(argv, (char *) data, TXD_W );
 	// debug id
 //	tb_vpi_put_logic_uint64_t(argv, tv_s);
 	//vpi_free_handle(argv);
@@ -109,6 +109,7 @@ static PLI_INT32 tb_exp_calltf(char*user_data){
 	pma = tb_pma_fifo_pop( tv_s->fifo, &debug_id);
 	
 	// write pma
+	info("fifo pop %ld data %016lx\n", debug_id, *pma);
 	tb_vpi_put_logic_uint64_t_var_arr(argv, pma, 1);
 		
 	// write debug id 
