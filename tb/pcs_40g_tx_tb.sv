@@ -24,6 +24,7 @@ logic              ready_o;
 // PMA
 logic [PMA_CNT_N*PMA_DATA_W-1:0] pma_o;
 logic [PMA_CNT_N*PMA_DATA_W-1:0] tb_pma;
+logic [PMA_CNT_N*PMA_DATA_W-1:0] tb_pma_diff;
 
 // debug id
 logic [LANE_N*DEBUG_ID_W-1:0] debug_id;
@@ -34,6 +35,8 @@ logic nreset;
 logic tb_nreset;
 
 always clk = #5 ~clk;
+
+assign tb_pma_diff = tb_pma ^ pma_o;
 
 genvar i;
 generate

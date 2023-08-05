@@ -51,7 +51,7 @@ void tv_create_packet(tv_t *t ){
 	idle = (long int) t->idle_cntdown;
 	ctrl.ctrl_v = 1;
 	ctrl.idle_v = 1;
-	while( idle >= 0){
+	do{
 		// idle frames
 		uint64_t *pma = malloc(sizeof(uint64_t));
 		accept = get_next_pma(t->tx, ctrl, 0, pma);
@@ -60,7 +60,7 @@ void tv_create_packet(tv_t *t ){
 		// add to fifo 
 		t->debug_id ++; 
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
-	}
+	}while(idle);
 	memset(&ctrl, 0, sizeof(ctrl_lite_s));	
 	len = (long int) t->len; 
 	// start
