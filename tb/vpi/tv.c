@@ -33,9 +33,9 @@ tv_t * tv_alloc(){
 void tv_create_packet(tv_t *t ){
 	uint64_t data;
 	long int idle;
-	long int len; 
 	bool accept;	
 	ctrl_lite_s ctrl;
+	size_t idx=0;
 	
 	t->idle_cntdown = tb_rand_packet_idle_cntdown();
 	// fill packet with real random data
@@ -45,6 +45,11 @@ void tv_create_packet(tv_t *t ){
 		realloc(t->packet, sizeof(uint8_t) * t->len) : 
 		malloc(sizeof(uint8_t) * t->len);
 	tb_rand_fill_packet(t->packet, t->len);
+	#ifdef DEBUG
+	info("packet :\n");
+	for(int i=0; i<t->len; i++)
+		info("[%d] %02x\n", i, t->packet[i]);
+	#endif
 
 	// create expected result
 	memset(&ctrl, 0, sizeof(ctrl_lite_s)); 
@@ -62,14 +67,13 @@ void tv_create_packet(tv_t *t ){
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
 	}while(idle);
 	memset(&ctrl, 0, sizeof(ctrl_lite_s));	
-	len = (long int) t->len; 
 	// start
 	ctrl.ctrl_v = 1;
 	ctrl.start_v[0] = 1;
 	data = 0;
-	for(size_t i=1; i< TXD_W; i++){
-		data =  data  |  (((uint64_t) t->packet[i-1])<< i*8 );  
-	}
+	for(size_t i=1; i< TXD_W; i++, idx++){
+		data |=  (uint64_t) t->packet[idx] << i*8 ;
+	}  
 	do {
 		uint64_t *pma = malloc(sizeof(uint64_t));
 		accept = get_next_pma(t->tx, ctrl, data, pma);
@@ -77,30 +81,29 @@ void tv_create_packet(tv_t *t ){
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
 	} while (!accept);
 
-	len -= TXD_W-1;
-	while( len >= (long int) (t->len % (TXD_W-1))){
+	while(  t->len - idx > (TXD_W-1)){
 		memset(&ctrl, 0, sizeof(ctrl_lite_s));	
 		data = 0;
-		for(size_t i=1; i< TXD_W; i++){
-			data =  data  |  (((uint64_t) t->packet[i-1])<< i*8 );  
+		for(size_t i=0; i< TXD_W; i++){
+			data =  data  |  (((uint64_t) t->packet[idx+i])<< i*8 );  
 		}
 		uint64_t *pma = malloc(sizeof(uint64_t));
 		accept = get_next_pma(t->tx, ctrl, data, pma);
 		t->debug_id ++; 
 		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
 		if ( accept ){ 
-			len -= TXD_W;
-			info("len %ld\n", len);
+			idx += TXD_W;
+			info("idx %ld\n", idx);
 		}
 	}
 	// terminate
 	memset(&ctrl, 0, sizeof(ctrl_lite_s));	
 	ctrl.ctrl_v = 1;
 	ctrl.term_v = 1;
-	LEN_TO_KEEP(len, ctrl.term_keep);
+	LEN_TO_KEEP((t->len-idx), ctrl.term_keep);
 	data = 0;
-	for(size_t i=1; i< TXD_W; i++){
-		data =  data  |  (((uint64_t) t->packet[i-1])<< i*8 );  
+	for(size_t i=1; i< TXD_W && idx < t->len; i++, idx++){
+		data =  data  |  (((uint64_t) t->packet[idx])<< i*8 );  
 	}
 
 	do {
@@ -123,7 +126,7 @@ void tv_get_next_txd(
 {
 	assert(TXD_W < 9 );// not supported yet
 	memset(ctrl, 0, sizeof(ctrl_lite_s));
-	info("TXD :\nidle countdown %ld\nrd_idx/len %ld/%ld\n",
+	info("TXD : idle countdown %ld rd_idx/len %ld/%ld \n",
 		t->idle_cntdown, t->rd_idx, t->len);
 	if ( t->idle_cntdown ){
 		t->idle_cntdown--;
@@ -138,7 +141,7 @@ void tv_get_next_txd(
 			ctrl->ctrl_v = 1;
 			ctrl->start_v[0] = 1;
 			for(size_t i=0; i < TXD_W-1; i++){
-				tx[i+1] = t->packet[i];
+				tx[i+1] = t->packet[t->rd_idx + i];
 			}
 			t->rd_idx += TXD_W-1;
 		}else if ( left < 8 ){
@@ -147,18 +150,24 @@ void tv_get_next_txd(
 			ctrl->term_v = 1;
 			LEN_TO_KEEP(left, ctrl->term_keep);
 			for(size_t i=0; i<left; i++){
-				tx[i+1] = t->packet[i];	
+				tx[i+1] = t->packet[t->rd_idx +i];	
 			}
 			t->rd_idx += TXD_W-1;	
 	
 		}else{
 			// normal packet
 			for(size_t i=0; i<TXD_W; i++){
-				tx[i] = t->packet[i];
+				tx[i] = t->packet[t->rd_idx +i];
 			}
 			t->rd_idx += TXD_W;	
 		}
 	}
+	#ifdef DEBUG
+	info("data : ");
+	for( int i =TXD_W-1; i>=0;  i-- )
+		info("%02x",tx[i]);
+	info("\n");
+	#endif
 }
 
 

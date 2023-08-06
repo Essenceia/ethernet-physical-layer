@@ -1,6 +1,9 @@
 #include "pcs_enc.h"
 #include "defs.h"
+#include <assert.h>
+#include <stdio.h>
 uint8_t enc_block( ctrl_lite_s ctrl, uint64_t data, block_s *block_enc ){
+	info("ENC : ctrl_v %x start_v[0] %x idle_v %x\n", ctrl.ctrl_v, ctrl.start_v[0], ctrl.idle_v);
 	if ( ctrl.ctrl_v ) {
 		uint8_t type = 0;
 		if ( ctrl.idle_v ){
@@ -34,10 +37,16 @@ uint8_t enc_block( ctrl_lite_s ctrl, uint64_t data, block_s *block_enc ){
 							break;
 				case 0x7F : type = BLOCK_TYPE_TERM_7;
 							break;
-				default : return 1;
+				default :   fprintf(stderr, "ENC: Unknown keep when setting term type, got %x\n", ctrl.term_keep);
+							assert(0);
+						  	return 1;
 			}
 		}
-		if ( !type ) return 1;
+		if ( !type ) {
+			fprintf(stderr, "ENC : Unidentified ctrl type\n"); 
+			assert(0);
+			return 1;
+		}
 		block_enc->head = SYNC_HEAD_CTRL;
 		block_enc->data = ( data & ~0xffULL) | ( type & 0xffULL);
 	}else{

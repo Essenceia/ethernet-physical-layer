@@ -14,7 +14,7 @@
 #include "tb_utils.h"
 
 static tv_t * tv_s = NULL;
-
+static uint64_t db_id = 0;
 
 static int tb_compiletf(char*user_data)
 {
@@ -28,10 +28,9 @@ static int tb_compiletf(char*user_data)
 // Drive PCS input values
 static int tb_calltf(char*user_data)
 {
-
-	uint8_t data[TXD_W] = {0};
+	//uint8_t *data = {0xff};
 	uint8_t debug_id[TXD_W];
-	//uint8_t *data = malloc(TXD_W);
+	uint8_t *data = malloc(TXD_W);
 	memset(data, 0, TXD_W);
 	ctrl_lite_s ctrl;
 	
@@ -52,7 +51,13 @@ static int tb_calltf(char*user_data)
 	info("Getting next txd");
 	// get ctrl and data to drive tx pcs
 	tv_get_next_txd(tv_s, &ctrl, data);
- 
+	#ifdef DEBUG
+	info("tv data : ");
+	for( int i =TXD_W-1; i>=0;  i-- )
+		info("%02x",data[i]);
+	info("\n");
+	#endif 
+	
 	// write signals through vpi interface
 	// ctrl
 	tb_vpi_put_logic_1b_t(argv, ctrl.ctrl_v);
@@ -69,9 +74,10 @@ static int tb_calltf(char*user_data)
 	// data
 	_tb_vpi_put_logic_char_var_arr(argv, (char *) data, TXD_W );
 	// debug id
-//	tb_vpi_put_logic_uint64_t(argv, tv_s);
+	db_id ++;
+ 	tb_vpi_put_logic_uint64_t(argv, db_id);
 	//vpi_free_handle(argv);
-	//free(data);
+	free(data);
 	return 0;
 }
 void tb_register()

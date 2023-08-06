@@ -8,6 +8,7 @@
 #include "tb_utils.h"
 #include <assert.h>
 #include <stdlib.h>
+#include "defs.h"
 /* Note : Eventhough calloc set bits to 0 we are still manually
  * writing bval's to 0 for clarity */
 
@@ -62,13 +63,19 @@ void tb_vpi_put_logic_uint64_t(vpiHandle argv, uint64_t var){
 	free(v.value.vector);	
 }
 
-void _tb_vpi_put_logic_char_var_arr(vpiHandle argv, char *arr, size_t len){
+void _tb_vpi_put_logic_char_var_arr(vpiHandle argv, uint8_t *arr, size_t len){
 	size_t w_cnt; // word count, vpi vector val elems are only of 32b wide each
 	size_t off;
 	vpiHandle h;
 	s_vpi_value v;
 	h = vpi_scan(argv);
 	assert(h);
+	#ifdef DEBUG
+	info("put_logic_char_var_arr len %ld data : ", len);
+	for(int i=len-1; i>= 0; i--)
+		info("%02x",arr[i]);
+	info("\n");
+	#endif
 	w_cnt = ((len*8)/ 32) + (((len*8) % 32 )? 1 :0 );// round to supperior
 	v.format = vpiVectorVal;
 	v.value.vector = calloc(w_cnt, sizeof(s_vpi_vecval));

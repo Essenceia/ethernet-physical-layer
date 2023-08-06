@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "tb_config.h"
 
-#define LFSR(x) ((x >> 0) ^ (x >> 2) ^ (x >> 3) ^ (x >> 5)) & 1u 
+#define LFSR(x) ((x >> 1) | (( ((x >> 0) ^ (x >> 2) ^ (x >> 3) ^ (x >> 5)) & 1u) << 15)) 
 
 static uint16_t lfsr; 
 static inline void tb_rand_init(uint16_t seed){

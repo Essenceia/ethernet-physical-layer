@@ -22,7 +22,7 @@ pcs_tx_s  *pcs_tx_init(){
 	return s; 
 }
 
-bool get_next_pma(pcs_tx_s *state, ctrl_lite_s ctrl, uint64_t data, uint64_t *pma)
+bool get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uint64_t *pma)
 {
 	uint8_t err = 0;
 	bool gb_full = true;
@@ -40,7 +40,7 @@ bool get_next_pma(pcs_tx_s *state, ctrl_lite_s ctrl, uint64_t data, uint64_t *pm
 	
 	accept = !( gb_full || marker_v );
 	info("[%ld] accpet %d full %d marker %d\n",l, accept, gb_full, marker_v);
-
+	info("raw data %016lx\n", data);	
 	// if gearbox is full next block will not be accpted anyways
 	// so there is no need to compute the expected result	
 	if ( accept ){

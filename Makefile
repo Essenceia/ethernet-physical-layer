@@ -13,7 +13,7 @@ WAVE_CONF=wave.conf
 DEBUG_FLAG=$(if $(debug), debug=1)
 DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 all: run wave
-
+40GBASE_ARGS:= 40GBASE=1 debug=1
 config:
 	@mkdir -p ${CONF}
 
@@ -54,16 +54,16 @@ run_pcs_40g_tx: pcs_40g_tx_tb vpi
 run: run_pcs_40g_tx
 
 vpi:
-	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEFINES)
+	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEFINES) $(40GBASE_ARGS)
 
 wave: config
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
-valgrind: pcs_40g_tx_tb vpi
+valgrind: run
 	valgrind vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
 
-valgrind2: pcs_40g_tx_tb vpi
-	valgrind --leak-check=full --log-file=vgd.log --fullpath-after=. vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
+valgrind2: run
+	valgrind --leak-check=full --fullpath-after=. vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
 
 gdb: pcs_40g_tx_tb vpi
 	gdb --args vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb

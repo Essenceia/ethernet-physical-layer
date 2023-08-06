@@ -22,13 +22,13 @@ void tb_vpi_put_logic_uint64_t(vpiHandle argv, uint64_t var);
 
 
 // puts an array of char of variable length to a vector
-void _tb_vpi_put_logic_char_var_arr(vpiHandle argv, char *arr, size_t len);
+void _tb_vpi_put_logic_char_var_arr(vpiHandle argv, uint8_t *arr, size_t len);
 
 // puts an array of uint64_t of variable length to a vector
 void tb_vpi_put_logic_uint64_t_var_arr(vpiHandle argv, uint64_t *arr, size_t len);
 
 #define TB_UTILS_PUT_CHAR_ARR(X) \
- static inline void tb_vpi_put_logic_char_##X##_t(vpiHandle argv, char *arr){ \
+ static inline void tb_vpi_put_logic_char_##X##_t(vpiHandle argv, uint8_t *arr){ \
 	_tb_vpi_put_logic_char_var_arr( argv, arr, X ); \
 }
 static inline void tb_vpi_put_logic_char(vpiHandle argc, char var){
