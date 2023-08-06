@@ -13,7 +13,7 @@ WAVE_CONF=wave.conf
 DEBUG_FLAG=$(if $(debug), debug=1)
 DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 all: run wave
-40GBASE_ARGS:= 40GBASE=1 debug=1
+40GBASE_ARGS:= 40GBASE=1
 config:
 	@mkdir -p ${CONF}
 

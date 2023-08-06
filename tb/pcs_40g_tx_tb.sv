@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 2
+`define TB_LOOP_CNT_N 10
 `endif
 module pcs_40g_tx_tb;
 
@@ -45,6 +45,12 @@ logic tb_nreset;
 always clk = #5 ~clk;
 
 assign tb_pma_diff = tb_pma ^ pma_o;
+
+always @(posedge clk) begin
+	if( ~nreset ) begin
+		assert(tb_pma == pma_o);
+	end
+end
 
 initial begin
 	$dumpfile("build/wave.vcd");
