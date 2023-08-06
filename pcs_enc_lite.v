@@ -5,7 +5,7 @@
 module pcs_enc_lite #(
 	parameter IS_40G = 0,
 	parameter DATA_W = 64,
-	parameter KEEP_W = $clog2(DATA_W),
+	parameter KEEP_W = DATA_W/8,
 	parameter BLOCK_W = 64,
 	parameter CNT_N = BLOCK_W/DATA_W,
 	parameter CNT_W = $clog2( CNT_N ),

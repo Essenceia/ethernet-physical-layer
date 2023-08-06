@@ -10,7 +10,7 @@
 module pcs_40g_tx#(
 	parameter LANE_N = 4,
 	parameter DATA_W = 64,
-	parameter KEEP_W = $clog2(DATA_W),
+	parameter KEEP_W = DATA_W/8,
 	parameter XGMII_DATA_W = LANE_N*DATA_W,
 	parameter XGMII_KEEP_W = LANE_N*KEEP_W,
 	parameter CNT_N = DATA_W/XGMII_DATA_W,
