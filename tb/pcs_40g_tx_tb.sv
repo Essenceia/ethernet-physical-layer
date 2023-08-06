@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 1
+`define TB_LOOP_CNT_N 2
 `endif
 module pcs_40g_tx_tb;
 
@@ -27,8 +27,16 @@ logic [PMA_CNT_N*PMA_DATA_W-1:0] tb_pma;
 logic [PMA_CNT_N*PMA_DATA_W-1:0] tb_pma_diff;
 
 // debug id
-logic [LANE_N*DEBUG_ID_W-1:0] debug_id;
-logic [LANE_N*DEBUG_ID_W-1:0] tb_debug_id;
+logic [LANE_N*DEBUG_ID_W-1:0] data_debug_id;
+logic [LANE_N*DEBUG_ID_W-1:0] pma_debug_id;
+
+// lane
+logic [KEEP_W-1:0] keep_lane[LANE_N-1:0];
+logic [DATA_W-1:0] data_lane[LANE_N-1:0];
+logic [DATA_W-1:0] tb_pma_lane[LANE_N-1:0];
+logic [DEBUG_ID_W-1:0] data_debug_id_lane[LANE_N-1:0];
+logic [DEBUG_ID_W-1:0] pma_debug_id_lane[LANE_N-1:0];
+
 
 reg   clk = 1'b0;
 logic nreset;
@@ -38,22 +46,6 @@ always clk = #5 ~clk;
 
 assign tb_pma_diff = tb_pma ^ pma_o;
 
-genvar i;
-generate
-	for( i=0; i < LANE_N; i++) begin
-		always @(posedge clk) begin
-			if( tb_nreset ) begin
-				// next block driver
-				$tb(ctrl_v_i[i], idle_v_i[i], start_v_i[i],term_v_i[i], keep_i[i*KEEP_W+KEEP_W-1:i*KEEP_W], 
-				err_v_i[i] , data_i[i*DATA_W+DATA_W-1:i*DATA_W], debug_id[i*DEBUG_ID_W+DEBUG_ID_W-1:i*DEBUG_ID_W]);	
-					// expected result
-				$tb_exp(tb_pma[i*DATA_W+DATA_W-1:i*DATA_W], tb_debug_id[i*DEBUG_ID_W+DEBUG_ID_W-1:i*DEBUG_ID_W]);
-				// check : experiemtnation, don't know if this would work
-				assert( pma_o[i*DATA_W+DATA_W-1:i*DATA_W] == tb_pma[i*DATA_W+DATA_W-1:i*DATA_W]); 
-			end		
-		end
-	end
-endgenerate
 initial begin
 	$dumpfile("build/wave.vcd");
 	$dumpvars(0, pcs_40g_tx_tb);
@@ -68,13 +60,40 @@ initial begin
 	err_v_i  = {LANE_N{1'b0}};	
 	#6
 	nreset = 1'b1;
-	
-	#( `TB_LOOP_CNT_N*10) $tb_end();
+
+	for(int t=0; t < `TB_LOOP_CNT_N; t++) begin
+		for( int i = 0; i < LANE_N; i++ ) begin
+		  // next block driver
+				$tb(ctrl_v_i[i], idle_v_i[i], start_v_i[i],
+					term_v_i[i], keep_lane[i],
+					err_v_i[i] , data_lane[i],
+					data_debug_id_lane[i]);	
+					// expected result
+				$tb_exp(tb_pma_lane[i], pma_debug_id_lane[i]);
+		end
+		#10
+		$display("loop %d", t);
+	end
+	$tb_end();
 	
 	$display("Sucess");	
 	$finish;
 end
 
+// check : experiemtnation, don't know if this would work
+//assert( pma_o == tb_pma);
+
+genvar x;
+generate 
+	for( x=0 ; x < LANE_N ; x++ ) begin
+		assign data_i[x*DATA_W+DATA_W-1:x*DATA_W] = data_lane[x];
+		assign keep_i[x*KEEP_W+KEEP_W-1:x*KEEP_W] = keep_lane[x];
+		assign tb_pma[x*DATA_W+DATA_W-1:x*DATA_W] = tb_pma_lane[x];
+
+		assign data_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W] = data_debug_id_lane[x];
+		assign pma_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W]  = pma_debug_id_lane[x];
+	end
+endgenerate
 
 // uut
 pcs_40g_tx #( .LANE_N(LANE_N), .DATA_W(DATA_W), .KEEP_W(KEEP_W))
