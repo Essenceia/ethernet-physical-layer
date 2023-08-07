@@ -28,7 +28,7 @@ static inline uint16_t tb_rand_packet_idle_cntdown(){
 }
 
 
-static inline void tb_rand_fill_packet(uint8_t* p, size_t len){
+static inline void tb_rand_fill_packet(uint8_t * p, size_t len){
 	for(size_t i=0; i < len; i++){
 		lfsr = LFSR(lfsr);
 		p[i] = (uint8_t) lfsr;

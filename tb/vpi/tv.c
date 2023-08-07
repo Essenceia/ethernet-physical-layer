@@ -13,173 +13,168 @@
 #include "tb_rand.h"
 #include "defs.h"
 
-tv_t * tv_alloc(){
+tv_t  *tv_alloc(){
 	tv_t *tv;
+	info("tv alloc");
 	tv = (tv_t *) malloc( sizeof(tv_t));
 	// init rand
 	tb_rand_init(RAND_SEED);
 	// init fifo
-	tv->fifo = tb_pma_fifo_alloc();
+	for( size_t l = 0; l < LANE_N; l ++ ){
+		tv->pma[l]  = tb_pma_fifo_ctor();
+		tv->data[l] = tb_pma_fifo_ctor();
+	}
 	// init values
 	tv->len = 0;
-	tv->rd_idx = 0;
-	tv->packet = NULL;
+	//tv->rd_idx = 0;
+	//tv->packet = NULL;
 	tv->idle_cntdown = 0;
+	tv->debug_id = 0;
 	tv->tx = pcs_tx_init();
-	tv->debug_id = 0; 
 	return tv; 
 }
+size_t add_to_fifo(tv_t *t, size_t idx, uint64_t *data, ctrl_lite_s *ctrl, uint64_t *pma){
+	size_t lane_idx = IDX_TO_LANE(idx++);
+	t->debug_id ++;
+	info("\n\ndata ptr %016lx, lane %ld\n", (int64_t) data, lane_idx); 
+	tb_pma_fifo_push(t->data[lane_idx], data, ctrl, t->debug_id);
+	tb_pma_fifo_push(t->pma[lane_idx], pma, NULL, t->debug_id);
+	return idx;
+}
 
-void tv_create_packet(tv_t *t ){
-	uint64_t data;
+void tv_create_packet(tv_t *t, const int start_lane ){
 	long int idle;
 	bool accept;	
-	ctrl_lite_s ctrl;
-	size_t idx=0;
-	
+	ctrl_lite_s *ctrl;
+	size_t idx;
+	uint8_t *tmp_data;
+	size_t  data_idx = 0;
+
+	info("create packet\n");
+
 	t->idle_cntdown = tb_rand_packet_idle_cntdown();
+
+	idx = (size_t) start_lane;	
 	// fill packet with real random data
 	t->len = tb_rand_get_packet_len();
-	t->rd_idx = 0;
-	t->packet = (t->packet) ?
-		realloc(t->packet, sizeof(uint8_t) * t->len) : 
-		malloc(sizeof(uint8_t) * t->len);
-	tb_rand_fill_packet(t->packet, t->len);
-	#ifdef DEBUG
-	info("packet :\n");
-	for(int i=0; i<t->len; i++)
-		info("[%d] %02x\n", i, t->packet[i]);
-	#endif
+	tmp_data = (uint8_t*) malloc(sizeof(uint8_t)*t->len);
+	tb_rand_fill_packet(tmp_data, t->len);
 
 	// create expected result
 	memset(&ctrl, 0, sizeof(ctrl_lite_s)); 
 	idle = (long int) t->idle_cntdown;
-	ctrl.ctrl_v = 1;
-	ctrl.idle_v = 1;
+
 	do{
 		// idle frames
+		ctrl = malloc( sizeof(ctrl_lite_s));
+		memset(ctrl, 0, sizeof(ctrl_lite_s));
+		ctrl->ctrl_v = 1;
+		ctrl->idle_v = 1;
+		uint64_t *data = malloc(sizeof(uint64_t));
 		uint64_t *pma = malloc(sizeof(uint64_t));
-		accept = get_next_pma(t->tx, ctrl, 0, pma);
+		data[0] = 0;	
+		
+		accept = get_next_pma(t->tx, *ctrl, *data, pma);
 		if ( accept ) idle--;
 		info("Idle %ld accept %d\n", idle, accept);
-		// add to fifo 
-		t->debug_id ++; 
-		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
+		// add to fifo
+		idx = add_to_fifo(t, idx, data, ctrl, pma ); 
 	}while(idle);
-	memset(&ctrl, 0, sizeof(ctrl_lite_s));	
 	// start
-	ctrl.ctrl_v = 1;
-	ctrl.start_v[0] = 1;
-	data = 0;
-	for(size_t i=1; i< TXD_W; i++, idx++){
-		data |=  (uint64_t) t->packet[idx] << i*8 ;
-	}  
-	do {
-		uint64_t *pma = malloc(sizeof(uint64_t));
-		accept = get_next_pma(t->tx, ctrl, data, pma);
-		t->debug_id ++; 
-		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
-	} while (!accept);
+	{	
+		ctrl = malloc(sizeof(ctrl_lite_s));
+		memset(ctrl, 0, sizeof(ctrl_lite_s));
+		ctrl->ctrl_v = 1;
+		ctrl->start_v[0] = 1;
+		uint64_t *data = malloc(sizeof(uint64_t));
+		*data = 0;
+		for(size_t i=1; i< TXD_W; i++, data_idx++){
+			*data |=  (uint64_t) tmp_data[data_idx] << i*8 ;
+		}  
+		do {
+			uint64_t *pma = malloc(sizeof(uint64_t));
+			accept = get_next_pma(t->tx, *ctrl, *data, pma);
+			idx = add_to_fifo(t, idx, data, ctrl, pma); 
+		} while (!accept);
+	}
 
-	while(  t->len - idx > (TXD_W-1)){
-		memset(&ctrl, 0, sizeof(ctrl_lite_s));	
-		data = 0;
+	while(  t->len - data_idx > (TXD_W-1)){
+		ctrl = malloc(sizeof(ctrl_lite_s));
+		memset(ctrl, 0, sizeof(ctrl_lite_s));
+		uint64_t *data = malloc(sizeof(uint64_t));
+		*data = 0;
 		for(size_t i=0; i< TXD_W; i++){
-			data =  data  |  (((uint64_t) t->packet[idx+i])<< i*8 );  
+			*data =  *data  |  (((uint64_t) tmp_data[data_idx+i])<< i*8 );  
 		}
 		uint64_t *pma = malloc(sizeof(uint64_t));
-		accept = get_next_pma(t->tx, ctrl, data, pma);
-		t->debug_id ++; 
-		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
+		accept = get_next_pma(t->tx, *ctrl, *data, pma);
+		idx = add_to_fifo(t, idx, data, ctrl, pma);
 		if ( accept ){ 
-			idx += TXD_W;
+			data_idx += TXD_W;
 			info("idx %ld\n", idx);
 		}
 	}
 	// terminate
-	memset(&ctrl, 0, sizeof(ctrl_lite_s));	
-	ctrl.ctrl_v = 1;
-	ctrl.term_v = 1;
-	LEN_TO_KEEP((t->len-idx), ctrl.term_keep);
-	data = 0;
-	for(size_t i=1; i< TXD_W && idx < t->len; i++, idx++){
-		data =  data  |  (((uint64_t) t->packet[idx])<< i*8 );  
+	{
+		ctrl = malloc(sizeof(ctrl_lite_s));
+		memset(ctrl, 0, sizeof(ctrl_lite_s));	
+		ctrl->ctrl_v = 1;
+		ctrl->term_v = 1;
+		LEN_TO_KEEP((t->len-data_idx), ctrl->term_keep);
+		uint64_t *data = malloc(sizeof(uint64_t));
+		*data = 0;
+		for(size_t i=1; i< TXD_W && data_idx < t->len; i++, data_idx++){
+			*data =  *data  |  (((uint64_t) tmp_data[data_idx])<< i*8 );  
+		}
+	
+		do {
+			uint64_t *pma = malloc(sizeof(uint64_t));
+			accept = get_next_pma(t->tx,  *ctrl,*data, pma);
+			idx = add_to_fifo(t, idx, data, ctrl, pma);
+		} while (!accept);
 	}
-
-	do {
-		uint64_t *pma = malloc(sizeof(uint64_t));
-		accept = get_next_pma(t->tx,  ctrl, data, pma);
-		t->debug_id ++; 
-		tb_pma_fifo_push(t->fifo, pma, t->debug_id);
-	} while (!accept);
-
 	#ifdef DEBUG
-	tb_pma_print_fifo(t->fifo);
-	#endif	
+	info("FIFO\ndata \n");
+	for(size_t l=0; l<LANE_N; l++)
+		tb_pma_print_fifo(t->data[l]);
+	info("pma \n");
+	for(size_t l=0; l<LANE_N; l++)
+		tb_pma_print_fifo(t->pma[l]);
+	#endif
+	free(tmp_data);	
 }
 
-void tv_get_next_txd(
-	tv_t* t,
-	ctrl_lite_s *ctrl, 
-	uint8_t *tx
+bool tv_get_next_txd(
+	tv_t *t,
+	ctrl_lite_s **ctrlp, 
+	uint64_t **datap,
+	uint64_t *debug_idp,
+	const int lane
 )
 {
 	assert(TXD_W < 9 );// not supported yet
-	memset(ctrl, 0, sizeof(ctrl_lite_s));
-	info("TXD : idle countdown %ld rd_idx/len %ld/%ld \n",
-		t->idle_cntdown, t->rd_idx, t->len);
-	if ( t->idle_cntdown ){
-		t->idle_cntdown--;
-		// write ctrl
-		ctrl->ctrl_v = 1;
-		ctrl->idle_v = 1;
-	} else {
-		size_t left;
-		left = t->len - t->rd_idx;	
-		if ( t->rd_idx == 0 ){
-			// start : this the first packet
-			ctrl->ctrl_v = 1;
-			ctrl->start_v[0] = 1;
-			for(size_t i=0; i < TXD_W-1; i++){
-				tx[i+1] = t->packet[t->rd_idx + i];
-			}
-			t->rd_idx += TXD_W-1;
-		}else if ( left < 8 ){
-			// term : this is the last packert 
-			ctrl->ctrl_v = 1;
-			ctrl->term_v = 1;
-			LEN_TO_KEEP(left, ctrl->term_keep);
-			for(size_t i=0; i<left; i++){
-				tx[i+1] = t->packet[t->rd_idx +i];	
-			}
-			t->rd_idx += TXD_W-1;	
-	
-		}else{
-			// normal packet
-			for(size_t i=0; i<TXD_W; i++){
-				tx[i] = t->packet[t->rd_idx +i];
-			}
-			t->rd_idx += TXD_W;	
-		}
+	uint64_t *data = *datap = tb_pma_fifo_pop(t->data[lane], debug_idp, ctrlp);	
+	if (data != NULL){
+		info("data : %016lx debug_id %016lx\n", *data, *debug_idp);
+		return true;
+	} else{
+		return false;	
 	}
-	#ifdef DEBUG
-	info("data : ");
-	for( int i =TXD_W-1; i>=0;  i-- )
-		info("%02x",tx[i]);
-	info("\n");
-	#endif
 }
 
 
 // check if we still have data to send
-bool tv_txd_has_data(tv_t* t){
-	return ( t->len > t->rd_idx ) || ( t->idle_cntdown > 0);
-}
+/*bool tv_txd_has_data(tv_t *t, const int lane){
+	return ;
+}*/
 
-void tv_free(tv_t * t)
+void tv_free(tv_t  *t)
 {
-	tb_pma_fifo_free(t->fifo);
+	for(int i=0; i< LANE_N; i++){
+		tb_pma_fifo_dtor(t->data[i]);
+		tb_pma_fifo_dtor(t->pma[i]);
+	}
 	free(t->tx);
-	free(t->packet);
+	//free(t->packet);
 	free(t);
 }

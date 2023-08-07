@@ -4,7 +4,7 @@
 uint8_t gearbox( gearbox_s * state, block_s block, uint64_t *pma ){
 	if ( state->len >= 64 ){
 		// buffer is full : purge
-		info("Gearbox purge, len %ld\n", state->len);
+		info("Gearbox purge, len %ld buff[0] %lx\n", state->len, state->buff[0]);
 		memcpy( pma, &state->buff[0], sizeof(uint64_t));
 		state->len = 0;	
 		state->buff[0] = 0;	

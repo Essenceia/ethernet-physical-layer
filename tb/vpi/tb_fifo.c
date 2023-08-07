@@ -7,7 +7,7 @@
 /*
  * Construct and return an pma fifo.
  */
-tv_pma_fifo_t *tb_pma_fifo_alloc(
+tv_pma_fifo_t *tb_pma_fifo_ctor(
 	void
 )
 {
@@ -19,7 +19,7 @@ tv_pma_fifo_t *tb_pma_fifo_alloc(
 /*
  * Delete @fifo.
  */
-void tb_pma_fifo_free(
+void tb_pma_fifo_dtor(
 	tv_pma_fifo_t *fifo
 )
 {
@@ -40,12 +40,14 @@ void tb_pma_fifo_free(
 void tb_pma_fifo_push(
 	tv_pma_fifo_t *fifo,
 	uint64_t *new,
+	ctrl_lite_s *ctrl,
 	uint64_t  debug_id
 )
 {
 	assert(fifo);
 	tv_pma_fifo_elem_t *elem = malloc_(tv_pma_fifo_elem_t);
 	elem->data = new;
+	elem->ctrl=ctrl;
 	elem->debug_id = debug_id;
 	slisth_push(&fifo->elems, &elem->elems);
 	#if 0
@@ -59,9 +61,10 @@ void tb_pma_fifo_push(
  * If @fifo is not empty, pop an element and return it.
  * Otherwise, return 0.
  */
-uint64_t* tb_pma_fifo_pop(
+uint64_t *tb_pma_fifo_pop(
 	tv_pma_fifo_t *fifo,
-	uint64_t *debug_id
+	uint64_t *debug_id,
+	ctrl_lite_s **ctrl
 )
 {
 
@@ -75,6 +78,7 @@ uint64_t* tb_pma_fifo_pop(
 
 	/* Read data, delete @pop. */	
 	*debug_id = pop->debug_id;
+	*ctrl = pop->ctrl;
 	uint64_t *ret = pop->data;
 	free(pop);
 	#ifdef DEBUG

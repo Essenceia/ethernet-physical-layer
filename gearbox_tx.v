@@ -75,13 +75,13 @@ endgenerate
 always_comb begin
 	for( int x=0; x <= SHIFT_N; x++) begin
 		if ( x < SHIFT_N ) begin
-		if ( shift_sel[x] ) wr_data_shifted = wr_data_shifted_arr[x];
-		if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];
-		if ( shift_sel[x] ) wr_mask_lite_shifted = wr_mask_lite_shifted_arr[x]; 
-		if ( shift_sel[x] ) rd_fifo_mask_lite_shifted = rd_fifo_mask_lite_shifted_arr[x];
-	end else begin
-		if ( shift_sel[x] ) rd_fifo_mask_lite_shifted = rd_fifo_mask_lite_shifted_arr[x]; 
-	end
+			if ( shift_sel[x] ) wr_data_shifted = wr_data_shifted_arr[x];
+			if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];
+			if ( shift_sel[x] ) wr_mask_lite_shifted = wr_mask_lite_shifted_arr[x]; 
+			if ( shift_sel[x] ) rd_fifo_mask_lite_shifted = rd_fifo_mask_lite_shifted_arr[x];
+		end else begin
+			if ( shift_sel[x] ) rd_fifo_mask_lite_shifted = {MASK_ARR_W{1'b1}}; 
+		end
 	end
 end
 // extend masks

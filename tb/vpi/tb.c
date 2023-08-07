@@ -13,8 +13,7 @@
 #include <stdlib.h>
 #include "tb_utils.h"
 
-static tv_t * tv_s = NULL;
-static uint64_t db_id = 0;
+static tv_t  *tv_s = NULL;
 
 static int tb_compiletf(char*user_data)
 {
@@ -28,11 +27,9 @@ static int tb_compiletf(char*user_data)
 // Drive PCS input values
 static int tb_calltf(char*user_data)
 {
-	//uint8_t *data = {0xff};
-	uint8_t debug_id[TXD_W];
-	uint8_t *data = malloc(TXD_W);
-	memset(data, 0, TXD_W);
-	ctrl_lite_s ctrl;
+	int 	lane;
+	int 	ready;
+	bool    has_data;
 	
 	vpiHandle sys;
 	vpiHandle argv;
@@ -45,39 +42,67 @@ static int tb_calltf(char*user_data)
    	vpi_printf("TB call\n");
 	#endif
 	assert(tv_s);
-	
-	// create a new packet if none exist
-	if (!tv_txd_has_data(tv_s))	tv_create_packet(tv_s);
-	info("Getting next txd");
-	// get ctrl and data to drive tx pcs
-	tv_get_next_txd(tv_s, &ctrl, data);
-	#ifdef DEBUG
-	info("tv data : ");
-	for( int i =TXD_W-1; i>=0;  i-- )
-		info("%02x",data[i]);
-	info("\n");
-	#endif 
-	
-	// write signals through vpi interface
-	// ctrl
-	tb_vpi_put_logic_1b_t(argv, ctrl.ctrl_v);
-	tb_vpi_put_logic_1b_t(argv, ctrl.idle_v);
-	// start 
-	uint8_t s = 0;
-	for(int l=START_W-1; l>-1 ;l--)
-		s= (s<<1) | ctrl.start_v[l]; 
-	tb_vpi_put_logic_uint8_t(argv, s);
-	tb_vpi_put_logic_1b_t(argv, ctrl.term_v);
-	tb_vpi_put_logic_uint8_t(argv, ctrl.term_keep);
-	tb_vpi_put_logic_1b_t(argv, ctrl.err_v);
 
-	// data
-	_tb_vpi_put_logic_char_var_arr(argv, (char *) data, TXD_W );
-	// debug id
-	db_id ++;
- 	tb_vpi_put_logic_uint64_t(argv, db_id);
-	//vpi_free_handle(argv);
-	free(data);
+	// ready
+	s_vpi_value ready_val;
+	vpiHandle ready_h;
+	
+	ready_h = vpi_scan(argv);
+	assert(ready_h);
+	ready_val.format = vpiIntVal;
+	vpi_get_value(ready_h, &ready_val);
+	ready = ready_val.value.integer;		
+	
+	// get lane n
+	s_vpi_value lane_val;
+	vpiHandle lane_h;
+		
+	lane_h = vpi_scan(argv);
+	assert(lane_h);
+	lane_val.format = vpiIntVal;
+	vpi_get_value(lane_h, &lane_val);	
+	lane = lane_val.value.integer;
+	assert((lane < LANE_N) && ( lane > -1 )); 
+
+	info("$tb ready %d called on lane %d\n", ready, lane);
+
+	// create a new packet if none exist
+	info("Getting next txd");
+	
+	if (ready) {
+		uint64_t *data;
+		uint64_t debug_id;
+		ctrl_lite_s *ctrl;
+
+		// get ctrl and data to drive tx pcs
+		do{
+			has_data = tv_get_next_txd(tv_s, &ctrl, &data, &debug_id, lane);
+			if (!has_data) tv_create_packet(tv_s, lane);
+		}while(!has_data);
+		info("tv data %016lx\n", *data);
+		
+		// write signals through vpi interface
+		// ctrl
+		tb_vpi_put_logic_1b_t(argv, ctrl->ctrl_v);
+		tb_vpi_put_logic_1b_t(argv, ctrl->idle_v);
+		// start 
+		uint8_t s = 0;
+		for(int l=START_W-1; l>-1 ;l--)
+			s= (s<<1) | ctrl->start_v[l]; 
+		tb_vpi_put_logic_uint8_t(argv, s);
+		tb_vpi_put_logic_1b_t(argv, ctrl->term_v);
+		tb_vpi_put_logic_uint8_t(argv, ctrl->term_keep);
+		tb_vpi_put_logic_1b_t(argv, ctrl->err_v);
+
+		// data
+		tb_vpi_put_logic_uint64_t(argv, data[0] );
+		// debug id
+ 		tb_vpi_put_logic_uint64_t(argv, debug_id);
+		//vpi_free_handle(argv);
+		free(data);
+		free(ctrl);
+
+	}
 	return 0;
 }
 void tb_register()
@@ -95,24 +120,36 @@ void tb_register()
 }
 
 
-static int tb_exp_compiletf(char* path)
+static int tb_exp_compiletf(char *path)
 {
     return 0;
 }
 /* Produce the expected output of the PCS and write it
  * to signals passed as parameter  */
-static PLI_INT32 tb_exp_calltf(char*user_data){
-	vpiHandle sys;
-	vpiHandle argv;
-	uint64_t *pma;
-	uint64_t debug_id = 0;	
-	
-	sys = vpi_handle(vpiSysTfCall, 0);
+static PLI_INT32 tb_exp_calltf(
+	char *user_data
+)
+{
+	vpiHandle sys = vpi_handle(vpiSysTfCall, 0);
 	assert(sys);
-	argv = vpi_iterate(vpiArgument, sys);
+	vpiHandle argv = vpi_iterate(vpiArgument, sys);
 	assert(argv);
+		
+	// get lane n
+	vpiHandle lane_h = vpi_scan(argv);
+	assert(lane_h);
+	s_vpi_value lane_val;
+	lane_val.format = vpiIntVal;
+	vpi_get_value(lane_h, &lane_val);	
+	int lane = lane_val.value.integer;
+	assert((lane < LANE_N) && ( lane > -1 )); 
+	
 	// pop fifo
-	pma = tb_pma_fifo_pop( tv_s->fifo, &debug_id);
+	ctrl_lite_s *ctrl;
+	uint64_t debug_id;
+	uint64_t *pma = tb_pma_fifo_pop( tv_s->pma[lane], &debug_id, &ctrl);
+	assert(ctrl == NULL); // crtl should be null
+	assert(pma);
 	
 	// write pma
 	info("fifo pop %ld data %016lx\n", debug_id, *pma);
@@ -142,7 +179,7 @@ void tb_exp_register()
 
 
 // de-init routine
-static int tb_end_compiletf(char* path)
+static int tb_end_compiletf(char *path)
 {
     return 0;
 }

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <assert.h>
+#include "pcs_defs.h"
 /*********
  * Utils *
  *********/
@@ -209,7 +210,7 @@ static inline void slisth_unpull(
 /*
  * PMA data buffer fifo, simply linked list.
  */
-typedef struct{
+typedef struct {
 
 	/* Elements of the same fifo sorted by recency. */
 	slist elems;
@@ -220,6 +221,10 @@ typedef struct{
 	/* pma data. */
 	uint64_t *data;
 
+	/* Control field. */
+	ctrl_lite_s *ctrl;
+
+
 } tv_pma_fifo_elem_t;
 
 typedef struct{
@@ -229,14 +234,14 @@ typedef struct{
 /*
  * Construct and return an itch fifo.
  */
-tv_pma_fifo_t * tb_pma_fifo_alloc(
+tv_pma_fifo_t * tb_pma_fifo_ctor(
 	void
 );
 
 /*
  * Delete @fifo.
  */
-void tb_pma_fifo_free(
+void tb_pma_fifo_dtor(
 	tv_pma_fifo_t *fifo
 );
 
@@ -246,6 +251,7 @@ void tb_pma_fifo_free(
 void tb_pma_fifo_push(
 	tv_pma_fifo_t *fifo,
 	uint64_t *new,
+	ctrl_lite_s *ctrl,
 	uint64_t debug_id
 );
 
@@ -253,9 +259,10 @@ void tb_pma_fifo_push(
  * If @fifo is not empty, pop an element and return it.
  * Otherwise, return 0.
  */
-uint64_t* tb_pma_fifo_pop(
+uint64_t *tb_pma_fifo_pop(
 	tv_pma_fifo_t *fifo,
-	uint64_t *debug_id
+	uint64_t *debug_id,
+	ctrl_lite_s **ctrl
 );
 
 /*

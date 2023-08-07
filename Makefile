@@ -10,6 +10,7 @@ FLAGS=-Wall -g2012 -gassertions -gstrict-expr-width
 WAVE_FILE=wave.vcd
 VIEW=gtkwave
 WAVE_CONF=wave.conf
+GDB_CONF=.gdbinit
 DEBUG_FLAG=$(if $(debug), debug=1)
 DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 all: run wave
@@ -59,15 +60,15 @@ vpi:
 wave: config
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
-valgrind: run
+valgrind: 
 	valgrind vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
 
-valgrind2: run
-	valgrind --leak-check=full --fullpath-after=. vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
+valgrind2: pcs_40g_tx_tb vpi
+	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
 
 gdb: pcs_40g_tx_tb vpi
-	gdb --args vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
-  
+	gdb -x $(CONF)/$(GDB_CONF) --args vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
+
 clean:
 	cd $(VPI_DIR) && $(MAKE) clean
 	rm -fr ${BUILD}/*

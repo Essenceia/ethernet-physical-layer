@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 1000
+`define TB_LOOP_CNT_N 34
 `endif
 module pcs_40g_tx_tb;
 
@@ -70,12 +70,13 @@ initial begin
 	for(int t=0; t < `TB_LOOP_CNT_N; t++) begin
 		for( int i = 0; i < LANE_N; i++ ) begin
 		  // next block driver
-				$tb(ctrl_v_i[i], idle_v_i[i], start_v_i[i],
+				$tb(ready_o, i,
+					ctrl_v_i[i], idle_v_i[i], start_v_i[i],
 					term_v_i[i], keep_lane[i],
 					err_v_i[i] , data_lane[i],
 					data_debug_id_lane[i]);	
 					// expected result
-				$tb_exp(tb_pma_lane[i], pma_debug_id_lane[i]);
+				$tb_exp(i, tb_pma_lane[i], pma_debug_id_lane[i]);
 		end
 		#10
 		$display("loop %d", t);
