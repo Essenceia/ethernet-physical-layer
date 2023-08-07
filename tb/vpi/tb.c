@@ -152,7 +152,7 @@ static PLI_INT32 tb_exp_calltf(
 	assert(pma);
 	
 	// write pma
-	info("fifo pop %ld data %016lx\n", debug_id, *pma);
+	info("fifo lane %d pop %ld data %016lx\n", lane, debug_id, *pma);
 	tb_vpi_put_logic_uint64_t_var_arr(argv, pma, 1);
 		
 	// write debug id 
