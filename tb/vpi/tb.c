@@ -147,9 +147,14 @@ static PLI_INT32 tb_exp_calltf(
 	// pop fifo
 	ctrl_lite_s *ctrl;
 	uint64_t debug_id;
-	uint64_t *pma = tb_pma_fifo_pop( tv_s->pma[lane], &debug_id, &ctrl);
-	assert(ctrl == NULL); // crtl should be null
-	assert(pma);
+	uint64_t *pma;
+	// if the end of the fifo collides with a cycle the pcs
+	// doesn't accept a new data we much call creat packet
+	do{
+		pma = tb_pma_fifo_pop( tv_s->pma[lane], &debug_id, &ctrl);
+		if(pma==NULL) tv_create_packet(tv_s, lane);
+	}while(pma == NULL);
+	assert(ctrl == NULL); // there is no crtl on pma
 	
 	// write pma
 	info("fifo lane %d pop %ld data %016lx\n", lane, debug_id, *pma);

@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 34
+`define TB_LOOP_CNT_N 300
 `endif
 module pcs_40g_tx_tb;
 
