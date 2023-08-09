@@ -28,6 +28,8 @@ uint8_t calculate_bip_per_lane(
 	uint64_t data = out.data;
 	uint8_t  head = out.head;
 	uint8_t i = 0;
+
+	info("calculate bip per lane , data , head { %lx, %x }\n", data, head );
 	// 0
 	uint8_t r = BIP(bip,0) ^ ( BVAL(2)  ^ BVAL(10) ^ BVAL(18) ^ BVAL(26) ^ BVAL(34) ^ BVAL(42) ^ BVAL(50) ^ BVAL(58));	
 	bip = BIPN(bip,0) | r;
@@ -116,17 +118,17 @@ bool alignement_marker(
 		// add alignement data
 		_create_alignement_marker(lane, state->bip[lane], out);
 		// reset gap counter and bip
+		state->bip[lane] = 0;
 		if( lane == LANE_N-1 ){
 			state->gap = 0;
-			memset( state->bip, 0, sizeof(uint8_t) * LANE_N );// TODO : confirm we need to reset bip to 0
 		}
 	}else{
 		memcpy(out, &in, sizeof(block_s));	
+		if ( lane == LANE_N-1) state->gap ++;
 	}
 	// continue calculating bip value
 	state->bip[lane] = calculate_bip_per_lane(state->bip[lane], *out);	
 	// update gap on last lane
-	if ( lane == LANE_N-1) state->gap ++;
 	
 	return need_marker;
 }

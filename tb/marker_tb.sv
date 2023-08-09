@@ -1,4 +1,4 @@
-`define TB_LOOP_N 20000
+`define TB_LOOP_N 60000
 /* marker_tb
  * TB to test the market alignement feature.
  * Written to help test this feature in isolation
