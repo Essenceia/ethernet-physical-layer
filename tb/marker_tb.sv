@@ -56,7 +56,6 @@ task check();
 			assert(tb_marker_v_o == marker_v_o);
 			assert(tb_head_o == head_o);
 			assert(tb_data_o == data_o);
-			$display("tb_data %x data %x", tb_data_o, data_o);
 endtask
 alignement_marker_tx m_uut(
 	.clk(clk),

@@ -21,7 +21,10 @@
 /* Calculate new bip value
  * head has index [1:0]
  * data          [63:0] */
-uint8_t calculate_bip_per_lane(uint8_t bip, const block_s out){
+uint8_t calculate_bip_per_lane(
+	uint8_t bip, 
+	const block_s out)
+{
 	uint64_t data = out.data;
 	uint8_t  head = out.head;
 	uint8_t i = 0;
@@ -121,7 +124,7 @@ bool alignement_marker(
 		memcpy(out, &in, sizeof(block_s));	
 	}
 	// continue calculating bip value
-	state->bip[lane] = calculate_bip_per_lane(state->bip[lane],in);	
+	state->bip[lane] = calculate_bip_per_lane(state->bip[lane], *out);	
 	// update gap on last lane
 	if ( lane == LANE_N-1) state->gap ++;
 	

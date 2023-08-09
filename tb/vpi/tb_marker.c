@@ -64,7 +64,7 @@ static int tb_marker_calltf(char*user_data)
 	}
 	//head
 	uint8_t head_i = format_head(in);
-	uint8_t head_o = format_head(in);
+	uint8_t head_o = format_head(out);
 	// data
 	uint64_t data_i[LANE_N];	
 	uint64_t data_o[LANE_N];
