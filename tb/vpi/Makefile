@@ -63,6 +63,11 @@ $(BUILD)/tb.o: tb.c tb.h
 	@mkdir -p $(@D)
 	$(CC) -o $@ -I$(INC) -I$(IVERILOG) -c tb.c $(FLAGS)
 
+$(BUILD)/tb_marker.o: tb_marker.c tb_marker.h
+	@mkdir -p $(@D)
+	$(CC) -o $@ -I$(INC) -I$(IVERILOG) -c tb_marker.c $(FLAGS)
+
+
 40g_deps := $(if $(40GBASE),pcs_marker.o)
 test_deps_ := test.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o tv.o $(40g_deps)
 test_deps := $(foreach x,$(test_deps_),$(BUILD)/$x)
@@ -71,12 +76,20 @@ tb_deps_ := tb.o tv.o tb_utils.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fi
 tb_deps := $(foreach x,$(tb_deps_),$(BUILD)/$x)
 $(info TB DEPS $(tb_deps))
 
+tb_marker_deps_ := tb_marker.o tb_utils.o pcs_marker.o
+tb_marker_deps := $(foreach x,$(tb_marker_deps_),$(BUILD)/$x)
+
 test: $(test_deps)
 	$(LD) -o test -g $^
 
 $(BUILD)/tb.vpi: $(tb_deps)
 	@mkdir -p $(@D)
 	$(LD) -shared -o $(BUILD)/tb.vpi $^ -lvpi
+
+$(BUILD)/tb_marker.vpi: $(tb_marker_deps)
+	@mkdir -p $(@D)
+	$(LD) -shared -o $(BUILD)/tb_marker.vpi $^ -lvpi
+
 
 clean:
 	rm -rf $(BUILD)/*	

@@ -2,7 +2,7 @@
 #define PCS_MARKER_H
 #include "pcs_defs.h"
 
-uint8_t calculate_bip_per_lane(const block_s out);
+uint8_t calculate_bip_per_lane(uint8_t bip, const block_s out);
 
 void _create_alignement_marker(const size_t lane, const uint8_t bip3, block_s *out);
 

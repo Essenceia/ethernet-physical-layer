@@ -27,7 +27,18 @@ static inline uint16_t tb_rand_packet_idle_cntdown(){
 	return ( lfsr % (PACKET_IDLE_CNT_MAX-PACKET_IDLE_CNT_MIN )) + PACKET_IDLE_CNT_MIN;
 }
 
-
+static inline uint64_t tb_rand_uint64_t(){
+	uint64_t r = 0;
+	for( int i=0; i<4; i++){
+		lfsr = LFSR(lfsr);
+		r |= (uint64_t)lfsr << 16*i;
+	}
+	return r;
+}
+static inline uint8_t tb_rand_uint8_t(){
+	lfsr = LFSR(lfsr);
+	return (uint8_t) lfsr;
+}
 static inline void tb_rand_fill_packet(uint8_t * p, size_t len){
 	for(size_t i=0; i < len; i++){
 		lfsr = LFSR(lfsr);

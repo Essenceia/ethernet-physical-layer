@@ -33,16 +33,20 @@ logic [GAP_W-1:0] gap_next;
 logic [GAP_W-1:0] gap_add;
 logic             gap_add_overflow;
 assign { gap_add_overflow, gap_add } = gap_q + {{GAP_W-1{1'b0}}, 1'b1};
-assign gap_next = add_market_v_q ? {GAP_W{1'b0}} : gap_add;
+assign gap_next = gap_add;
  
 logic add_market_v_next;
 reg   add_market_v_q;
 
-assign add_market_v_next = gap_add_overflow;
+// alginement marker is inserted every 16383 blocks's 
+// 16383 = 2^14 - 1
+assign add_market_v_next = &gap_q;
 
 always @(posedge clk) begin
 	if ( ~nreset ) begin
-		gap_q <= {GAP_W{1'b0}};
+		// reset to 1 by default as 0 is the cycle were we
+		// insert the aligment marker
+		gap_q <= {{GAP_W-1{1'b0}}, 1'b1};
 		add_market_v_q <= 1'b0;// don't add alignement market on reset
 	end else begin
 		gap_q <= gap_next;
@@ -53,16 +57,35 @@ end
 genvar i;
 generate
 for( i = 0; i < LANE_N; i++) begin
+	logic [DATA_W-1:0] data;
+	logic [HEAD_W-1:0] head;
+	logic [DATA_W-1:0] data_m;
+	logic [HEAD_W-1:0] head_m;
+	assign data = data_i[i*DATA_W+DATA_W-1:i*DATA_W];
+	assign head = head_i[i*HEAD_W+HEAD_W-1:i*HEAD_W];	
+	assign data_o[i*DATA_W+DATA_W-1:i*DATA_W] = data_m;
+	assign head_o[i*HEAD_W+HEAD_W-1:i*HEAD_W] = head_m;
 	alignement_marker_lane_tx #(.LANE_ENC(MARKER_LANE[i*BLOCK_W+BLOCK_W-1:i*BLOCK_W]))
 	m_market_lane(
 		.clk(clk),
 		.nreset(nreset),
 		.marker_v(add_market_v_q),
-		.data_i({ data_i[i*DATA_W+DATA_W-1:i*DATA_W], head_i[i*HEAD_W+HEAD_W-1:i*HEAD_W]}),	
-		.data_o({ data_o[i*DATA_W+DATA_W-1:i*DATA_W], head_o[i*HEAD_W+HEAD_W-1:i*HEAD_W]})	
+		.data_i({ data , head }),	
+		.data_o({ data_m, head_m })	
 	);
 end
 endgenerate
 
 assign marker_v_o = add_market_v_q;
+
+`ifdef FORMAL
+
+always @(posedge clk) begin
+	if( nreset ) begin
+		// aligmenent marker added on sequence cnt 2^14 ( overlow )
+		sva_marker_2_pow_14 : assert( ~marker_v_o | marker_v_o & gap_add_overflow );
+		sva_marker_gap_zero : assert( ~marker_v_o | marker_v_o & ( gap_q == 0 ) );
+	end
+end
+`endif
 endmodule

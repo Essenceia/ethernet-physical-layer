@@ -45,16 +45,29 @@ BIP 3 bit number Assigned 66-bit word bits
 6                8, 16, 24, 32, 40, 48, 56, 64
 7                9, 17, 25, 33, 41, 49, 57, 65
 */
-assign bip_res[0] = bip_q[0] ^ data_i[2] ^ data_i[10] ^ data_i[18] ^ data_i[26] ^ data_i[34] ^ data_i[42] ^ data_i[50] ^ data_i[58];
-assign bip_res[1] = bip_q[1] ^ data_i[3] ^ data_i[11] ^ data_i[19] ^ data_i[27] ^ data_i[35] ^ data_i[43] ^ data_i[51] ^ data_i[59];
-assign bip_res[2] = bip_q[2] ^ data_i[4] ^ data_i[12] ^ data_i[20] ^ data_i[28] ^ data_i[36] ^ data_i[44] ^ data_i[52] ^ data_i[60];
+assign bip_res[0] = bip_q[0] ^ 
+	data_i[2]  ^ data_i[10] ^ data_i[18] ^ 
+	data_i[26] ^ data_i[34] ^ data_i[42] ^ 
+	data_i[50] ^ data_i[58];
+
+assign bip_res[1] = bip_q[1] ^ 
+	data_i[3]  ^ data_i[11] ^ data_i[19] ^ 
+	data_i[27] ^ data_i[35] ^ data_i[43] ^ 
+	data_i[51] ^ data_i[59];
+
+assign bip_res[2] = bip_q[2] ^ 
+	data_i[4]  ^ data_i[12] ^ data_i[20] ^ 
+	data_i[28] ^ data_i[36] ^ data_i[44] ^ 
+	data_i[52] ^ data_i[60];
 assign bip_res[3] = bip_q[3] ^ data_i[0] ^ data_i[5 ] ^ data_i[13] ^ data_i[21] ^ data_i[29] ^ data_i[37] ^ data_i[45] ^ data_i[53] ^ data_i[61];
 assign bip_res[4] = bip_q[4] ^ data_i[1] ^ data_i[6 ] ^ data_i[14] ^ data_i[22] ^ data_i[30] ^ data_i[38] ^ data_i[46] ^ data_i[54] ^ data_i[62];
 assign bip_res[5] = bip_q[5] ^ data_i[7] ^ data_i[15] ^ data_i[23] ^ data_i[31] ^ data_i[39] ^ data_i[47] ^ data_i[55] ^ data_i[63];
 assign bip_res[6] = bip_q[6] ^ data_i[8] ^ data_i[16] ^ data_i[24] ^ data_i[32] ^ data_i[40] ^ data_i[48] ^ data_i[56] ^ data_i[64];
 assign bip_res[7] = bip_q[7] ^ data_i[9] ^ data_i[17] ^ data_i[25] ^ data_i[33] ^ data_i[41] ^ data_i[49] ^ data_i[57] ^ data_i[65];
 
-assign bip3 = bip_res;
+// bip calculation includes previous alignement marker and
+// all data in the gap
+assign bip3 = bip_q;
 assign bip7 = ~bip3;
 
 // create new marker
