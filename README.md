@@ -30,6 +30,10 @@ Features not supported :
 
 - EEE - Ethernet Energy Efficiency 
 
+## Testing
+
+For more information on the testbenches and the commands to run them see the [README in the tb director](tb/README.md).
+
 # License 
 
 This code uses the MIT license, all rights belong to Julia Desmazes.
