@@ -58,6 +58,16 @@ To get debug logs :
 make run debug=1
 ```
 
+## RX frame sync
+
+This is small pure system verilog test bench to test frame sync lock and bit slip functionality on rx path.
+Expected behavior is outlines in `802.3` clause `82` figure `12`.
+
+To run
+```
+make run_sync_rx
+```
+
 ## Get waves
 
 Waves will be opened using the viewer specified by `VIEW`, by default this is set to
