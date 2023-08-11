@@ -11,7 +11,7 @@
 *
 *
 * */
-module pcs_lock_state#(
+module pcs_sync_rx#(
 	parameter HEAD_W = 2
 )(
 	input clk,
@@ -29,7 +29,7 @@ module pcs_lock_state#(
 );
 localparam CNT_N = 1024;
 localparam CNT_W = $clog2(CNT_N);
-localparam NV_CNT_N = 65
+localparam NV_CNT_N = 65;
 localparam NV_CNT_W = $clog2(NV_CNT_N);
 localparam NV_CNT_MAX = 'd65;
 
@@ -42,6 +42,7 @@ logic [CNT_W-1:0] cnt_next;
 reg   [CNT_W-1:0] cnt_q;// sh_cnt 
 logic [CNT_W-1:0] cnt_add;
 logic             cnt_add_overflow; // 1024 
+logic             cnt_max;
 
 logic [NV_CNT_W-1:0] nv_cnt_next;
 reg   [NV_CNT_W-1:0] nv_cnt_q;// sh_invalid_cnt 
@@ -55,13 +56,13 @@ logic lock_v; // 64_GOOD
 logic slip_v; // SLIP
 
 
-assign cnt_rest_v = lock_v | slip_v | cnt_max; 
+assign cnt_rst_v = lock_v | slip_v | cnt_max; 
 
-assign { cnt_add_overflow,    cnt_add    } = cnt_q + {{ CNT_W-1{1'b0}}, sh_v|lock_q };
+assign { cnt_add_overflow,    cnt_add    } = cnt_q    + {{ CNT_W-1{1'b0}}, sh_v|lock_q };
 assign { nv_cnt_add_overflow, nv_cnt_add } = nv_cnt_q + {{NV_CNT_W-1{1'b0}}, ~sh_v }; 
 
-assign cnt_next = cnt_rst_v ? {{CNT_W{1'b0}} : cnt_add;
-assign nv_cnt_next = cnt_rst_v ? {{NV_CNT_W{1'b0}} : nv_cnt_add;
+assign cnt_next = cnt_rst_v ? {CNT_W{1'b0}} : cnt_add;
+assign nv_cnt_next = cnt_rst_v ? {NV_CNT_W{1'b0}} : nv_cnt_add;
  
 assign nv_cnt_max = nv_cnt_add == NV_CNT_MAX;
 assign cnt_max    = cnt_add_overflow;

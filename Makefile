@@ -45,6 +45,9 @@ pcs_40g_tx_tb : ${TB_DIR}/pcs_40g_tx_tb.sv pcs_40g_tx.v pcs_enc_lite.v 64b66b.v 
 marker_tb : ${TB_DIR}/marker_tb.sv alignement_marker_tx.v alignement_marker_lane_tx.v 
 	iverilog ${FLAGS} -s marker_tb -o ${BUILD}/marker_tb alignement_marker_tx.v alignement_marker_lane_tx.v ${TB_DIR}/marker_tb.sv
 
+pcs_sync_rx_tb: $(TB_DIR)/pcs_sync_rx_tb.sv pcs_sync_rx.v
+	iverilog ${FLAGS} -s pcs_sync_rx_tb -o ${BUILD}/pcs_sync_rx_tb pcs_sync_rx.v ${TB_DIR}/pcs_sync_rx_tb.sv
+
 run_64b66b: 64b66b_tb
 	vvp ${BUILD}/lite_64b66b_tb
 
@@ -57,6 +60,10 @@ run_pcs_40g_tx: pcs_40g_tx_tb vpi
 run_marker: marker_tb vpi_marker
 	mv $(VPI_DIR)/$(BUILD)/tb_marker.vpi $(VPI_DIR)/$(BUILD)/tb.vpi
 	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/marker_tb
+
+run_sync_rx: pcs_sync_rx_tb
+	vvp ${BUILD}/pcs_sync_rx_tb
+
 
 run: run_pcs_40g_tx
 
