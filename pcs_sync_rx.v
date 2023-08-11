@@ -31,7 +31,6 @@ localparam CNT_N = 1024;
 localparam CNT_W = $clog2(CNT_N);
 localparam NV_CNT_N = 65;
 localparam NV_CNT_W = $clog2(NV_CNT_N);
-localparam NV_CNT_MAX = 'd65;
 
 // sync header test
 logic  sh_v; // sh_valid
@@ -42,21 +41,22 @@ logic [CNT_W-1:0] cnt_next;
 reg   [CNT_W-1:0] cnt_q;// sh_cnt 
 logic [CNT_W-1:0] cnt_add;
 logic             cnt_add_overflow; // 1024 
-logic             cnt_max;
+logic             cnt_64;
+logic             cnt_1024;
 
 logic [NV_CNT_W-1:0] nv_cnt_next;
 reg   [NV_CNT_W-1:0] nv_cnt_q;// sh_invalid_cnt 
 logic [NV_CNT_W-1:0] nv_cnt_add;
 logic                nv_cnt_add_overflow; 
-logic                nv_cnt_max; 
+logic                nv_cnt_65; 
 
-logic             cnt_rst_v; // reset counters ( RESET_CNT )
+logic cnt_rst_v; // reset counters ( RESET_CNT )
 // lock set and unset
 logic lock_v; // 64_GOOD
 logic slip_v; // SLIP
 
 
-assign cnt_rst_v = lock_v | slip_v | cnt_max; 
+assign cnt_rst_v = invalid_q | lock_v | slip_v | cnt_1024; 
 
 assign { cnt_add_overflow,    cnt_add    } = cnt_q    + {{ CNT_W-1{1'b0}}, sh_v|lock_q };
 assign { nv_cnt_add_overflow, nv_cnt_add } = nv_cnt_q + {{NV_CNT_W-1{1'b0}}, ~sh_v }; 
@@ -64,8 +64,9 @@ assign { nv_cnt_add_overflow, nv_cnt_add } = nv_cnt_q + {{NV_CNT_W-1{1'b0}}, ~sh
 assign cnt_next = cnt_rst_v ? {CNT_W{1'b0}} : cnt_add;
 assign nv_cnt_next = cnt_rst_v ? {NV_CNT_W{1'b0}} : nv_cnt_add;
  
-assign nv_cnt_max = nv_cnt_add == NV_CNT_MAX;
-assign cnt_max    = cnt_add_overflow;
+assign nv_cnt_65 = nv_cnt_add == 'd65;
+assign cnt_64    = cnt_add == 'd64;
+assign cnt_1024  = cnt_add_overflow;
  
 always @(posedge clk) begin
 	cnt_q <= cnt_next;
@@ -74,8 +75,8 @@ end
 
 // lock and slip
 assign slip_v = sync_q & ~sh_v // TEST_SH -> SLIP 
-			  | lock_q & nv_cnt_max; // INVALID_SH -> SLIP
-assign lock_v = sync_q & cnt_max;
+			  | lock_q & nv_cnt_65; // INVALID_SH -> SLIP
+assign lock_v = sync_q & cnt_64;
  
 // fsm
 reg   invalid_q;
@@ -88,11 +89,11 @@ logic lock_next;
 assign invalid_next = invalid_q & ~valid_i 
 					| ~valid_i;
 assign sync_next = valid_i & ( invalid_q // signal ok, start testing
-				 | sync_next & ~lock_v // continue testesing, not locked yet
+				 | sync_q & ~lock_v // continue testesing, not locked yet
 				 | lock_q & slip_v) ;// lost lock startup new sync process
 assign lock_next = valid_i 
 				 & ( lock_q & ~slip_v // lock not lost 
-				   | sync_q & lock_q); // locked
+				   | sync_q & lock_v); // locked
 				  
 always @(posedge clk) begin
 	if ( ~nreset ) begin
