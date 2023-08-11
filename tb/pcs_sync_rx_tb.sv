@@ -23,6 +23,19 @@ int loop_lock;
 int nv_sh_sent;
 int sh_v; 
 
+task aquire_lock( input int loop_lock );
+	// need at least 64 blocks to aquire lock
+	assert( loop_lock >= 64 );
+	for(int t=0; t < loop_lock; t++ ) begin
+		#9
+		head_i = ( $random % 2 )? `SYNC_CTRL : `SYNC_DATA;
+		valid_i = 1'b1;
+		// only sending valid lock's should never slip
+		#1
+		assert( ~slip_v_o );
+	end
+endtask
+
 initial begin
 	$dumpfile("build/wave.vcd");
 	$dumpvars(0, pcs_sync_rx_tb);
@@ -35,13 +48,7 @@ initial begin
 	// we need at least 64 blocks to trigger a lock
 	$display("test 1 %t", $time);
 	loop_lock =  64 + ( $random % 20 ); 
-	for(int t=0; t < loop_lock; t++ ) begin
-		#10
-		head_i = ( $random % 2 )? `SYNC_CTRL : `SYNC_DATA;
-		valid_i = 1'b1;
-		// only sending valid lock's should never slip
-		assert( ~slip_v_o );
-	end
+	aquire_lock(loop_lock);	
 	// we should be locked
 	assert( lock_v_o );
 	
@@ -83,7 +90,31 @@ initial begin
 		end	
 	end
 
-	$display("Test finished $t", $time);	
+	// test 4
+	// Re-aquire lock and once we have re-locked
+	// lose the signal.
+	$display("test 4 %t", $time);
+	aquire_lock(loop_lock);
+	assert(lock_v_o);
+	#10;
+	valid_i = 1'b0;
+	// continue sending valid headers but should have lost lock and there
+	// should be no slip
+	for(int t = 0; t < loop_lock; t++) begin
+		#9
+		head_i = ( $random % 2 )? `SYNC_CTRL : `SYNC_DATA;
+		#1
+		assert( ~slip_v_o );
+		assert( ~lock_v_o );
+	end	
+	// test 5
+	// Re-establish signal, re-aquire lock
+	$display("test 5 %t", $time);
+	valid_i = 1'b1;
+	aquire_lock( loop_lock );
+	assert( lock_v_o );
+
+	$display("Test finished %t", $time);	
 	valid_i = 1'b0;
 	#20
 	$finish;
