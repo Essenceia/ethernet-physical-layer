@@ -1,5 +1,6 @@
-module pcs_alignement_marker_lock_rx #(
+module am_lock_rx #(
 	parameter BLOCK_W = 66,
+	parameter LANE_N = 4
 )(
 	input clk,
 	input nreset,
@@ -59,7 +60,7 @@ logic             gap_rst_v;
 
 assign gap_rst_v = invalid_q | slip_v;
 assign {gap_add_overflow, gap_add} = gap_q + { {GAP_W-1{1'b0}},1'b1 };
-assign gap_next = gap_rst_v ? {{GAP_W-1{1'b0}},1'b1}; 
+assign gap_next = gap_rst_v ? {{GAP_W-1{1'b0}},1'b1}: gap_add; 
 
 assign gap_zero = ~|gap_q;
 
@@ -110,7 +111,7 @@ logic invalid_next;
 assign invalid_next = ~valid_i; 
 assign sync_next  = valid_i 
 				  & ( invalid_q
-				    | sync_q & ~am_first_v;
+				    | sync_q & ~am_first_v
 				    | slip_v);
 assign first_next = valid_i 
 				   & ( sync_q & am_first_v
