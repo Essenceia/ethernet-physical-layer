@@ -60,7 +60,7 @@ logic             gap_rst_v;
 
 assign gap_rst_v = invalid_q | slip_v;
 assign {gap_add_overflow, gap_add} = gap_q + { {GAP_W-1{1'b0}},1'b1 };
-assign gap_next = gap_rst_v ? {{GAP_W-1{1'b0}},1'b1}: gap_add; 
+assign gap_next = gap_rst_v ? {GAP_W{1'b0}}: gap_add; 
 
 assign gap_zero = ~|gap_q;
 
@@ -86,7 +86,7 @@ generate
 	end
 endgenerate
 
-assign lane_next = lane_match; 
+assign lane_next = gap_zero ? lane_match : lane_q; 
 always @(posedge clk) begin
 	lane_q <= lane_next;
 end

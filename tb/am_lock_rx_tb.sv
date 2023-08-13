@@ -36,24 +36,33 @@ assign marker_lane[3] = MARKER_LANE3;
 task aquire_lock( input int extra_cycles, int lane );
 	logic [HEAD_W-1:0] head;
 	logic [DATA_W-1:0] data;
+	// extra cycles should be smaller than the am gap
+	assert( extra_cycles < GAP_N );
 	// write first am 
 	#10
 	valid_i = 1'b1;
-	block_i = marker_lane[lane]; 
+	block_i = marker_lane[lane];
 	for(int t=0; t < GAP_N ; t++ ) begin
 		#9
 		head = ( $random % 2 )? `SYNC_CTRL : `SYNC_DATA;
 		data = { $random, $random };
-		block_i = {data, head};
+		block_i = {'0, t};
 		// only sending valid lock's should never slip
 		#1
 		assert( ~slip_v_o );
 	end
 	// write second am
+	#10
 	block_i = marker_lane[lane];
 	for(int t=0; t<extra_cycles; t++) begin
-		#10
-		assert( lock_v_o); 
+		#10	
+		head = ( $random % 2 )? `SYNC_CTRL : `SYNC_DATA;
+		data = { $random, $random };
+		block_i = {data, head};
+		// lane has locked
+		assert( lock_v_o);
+		// correct lane 
+		assert(lane_o[lane]);
 	end
 endtask
 
@@ -65,7 +74,8 @@ initial begin
 	nreset = 1'b0;
 	#10;
 	nreset = 1'b1;
-	valid_i = 1'b0;
+	valid_i = 1'b1;
+	block_i = {BLOCK_W{1'b0}};
 	$display("Starting test");
 	// test 1
 	// Begining simple lock process right after reset
@@ -74,7 +84,6 @@ initial begin
 	$display("test 1 %t", $time);
 	tb_lane = $random % LANE_N;
 	aquire_lock(10, tb_lane);
-	assert(lane_o[tb_lane]);
 	
 	$display("Test finished");
 	$finish;
