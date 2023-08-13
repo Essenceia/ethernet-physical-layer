@@ -15,6 +15,7 @@ localparam [BLOCK_W-1:0]
 	MARKER_LANE2 = { `SYNC_CTRL, {8{1'bx}},8'h64, 8'h9a, 8'h3a, {8{1'bx}}, 8'h9b, 8'h65, 8'hc5 },
 	MARKER_LANE3 = { `SYNC_CTRL, {8{1'bx}},8'hc2, 8'h86, 8'h5d, {8{1'bx}}, 8'h3d, 8'h79, 8'ha2 };
 localparam LANE_N = 4;
+localparam LANE_W = $clog2(LANE_N);
 localparam GAP_N = 16383;
 
 reg   clk = 1'b0;
@@ -77,7 +78,7 @@ task aquire_lock( input int extra_cycles, int lane );
 	end
 endtask
 
-int tb_lane;
+logic [LANE_W-1:0] tb_lane;
 
 initial begin
 	$dumpfile("build/wave.vcd");
@@ -105,7 +106,63 @@ initial begin
 	$display("test 2 %t", $time);
 	send_rand_block( GAP_N*4 );
 	assert(slip_v_o);
+	assert(~lock_v_o);
 	
+	// test 3
+	// RESET -> COMP_2ND -> SLIP 
+	// Send 2 valid am but each for a different lanes
+	$display("test 3 %t", $time);
+	#10
+	tb_lane = $random % LANE_N;
+	block_i = marker_lane[tb_lane];
+	send_rand_block(GAP_N);
+	#10
+	tb_lane = tb_lane + 1;
+	block_i = marker_lane[tb_lane];
+	#1
+	assert(slip_v_o);
+	#9
+	assert(~lock_v_o);	
+
+	// test 4
+	// Lose signal on SLIP/RST
+	$display("test 4 %t", $time);
+	#10
+	valid_i = 1'b0;	
+	#1
+	assert(~slip_v_o);
+	#9
+	assert(~lock_v_o);
+
+	// test 5 
+	// Find 1 and then lose signal	
+	$display("test 5 %t", $time);
+	#10
+	valid_i = 1'b1;
+	block_i = marker_lane[tb_lane];
+	#1
+	assert(~slip_v_o);
+	#9
+	valid_i = 1'b0;
+	#1
+	assert(~slip_v_o);
+	#9
+	
+	// test 6
+	// Lock on lane then lose signal 
+	$display("test 6 %t", $time);
+	valid_i = 1'b1;	
+	aquire_lock(1, tb_lane);
+	assert(~slip_v_o);
+	assert(lock_v_o);
+	assert(lane_o[tb_lane]);
+	#10
+	valid_i = 1'b0;
+	#1
+	assert(~slip_v_o);
+	#9
+	assert(~lock_v_o);	
+		
 	$display("Test finished");
 	$finish;
 end
