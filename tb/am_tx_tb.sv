@@ -6,7 +6,7 @@
  * hit this case faster. This marker will only be
  * added once every 2^14 cycles.
  */
-module marker_tb;
+module am_tx_tb;
 parameter LANE_N = 4;
 parameter HEAD_W = 2;
 parameter DATA_W = 64;
@@ -33,7 +33,7 @@ always #5 clk = ~clk;
 
 initial begin
 	$dumpfile("build/wave.vcd");
-	$dumpvars(0, marker_tb);
+	$dumpvars(0, am_tx_tb);
 	nreset = 1'b0;
 	#10
 	// begin testing
@@ -57,7 +57,7 @@ task check();
 			assert(tb_head_o == head_o);
 			assert(tb_data_o == data_o);
 endtask
-alignement_marker_tx m_uut(
+am_tx #(.LANE_N(LANE_N)) m_uut(
 	.clk(clk),
 	.nreset(nreset),
 	.head_i(head_i),

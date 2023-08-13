@@ -36,14 +36,14 @@ pcs_10g_enc_tb: pcs_10g_enc.v pcs_enc_lite.v
 pcs_10g_tx : pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v 
 	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v
 
-pcs_40g_tx : pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v 
-	iverilog ${FLAGS} -s pcs_40g_tx -o ${BUILD}/pcs_40g_tx pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v
+pcs_40g_tx : pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v 
+	iverilog ${FLAGS} -s pcs_40g_tx -o ${BUILD}/pcs_40g_tx pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v
 
-pcs_40g_tx_tb : ${TB_DIR}/pcs_40g_tx_tb.sv pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v 
-	iverilog ${FLAGS} -s pcs_40g_tx_tb -o ${BUILD}/pcs_40g_tx_tb pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v alignement_marker_tx.v alignement_marker_lane_tx.v ${TB_DIR}/pcs_40g_tx_tb.sv
+pcs_40g_tx_tb : ${TB_DIR}/pcs_40g_tx_tb.sv pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v 
+	iverilog ${FLAGS} -s pcs_40g_tx_tb -o ${BUILD}/pcs_40g_tx_tb pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v ${TB_DIR}/pcs_40g_tx_tb.sv
 
-marker_tb : ${TB_DIR}/marker_tb.sv alignement_marker_tx.v alignement_marker_lane_tx.v 
-	iverilog ${FLAGS} -s marker_tb -o ${BUILD}/marker_tb alignement_marker_tx.v alignement_marker_lane_tx.v ${TB_DIR}/marker_tb.sv
+am_tx_tb : ${TB_DIR}/am_tx_tb.sv am_tx.v am_lane_tx.v 
+	iverilog ${FLAGS} -s am_tx_tb -o ${BUILD}/am_tx_tb am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv
 
 pcs_sync_rx_tb: $(TB_DIR)/pcs_sync_rx_tb.sv pcs_sync_rx.v
 	iverilog ${FLAGS} -s pcs_sync_rx_tb -o ${BUILD}/pcs_sync_rx_tb pcs_sync_rx.v ${TB_DIR}/pcs_sync_rx_tb.sv
@@ -63,9 +63,9 @@ run_gearbox_tx: gearbox_tx_tb
 run_pcs_40g_tx: pcs_40g_tx_tb vpi
 	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/pcs_40g_tx_tb
 
-run_marker: marker_tb vpi_marker
+run_am_tx: am_tx_tb vpi_marker
 	mv $(VPI_DIR)/$(BUILD)/tb_marker.vpi $(VPI_DIR)/$(BUILD)/tb.vpi
-	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/marker_tb
+	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/am_tx_tb
 
 run_sync_rx: pcs_sync_rx_tb
 	vvp ${BUILD}/pcs_sync_rx_tb

@@ -116,7 +116,7 @@ m_64b66b_tx(
 );
 
 // alignement marker
-alignement_marker_tx #(.LANE_N(LANE_N), .HEAD_W( HEAD_W ), .DATA_W(DATA_W))
+am_tx #(.LANE_N(LANE_N), .HEAD_W( HEAD_W ), .DATA_W(DATA_W))
 m_align_market(
 	.clk(clk),
 	.nreset(nreset),

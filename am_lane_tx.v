@@ -1,7 +1,7 @@
 /* Create marker per lane, keep track of Bit Interleaved Parity value
 *  when not creating market 
 */
-module alignement_marker_lane_tx #(
+module am_lane_tx #(
 	parameter HEAD_W  = 2,
 	parameter DATA_W  = 64,
 	parameter BLOCK_W = HEAD_W + DATA_W,
