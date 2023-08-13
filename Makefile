@@ -51,6 +51,8 @@ pcs_sync_rx_tb: $(TB_DIR)/pcs_sync_rx_tb.sv pcs_sync_rx.v
 am_lock_rx_tb: $(TB_DIR)/am_lock_rx_tb.sv am_lock_rx.v
 	iverilog ${FLAGS} -s am_lock_rx_tb -o ${BUILD}/am_lock_rx_tb am_lock_rx.v ${TB_DIR}/am_lock_rx_tb.sv
 
+lane_reorder_rx_tb: $(TB_DIR)/lane_reorder_rx_tb.sv lane_reorder_rx.v
+	iverilog ${FLAGS} -s lane_reorder_rx_tb -o ${BUILD}/lane_reorder_rx_tb lane_reorder_rx.v ${TB_DIR}/lane_reorder_rx_tb.sv
 
 run_64b66b: 64b66b_tb
 	vvp ${BUILD}/lite_64b66b_tb
@@ -71,6 +73,8 @@ run_sync_rx: pcs_sync_rx_tb
 run_am_lock_rx: am_lock_rx_tb
 	vvp ${BUILD}/am_lock_rx_tb
 
+run_lane_reorder_rx: lane_reorder_rx_tb
+	vvp ${BUILD}/lane_reorder_rx_tb
 
 run: run_pcs_40g_tx
 
