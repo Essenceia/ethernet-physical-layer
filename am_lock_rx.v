@@ -37,6 +37,7 @@ logic [NV_CNT_W-1:0] nv_cnt_add;// am_invld_cnt
 logic                nv_cnt_add_overflow;
 logic                nv_cnt_rst_v;
 logic                nv_cnt_4;
+logic                nv_cnt_zero;
 
 // match alignement marker
 logic am_first_v; // found a valid alignement marker, lite version
@@ -46,7 +47,8 @@ logic slip_v;
 assign nv_cnt_rst_v =  sync_q | ( lock_q & gap_zero & lane_match_same ); 
 // add
 assign { nv_cnt_add_overflow, nv_cnt_add } = nv_cnt_q + {{NV_CNT_W-1{1'b0}}, lock_q & gap_zero & ~lane_match_same}; 
-assign nv_cnt_4 = nv_cnt_add_overflow;
+assign nv_cnt_4    = nv_cnt_add_overflow;
+assign nv_cnt_zero = ~|nv_cnt_q;
 
 assign nv_cnt_next = nv_cnt_rst_v ? {NV_CNT_W{1'b0}} : nv_cnt_add;
 
@@ -76,7 +78,7 @@ logic [LANE_N-1:0] lane_next;
 logic [LANE_N-1:0] lane_match;
 logic              lane_match_same;// match same the alignement marker on the same lane
 
-assign lane_match_same = |(lane_match == lane_q);
+assign lane_match_same = |(lane_match == lane_q) & nv_cnt_zero;
 genvar i;
 generate
 	for( i=0 ; i < LANE_N; i++ ) begin

@@ -33,6 +33,17 @@ assign marker_lane[1] = MARKER_LANE1;
 assign marker_lane[2] = MARKER_LANE2;
 assign marker_lane[3] = MARKER_LANE3;
 
+task send_rand_block(int cycles);
+	logic [HEAD_W-1:0] head;
+	logic [DATA_W-1:0] data;
+	for(int t=0; t<cycles; t++) begin
+		#10	
+		head = ( $random % 2 )? `SYNC_CTRL : `SYNC_DATA;
+		data = { $random, $random };
+		block_i = {data, head};
+	end
+endtask
+
 task aquire_lock( input int extra_cycles, int lane );
 	logic [HEAD_W-1:0] head;
 	logic [DATA_W-1:0] data;
@@ -71,19 +82,29 @@ int tb_lane;
 initial begin
 	$dumpfile("build/wave.vcd");
 	$dumpvars(0, am_lock_rx_tb);
+	// AM_LOCK_INIT -> AM_RESET_CNT
 	nreset = 1'b0;
 	#10;
 	nreset = 1'b1;
 	valid_i = 1'b1;
 	block_i = {BLOCK_W{1'b0}};
 	$display("Starting test");
-	// test 1
+	// test 1 
+	// AM_RESET_CNT -> FIND_1ST -> COUNT_1 -> COMP_2ND -> 2_GOOD ->
+	// COUNT_2
 	// Begining simple lock process right after reset
 	// sending 2 correct aligngment marker and checking
-	// we have locked
+	// we have locked on correct lane
 	$display("test 1 %t", $time);
 	tb_lane = $random % LANE_N;
 	aquire_lock(10, tb_lane);
+
+	// test 2
+	// COUNT_2 -> SLIP
+	// Send random data and send 4 invalid am to provoque slip
+	$display("test 2 %t", $time);
+	send_rand_block( GAP_N*4 );
+	assert(slip_v_o);
 	
 	$display("Test finished");
 	$finish;
