@@ -57,6 +57,8 @@ task aquire_lock( input int extra_cycles, int lane );
 	end
 endtask
 
+int tb_lane;
+
 initial begin
 	$dumpfile("build/wave.vcd");
 	$dumpvars(0, am_lock_rx_tb);
@@ -64,6 +66,17 @@ initial begin
 	#10;
 	nreset = 1'b1;
 	valid_i = 1'b0;
+	$display("Starting test");
+	// test 1
+	// Begining simple lock process right after reset
+	// sending 2 correct aligngment marker and checking
+	// we have locked
+	$display("test 1 %t", $time);
+	tb_lane = $random % LANE_N;
+	aquire_lock(10, tb_lane);
+	assert(lane_o[tb_lane]);
+	
+	$display("Test finished");
 	$finish;
 end
 

@@ -71,18 +71,18 @@ end
 
 // alignement marker detection
 // current lane
-reg   [LANE_W-1:0] lane_q;
-logic [LANE_W-1:0] lane_next;
-logic [LANE_W-1:0] lane_match;
+reg   [LANE_N-1:0] lane_q;
+logic [LANE_N-1:0] lane_next;
+logic [LANE_N-1:0] lane_match;
 logic              lane_match_same;// match same the alignement marker on the same lane
 
 assign lane_match_same = |(lane_match == lane_q);
 genvar i;
 generate
 	for( i=0 ; i < LANE_N; i++ ) begin
-		assign lane_match[i] = (marker_lane[3*8-1:0]  == block_i[3*8-1:0] )
-							 & (marker_lane[7*8-1:32] == block_i[7*8-1:32])
-							 & (marker_lane[65:64]    == block_i[65:64]);
+		assign lane_match[i] = (marker_lane[i][3*8-1:0]  == block_i[3*8-1:0] )
+							 & (marker_lane[i][7*8-1:32] == block_i[7*8-1:32])
+							 & (marker_lane[i][65:64]    == block_i[65:64]);
 	end
 endgenerate
 
