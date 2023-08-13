@@ -24,6 +24,9 @@ build:
 64b66b_tx : 64b66b.v build
 	iverilog ${FLAGS} -s scrambler_64b66b_tx -o ${BUILD}/64b66b_tx 64b66b.v
 
+64b66b_rx : 66b64b.v build
+	iverilog ${FLAGS} -s descrambler_64b66b_rx -o ${BUILD}/64b66b_rx 66b64b.v
+
 64b66b_tb: 64b66b_tx ${TB_DIR}/64b66b_tb.v
 	iverilog ${FLAGS} -s lite_64b66b_tb -o ${BUILD}/lite_64b66b_tb 64b66b.v ${TB_DIR}/64b66b_tb.v
 

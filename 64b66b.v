@@ -1,4 +1,4 @@
-/* 64b/66b encoder and scrable, used for transmission path */
+/* 64b/66b scrable, used for transmission path */
 module scrambler_64b66b_tx #(
 	parameter LEN    = 32 // size of each block in bits
 )
