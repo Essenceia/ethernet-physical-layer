@@ -145,7 +145,15 @@ assign f_fsm = { invalid_q , sync_q , first_q, lock_q };
 
 always @(posedge clk) begin
 	if ( nreset ) begin
-		sva_fsm_onehot(f_fsm);
+		// xcheck
+		xcheck_valid_i : assert( ~$isunknown(valid_i));
+		xcheck_block_i : assert( ~valid_i | valid_i & ~$isunknown(block_i));
+		xcheck_lock_v_o : assert( ~$isunknown(lock_v_o));
+		xcheck_lane_o : assert( ~lock_v_o | lock_v_o & ~$isunknown(lane_o));
+		xcheck_slip_v_o : assert( ~$isunknown(slip_v_o));
+
+		// fsm
+		sva_fsm_onehot : assert( $onehot(f_fsm));
 	end
 end
 `endif
