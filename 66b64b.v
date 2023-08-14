@@ -25,24 +25,27 @@ genvar i;
 generate
 	for (  i = 0; i < LEN; i++ ) begin : xor_loop
 		if ( i <= I0 ) begin
-			assign data_o[i] = scram_i[i] ^ s_q[I0-i] ^ s_q[I1-i];	
+			assign data_o[i] = scram_i[i] ^ (s_q[I0-i] ^ s_q[I1-i]);	
 		end else if ( i <= I1 ) begin
-			assign data_o[i] = scram_i[i] ^ scram_i[i-I0] ^ s_q[I1-i];	
+			assign data_o[i] = scram_i[i] ^ (scram_i[i-I0] ^ s_q[I1-i]);	
 		end else begin
-			assign data_o[i] = scram_i[i] ^ scram_i[i-I0] ^ scram_i[i-I1];	
+			assign data_o[i] = scram_i[i] ^ (scram_i[i-I0] ^ scram_i[i-I1]);	
 		end
 	end
-endgenerate
 
-// flop input data to be used next cycle
-if ( LEN > S_W ) begin
-	// input data is larger than internal state, rewite all bits
-	assign s_next = scram_i[LEN-1:LEN-S_W];
-end else begin
-	// input data is smaller than internal state, shift
-	// state and rewrite only lower order bits
-	assign s_next = { s_q[S_W-LEN-1:0] , scram_i};
-end
+	for( i=0; i < S_W; i++) begin	
+	// flop input data to be used next cycle
+	if ( i < LEN ) begin
+		// input data is larger than internal state, rewite all bits
+		assign s_next[i] = scram_i[LEN-1-i];
+	end else begin
+		// input data is smaller than internal state, shift
+		// state and rewrite only lower order bits
+		assign s_next[i] = s_q[i-LEN];
+	end
+	end
+
+endgenerate
 
 always @(posedge clk) begin
 	if ( ~nreset ) begin
