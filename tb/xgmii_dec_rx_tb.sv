@@ -52,8 +52,44 @@ logic [KEEP_W-1:0]      keep_o;
 logic [XGMII_DATA_W-1:0] xgmii_txd_o;
 logic [XGMII_CTRL_W-1:0] xgmii_txc_o;
 
-reg clk; 
-always clk = #5 ~clk;
+// tb specific wires
+logic [7:0] tb_data_byte[KEEP_W-1:0];
+logic [7:0] tb_txd_byte[KEEP_W-1:0];
+
+// send idle over the entier block
+task check_full_idle();
+	head_i = SYNC_HEAD_CTRL; 	
+	data_i[CTRL_W-1:0] = BLOCK_TYPE_IDLE;
+	data_i[DATA_W-1:CTRL_W] = { $random, $random };
+	#10
+	assert(&xgmii_txc_o);
+	for(int i=0; i<KEEP_W; i++) begin
+		assert(tb_txd_byte[i] == XGMII_CTRL_IDLE);
+	end
+endtask
+
+// send default ctrl block
+// applies to start, err control types
+task check_ctrl(logic [CTRL_W-1:0] cc, logic [XGMII_CTRL_W-1:0] xcc);
+	head_i = SYNC_HEAD_CTRL; 	
+	data_i[CTRL_W-1:0] = cc;
+	data_i[DATA_W-1:CTRL_W] = { $random, $random };
+	#10
+	assert(xgmii_txc_o[0]);
+	assert(~|xgmii_txc_o[7:1]);
+	assert(tb_txd_byte[0] == xcc);
+	for(int i=1; i<KEEP_W; i++) begin
+		assert(tb_txd_byte[i] == tb_data_byte[i]);
+	end
+endtask
+
+genvar x;
+generate
+	for(x=0; x< KEEP_W; x++) begin
+		assign tb_data_byte[x] = data_i[x*8+7:x*8];
+		assign tb_txd_byte[x] = xgmii_txd_o[x*8+7:x*8];
+	end
+endgenerate
 
 initial begin
 	$dumpfile("build/wave.vcd");
@@ -61,12 +97,17 @@ initial begin
 	
 	// test 1 : send idle
 	$display("test 1 %t", $time);
-	head_i = SYNC_HEAD_CTRL; 	
-	data_i[CTRL_W-1:0] = BLOCK_TYPE_IDLE;
-	data_i[DATA_W-1:CTRL_W] = { $random, $random };
-	#1
-	assert(&xgmii_txc_o);
-	assert(xgmii_txd_o[CTRL_W-1:0] == XGMII_CTRL_IDLE);
+	check_full_idle();
+
+	// test 2 : send start
+	$display("test 2 %t", $time);
+	check_ctrl(BLOCK_TYPE_START_0, XGMII_CTRL_START);
+
+	// test 3 : send err
+	$display("test 3 %t", $time);
+	check_ctrl(BLOCK_TYPE_CTRL, XGMII_CTRL_ERR);
+
+	
 
 	$display("Test finished"); 
 	$finish;
