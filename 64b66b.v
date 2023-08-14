@@ -38,7 +38,7 @@ for( i = 0; i < S_W; i++ ) begin
 		if( i < LEN ) begin 
 			assign s_next[i] = scram_o[LEN-1-i];
 		end else begin 
-			assign s_next[i] = scram_q[LEN-1-i];
+			assign s_next[i] = s_q[i-LEN];
 		end
 	end else begin
 		// LEN >= S_W
