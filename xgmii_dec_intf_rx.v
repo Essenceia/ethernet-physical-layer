@@ -39,16 +39,21 @@ assign term_onehot = {XGMII_CTRL_W{term_v_i}}
 // xgmii control codes
 logic [CTRL_W-1:0] ctrl_code;
 
-assign ctrl_code = {CTRL_W{idle_v_i}}   & XGMII_CTRL_IDLE
-				 | {CTRL_W{|start_v_i}} & XGMII_CTRL_START 
+// idle ctrl will be handled appart 
+assign ctrl_code = {CTRL_W{|start_v_i}} & XGMII_CTRL_START 
 				 | {CTRL_W{term_v_i}}   & XGMII_CTRL_TERM  
 				 | {CTRL_W{err_v_i}}    & XGMII_CTRL_ERR;
 
 
 logic [XGMII_CTRL_W-1:0] ctrl_lane_v;
+logic [XGMII_CTRL_W-1:0] idle_lane_v;
 
-assign ctrl_lane_v[0] = idle_v_i | start_v_i[0] | err_v_i | term_onehot[0];
+// on idle all bytes should be set to idle ctrl and set all bytes after term to idle 
+assign idle_lane_v = {XGMII_CTRL_W{idle_v_i}} | ( {XGMII_CTRL_W{term_v_i}} & ~keep_i ); 
 
+assign ctrl_lane_v[0] = start_v_i[0] | err_v_i | term_onehot[0];
+
+// When deleting /I/s, the first four characters after a /T/ shall not be deleted.
 genvar i;
 generate
 	for(i=1; i< XGMII_CTRL_W; i++) begin
@@ -58,12 +63,23 @@ generate
 			assign ctrl_lane_v[i] = term_onehot[i];
 		end	
 	end
+	
+endgenerate
+
+// shift output data, term character is moved from first byte in the pcs to
+// the end of the valid data in the xgmii
+logic [DATA_W-1:0] data_shift;
+
+assign data_shift = term_v_i ? { {CTRL_W{1'bx}}, data_i[DATA_W-CTRL_W-1:0] } : data_i;
+generate
 	for(i=0; i< XGMII_CTRL_W; i++) begin
-		assign xgmii_txd_o[i*CTRL_W+CTRL_W-1:i*CTRL_W] = ctrl_lane_v[i] ? ctrl_code : data_i[i*CTRL_W+CTRL_W-1:i*CTRL_W];	
+		assign xgmii_txd_o[i*CTRL_W+CTRL_W-1:i*CTRL_W] = ctrl_lane_v[i] ? ctrl_code
+													   : idle_lane_v[i] ? XGMII_CTRL_IDLE	
+													   : data_shift[i*CTRL_W+CTRL_W-1:i*CTRL_W];	
 	end
 endgenerate
 
-assign xgmii_txc_o = ctrl_lane_v;  
+assign xgmii_txc_o = ctrl_lane_v | idle_lane_v;  
 
 // overwrite 
 endmodule
