@@ -60,6 +60,10 @@ lane_reorder_rx_tb: $(TB_DIR)/lane_reorder_rx_tb.sv lane_reorder_rx.v
 xgmii_dec_rx_tb: $(TB_DIR)/xgmii_dec_rx_tb.sv pcs_dec_lite.v xgmii_dec_intf_rx.v
 	iverilog ${FLAGS} -s xgmii_dec_rx_tb -o ${BUILD}/xgmii_dec_rx_tb pcs_dec_lite.v xgmii_dec_intf_rx.v ${TB_DIR}/xgmii_dec_rx_tb.sv
 
+deskew_rx_tb: $(TB_DIR)/deskew_rx_tb.sv deskew_rx.v deskew_lane_rx.v
+	iverilog ${FLAGS} -s deskew_rx_tb -o ${BUILD}/deskew_rx_tb deskew_lane_rx.v deskew_rx.v ${TB_DIR}/deskew_rx_tb.sv
+
+
 run_64b66b: 64b66b_tb
 	vvp ${BUILD}/lite_64b66b_tb
 
@@ -84,6 +88,9 @@ run_lane_reorder_rx: lane_reorder_rx_tb
 
 run_xgmii_dec_rx: xgmii_dec_rx_tb
 	vvp ${BUILD}/xgmii_dec_rx_tb
+
+run_deskew_rx: deskew_rx_tb
+	vvp ${BUILD}/deskew_rx_tb
 
 run: run_pcs_40g_tx
 

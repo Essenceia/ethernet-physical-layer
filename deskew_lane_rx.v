@@ -47,7 +47,7 @@ always @(posedge clk) begin
 end
 
 // shift buffer
-reg   [BLOCK_W-1:0] buff_q[MAX_SKEW_BLOCK_N-1:0]
+reg   [BLOCK_W-1:0] buff_q[MAX_SKEW_BLOCK_N-1:0];
 logic [BLOCK_W-1:0] buff_next[MAX_SKEW_BLOCK_N-1:0]; 
 assign buff_next[0] = data_i;
 genvar i;
@@ -55,17 +55,21 @@ generate
 	for(i=1; i < MAX_SKEW_BLOCK_N; i++ ) begin
 		assign buff_next[i] = buff_q[i-1];
 	end
+
+	for(i=0; i < MAX_SKEW_BLOCK_N; i++) begin	
+		always @(posedge clk) begin
+			buff_q[i] <= buff_next[i];
+		end
+	end
 endgenerate
 
-always @(posedge clk) begin
-	data_q <= data_next;
-end
-
 // skew is used as read pointer
+logic [BLOCK_W-1:0] buff_rd;
 always_comb begin
 	for(int j=0; j<MAX_SKEW_BLOCK_N; j++) begin
-		if( skew_q == j ) data_o = buff_q[j];
+		if( skew_q == j ) buff_rd = buff_q[j];
 	end
 end
-
+// output
+assign data_o = buff_rd;
 endmodule
