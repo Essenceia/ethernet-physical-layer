@@ -6,7 +6,6 @@ localparam IS_40G = 1;
 localparam HEAD_W = 2;
 localparam DATA_W = 64;
 localparam KEEP_W = DATA_W/8;
-localparam CTRL_W = 8;
 localparam BLOCK_TYPE_W = 8;
 localparam LANE0_CNT_N  = IS_40G ? 1 : 2;
 localparam XGMII_DATA_W = 64;	
@@ -33,7 +32,7 @@ localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_TERM_6   = 8'he1, // C7    D5 D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_7   = 8'hff; //    D6 D5 D4 D3 D2 D1 D0 BT
 
-localparam [CTRL_W-1:0] 
+localparam [BLOCK_TYPE_W-1:0] 
 	XGMII_CTRL_IDLE  = 8'h07,	
 	XGMII_CTRL_START = 8'hfb,	
 	XGMII_CTRL_TERM  = 8'hfd,
@@ -56,11 +55,21 @@ logic [XGMII_CTRL_W-1:0] xgmii_txc_o;
 logic [7:0] tb_data_byte[KEEP_W-1:0];
 logic [7:0] tb_txd_byte[KEEP_W-1:0];
 
+logic [BLOCK_TYPE_W-1:0] term_ctrl_arr[KEEP_W-1:0];
+assign term_ctrl_arr[0] = BLOCK_TYPE_TERM_0;
+assign term_ctrl_arr[1] = BLOCK_TYPE_TERM_1;
+assign term_ctrl_arr[2] = BLOCK_TYPE_TERM_2;
+assign term_ctrl_arr[3] = BLOCK_TYPE_TERM_3;
+assign term_ctrl_arr[4] = BLOCK_TYPE_TERM_4;
+assign term_ctrl_arr[5] = BLOCK_TYPE_TERM_5;
+assign term_ctrl_arr[6] = BLOCK_TYPE_TERM_6;
+assign term_ctrl_arr[7] = BLOCK_TYPE_TERM_7;
+
 // send idle over the entier block
 task check_full_idle();
 	head_i = SYNC_HEAD_CTRL; 	
-	data_i[CTRL_W-1:0] = BLOCK_TYPE_IDLE;
-	data_i[DATA_W-1:CTRL_W] = { $random, $random };
+	data_i[BLOCK_TYPE_W-1:0] = BLOCK_TYPE_IDLE;
+	data_i[DATA_W-1:BLOCK_TYPE_W] = { $random, $random };
 	#10
 	assert(&xgmii_txc_o);
 	for(int i=0; i<KEEP_W; i++) begin
@@ -70,10 +79,10 @@ endtask
 
 // send default ctrl block
 // applies to start, err control types
-task check_ctrl(logic [CTRL_W-1:0] cc, logic [XGMII_CTRL_W-1:0] xcc);
+task check_ctrl(logic [BLOCK_TYPE_W-1:0] cc, logic [XGMII_CTRL_W-1:0] xcc);
 	head_i = SYNC_HEAD_CTRL; 	
-	data_i[CTRL_W-1:0] = cc;
-	data_i[DATA_W-1:CTRL_W] = { $random, $random };
+	data_i[BLOCK_TYPE_W-1:0] = cc;
+	data_i[DATA_W-1:BLOCK_TYPE_W] = { $random, $random };
 	#10
 	assert(xgmii_txc_o[0]);
 	assert(~|xgmii_txc_o[7:1]);
@@ -82,6 +91,29 @@ task check_ctrl(logic [CTRL_W-1:0] cc, logic [XGMII_CTRL_W-1:0] xcc);
 		assert(tb_txd_byte[i] == tb_data_byte[i]);
 	end
 endtask
+
+// send term 
+// there are 8 different possible positions for the term
+// as it can occure at any position in the byte
+task check_term();
+	head_i = SYNC_HEAD_CTRL;
+	for(int i=0; i < KEEP_W; i++)begin
+		#10
+		data_i = { $random, $random , term_ctrl_arr[i] };
+		#10
+		assert(xgmii_txc_o[i]);
+		assert(tb_txd_byte[i] == XGMII_CTRL_TERM);
+		for(int j=0; j < i; j++) begin
+			assert(~xgmii_txc_o[j]);
+			assert(tb_txd_byte[j] == tb_data_byte[j+1]);
+		end
+		for(int j=i+1; j < KEEP_W; j++) begin
+			assert(xgmii_txc_o[j]);
+			assert(tb_txd_byte[j] == XGMII_CTRL_IDLE);	
+		end
+	end	
+endtask
+
 
 genvar x;
 generate
@@ -106,8 +138,10 @@ initial begin
 	// test 3 : send err
 	$display("test 3 %t", $time);
 	check_ctrl(BLOCK_TYPE_CTRL, XGMII_CTRL_ERR);
-
 	
+	// test 4 : test term configurations	
+	$display("test 4 %t", $time);
+	check_term();
 
 	$display("Test finished"); 
 	$finish;

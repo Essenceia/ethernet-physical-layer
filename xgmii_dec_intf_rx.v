@@ -34,8 +34,9 @@ localparam [CTRL_W-1:0]
 // re-translate term to onehot, we undo modifs done in the
 // dec as our primary use case don't target the x(l)gmii 
 logic [XGMII_CTRL_W-1:0] term_onehot;
-assign term_onehot = {XGMII_CTRL_W{term_v_i}} 
-                   & (( keep_i - 'd1 ) ^ keep_i );
+logic                    term_onehot_overflow; 
+assign { term_onehot_overflow, term_onehot } = {XGMII_CTRL_W{term_v_i}} 
+                   & ( keep_i + 'd1 );
 // xgmii control codes
 logic [CTRL_W-1:0] ctrl_code;
 
@@ -70,7 +71,7 @@ endgenerate
 // the end of the valid data in the xgmii
 logic [DATA_W-1:0] data_shift;
 
-assign data_shift = term_v_i ? { {CTRL_W{1'bx}}, data_i[DATA_W-CTRL_W-1:0] } : data_i;
+assign data_shift = term_v_i ? { {CTRL_W{1'bx}}, data_i[DATA_W-1:CTRL_W] } : data_i;
 generate
 	for(i=0; i< XGMII_CTRL_W; i++) begin
 		assign xgmii_txd_o[i*CTRL_W+CTRL_W-1:i*CTRL_W] = ctrl_lane_v[i] ? ctrl_code

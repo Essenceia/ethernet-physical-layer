@@ -9,8 +9,7 @@ module pcs_dec_lite #(
 	parameter KEEP_W = DATA_W/8,
 	parameter BLOCK_W = 64,
 	parameter LANE0_CNT_N = IS_40G ? 1 : BLOCK_W/( 4 * 8),
-	parameter BLOCK_TYPE_W = 8,
-	parameter CTRL_W  = 7
+	parameter BLOCK_TYPE_W = 8
 )(
 	input [HEAD_W-1:0] head_i,
 	input [DATA_W-1:0] data_i,
@@ -52,40 +51,40 @@ assign head_v = head_i[0] ^ head_i[1];
 
 
 // look for matching control code
-logic [CTRL_W-1:0]      ctrl_code;
-logic                   ctrl_code_none; 
-logic                   idle_lite; 
-logic                   err_lite; 
-logic                   ord_lite; // ordered set
-logic [KEEP_W-1:0]      term_lite; 
-logic [LANE0_CNT_N-1:0] start_lite; 
-logic                   idle_v; 
-logic                   err_v; 
-logic                   ord_v; // ordered set
-logic [KEEP_W-1:0]      term_v; 
-logic [LANE0_CNT_N-1:0] start_v; 
+logic [BLOCK_TYPE_W-1:0] block_type;
+logic                    block_type_none; 
+logic                    idle_lite; 
+logic                    err_lite; 
+logic                    ord_lite; // ordered set
+logic [KEEP_W-1:0]       term_lite; 
+logic [LANE0_CNT_N-1:0]  start_lite; 
+logic                    idle_v; 
+logic                    err_v; 
+logic                    ord_v; // ordered set
+logic [KEEP_W-1:0]       term_v; 
+logic [LANE0_CNT_N-1:0]  start_v; 
 
-assign ctrl_code = data_i[CTRL_W-1:0];
+assign block_type = data_i[BLOCK_TYPE_W-1:0];
 
-assign idle_lite = ~|ctrl_code; // 0x0
-assign err_lite  = ctrl_code == BLOCK_TYPE_CTRL;
+assign idle_lite = ~|block_type; // 0x0
+assign err_lite  = block_type == BLOCK_TYPE_CTRL;
 assign ord_lite  = 1'b0; // TODO : add support for order set codes 
 
-assign term_lite[0] = ctrl_code == BLOCK_TYPE_TERM_0;  
-assign term_lite[1] = ctrl_code == BLOCK_TYPE_TERM_1;  
-assign term_lite[2] = ctrl_code == BLOCK_TYPE_TERM_2;  
-assign term_lite[3] = ctrl_code == BLOCK_TYPE_TERM_3;  
-assign term_lite[4] = ctrl_code == BLOCK_TYPE_TERM_4;  
-assign term_lite[5] = ctrl_code == BLOCK_TYPE_TERM_5;  
-assign term_lite[6] = ctrl_code == BLOCK_TYPE_TERM_6;  
-assign term_lite[7] = ctrl_code == BLOCK_TYPE_TERM_7;  
+assign term_lite[0] = block_type == BLOCK_TYPE_TERM_0;  
+assign term_lite[1] = block_type == BLOCK_TYPE_TERM_1;  
+assign term_lite[2] = block_type == BLOCK_TYPE_TERM_2;  
+assign term_lite[3] = block_type == BLOCK_TYPE_TERM_3;  
+assign term_lite[4] = block_type == BLOCK_TYPE_TERM_4;  
+assign term_lite[5] = block_type == BLOCK_TYPE_TERM_5;  
+assign term_lite[6] = block_type == BLOCK_TYPE_TERM_6;  
+assign term_lite[7] = block_type == BLOCK_TYPE_TERM_7;  
 
-assign start_lite[0] = ctrl_code == BLOCK_TYPE_START_0;
+assign start_lite[0] = block_type == BLOCK_TYPE_START_0;
 if ( !IS_40G ) begin
-assign start_lite[1] = ctrl_code == BLOCK_TYPE_START_4;
+assign start_lite[1] = block_type == BLOCK_TYPE_START_4;
 end 
 // no valid control code was dound 
-assign ctrl_code_none = ~( idle_lite | err_lite | ord_lite | |term_lite | |start_lite );  
+assign block_type_none = ~( idle_lite | err_lite | ord_lite | |term_lite | |start_lite );  
 
 // mask control code if the block is invalid
 assign err_v  = err_lite | block_nv; 
@@ -102,7 +101,7 @@ assign start_v = start_lite & {LANE0_CNT_N{~block_nv}};
 assign keep_o = term_lite - 'd1; 
 
 // check if block is valid
-assign block_nv = ~head_v | ctrl_code_none;
+assign block_nv = ~head_v | block_type_none;
 
 // output
 // check if we have ctrl, or reception error
