@@ -4,7 +4,7 @@
 
 `define TB_TEST3_LOOP 150
 
-module pcs_sync_rx_tb;
+module block_sync_rx_tb;
 
 localparam HEAD_W = 2;
 localparam DATA_W = 64;
@@ -38,7 +38,7 @@ endtask
 
 initial begin
 	$dumpfile("build/wave.vcd");
-	$dumpvars(0, pcs_sync_rx_tb);
+	$dumpvars(0, block_sync_rx_tb);
 	nreset = 1'b0;
 	#10;
 	nreset = 1'b1;
@@ -120,7 +120,7 @@ initial begin
 	$finish;
 end
 
-pcs_sync_rx #(.HEAD_W(HEAD_W))
+block_sync_rx #(.HEAD_W(HEAD_W))
 m_uut(
 	.clk(clk),
 	.nreset(nreset),

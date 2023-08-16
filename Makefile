@@ -48,8 +48,8 @@ pcs_40g_tx_tb : ${TB_DIR}/pcs_40g_tx_tb.sv pcs_40g_tx.v pcs_enc_lite.v 64b66b.v 
 am_tx_tb : ${TB_DIR}/am_tx_tb.sv am_tx.v am_lane_tx.v 
 	iverilog ${FLAGS} -s am_tx_tb -o ${BUILD}/am_tx_tb am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv
 
-pcs_sync_rx_tb: $(TB_DIR)/pcs_sync_rx_tb.sv pcs_sync_rx.v
-	iverilog ${FLAGS} -s pcs_sync_rx_tb -o ${BUILD}/pcs_sync_rx_tb pcs_sync_rx.v ${TB_DIR}/pcs_sync_rx_tb.sv
+block_sync_rx_tb: $(TB_DIR)/block_sync_rx_tb.sv block_sync_rx.v
+	iverilog ${FLAGS} -s block_sync_rx_tb -o ${BUILD}/block_sync_rx_tb block_sync_rx.v ${TB_DIR}/block_sync_rx_tb.sv
 
 am_lock_rx_tb: $(TB_DIR)/am_lock_rx_tb.sv am_lock_rx.v
 	iverilog ${FLAGS} -s am_lock_rx_tb -o ${BUILD}/am_lock_rx_tb am_lock_rx.v ${TB_DIR}/am_lock_rx_tb.sv
@@ -77,8 +77,8 @@ run_am_tx: am_tx_tb vpi_marker
 	mv $(VPI_DIR)/$(BUILD)/tb_marker.vpi $(VPI_DIR)/$(BUILD)/tb.vpi
 	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/am_tx_tb
 
-run_sync_rx: pcs_sync_rx_tb
-	vvp ${BUILD}/pcs_sync_rx_tb
+run_sync_rx: block_sync_rx_tb
+	vvp ${BUILD}/block_sync_rx_tb
 
 run_am_lock_rx: am_lock_rx_tb
 	vvp ${BUILD}/am_lock_rx_tb

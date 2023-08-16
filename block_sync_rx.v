@@ -11,7 +11,7 @@
 *
 *
 * */
-module pcs_sync_rx#(
+module block_sync_rx#(
 	parameter HEAD_W = 2
 )(
 	input clk,
