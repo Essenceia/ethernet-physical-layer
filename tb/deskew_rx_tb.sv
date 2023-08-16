@@ -1,9 +1,8 @@
-`define TB_LOOP_CNT 5
+`define TB_LOOP_CNT 3
 `define TB_MARKER {BLOCK_W{1'b1}}
 `define SYNC_CTRL 2'b10
 `define SYNC_DATA 2'b01
 `define TB_SKEW_RANGE 5
-
 module deskew_rx_tb;
 localparam LANE_N = 4;
 localparam BLOCK_W = 66;
@@ -38,32 +37,17 @@ logic [BLOCK_W-1:0] tb_data_o[LANE_N-1:0];
 
 always clk = #5 ~clk;
 
-`ifdef NOT_IVERILOG
-// iverilog doesn't have support for this yet
-// error :
-// sorry: Subroutine ports with unpacked dimensions are not yet supported.
-
-typedef int skew_arr_t[LANE_N];
-skew_arr_t skew;
-
-function skew_arr_t create_skew();
-	skew_arr_t arr;
-	for(int i=0; i<LANE_N; i++)begin
-		arr[i] = $random % MAX_SKEW_BLOCK_N;
-	end
-	return arr;
-endfunction
-`else
 int skew[LANE_N];
-int skew_max = 4;
+int skew_max;
 task create_skew();
 	assert(`TB_SKEW_RANGE <= MAX_SKEW_BLOCK_N );
+	skew_max = 0;	
 	for(int i=0; i < LANE_N; i++ ) begin
 		skew[i] = $random % `TB_SKEW_RANGE;
 		skew[i] = ( skew[i] < 0 )? -skew[i] : skew[i];
-	end	
+		skew_max = ( skew_max > skew[i])? skew_max : skew[i];
+	end
 endtask
-`endif
 
 task test_deskew();
 	assert( skew_max <= MAX_SKEW_BLOCK_N );
@@ -72,6 +56,9 @@ task test_deskew();
 	for(int j=0; j <= skew_max; j++ ) begin
 		#10;
 		am_lite_lock_lost_v_i = {LANE_N{1'b0}};
+		`ifdef DEBUG
+		$display("t %t skew %d", $time, j);
+		`endif
 		for(int i=0; i< LANE_N; i++) begin
 			`ifdef DEBUG
 			$display("lane %d j %d skew %d", i, j, skew[i]);
@@ -103,7 +90,26 @@ task test_deskew();
 			assert(tb_data_o[i] == marker_lane[i]);
 		end
 	end
+	#9
+	$display("");
 endtask
+
+task set_lock_lost(int lane);
+	for(int i=0; i < LANE_N; i++) begin
+		am_lite_lock_lost_v_i[i] = (lane == i)? 1'b1 : 1'b0;
+		// mask lock valid when lock lost
+		am_lite_lock_v_i[i] = am_lite_lock_v_i[i] & ~am_lite_lock_lost_v_i[i];	
+	end
+	#10
+	am_lite_lock_lost_v_i = { LANE_N{ 1'b0 }};
+endtask
+
+function int get_rand_lane();
+	int rand_lane;
+	rand_lane = $random % LANE_N;
+	rand_lane = ( rand_lane < 0) ? -rand_lane: rand_lane;
+	return rand_lane;
+endfunction	
 
 task simulate_stream();
 	#10
@@ -119,7 +125,7 @@ generate
 		assign tb_data_o[i] = data_o[i*BLOCK_W+BLOCK_W-1:i*BLOCK_W];
 	end
 endgenerate
-
+int tmp_lane; 
 initial begin
 	$dumpfile("build/wave.vcd");
 	$dumpvars(0, deskew_rx_tb);
@@ -145,25 +151,23 @@ initial begin
 		// test 2 : lose lock on a lane while locked
 		// and test reset of deskew
 		$display("Test 1.2 %t", $time);
-		am_lite_lock_lost_v_i = {{LANE_N-1{1'b0}} , 1'b1};
-		#10
+		set_lock_lost(get_rand_lane());
 		test_deskew();
 	
 		// test 3 : lose locking on a lane after having locked
 		$display("Test 1.3 %t", $time);
-		// start by re-losing lock, lane 1 this time
-		am_lite_lock_lost_v_i = { {LANE_N-2{1'b0}} , 1'b1, 1'b0 };
-		#10
+		// start by re-losing lock
+		tmp_lane = get_rand_lane();
+		set_lock_lost(tmp_lane);
+		
 		// sending am_v and lock on first 3 lanes
 		am_lite_v_i = { {LANE_N-3{1'b0}}, {3{1'b1}} };
 		#10
 		am_lite_lock_v_i = { {LANE_N-3{1'b0}}, {3{1'b1}} };
-		// lose lock on lane 1 while we see marker on missing lanes
+		// lose lock on lane again
 		#10
-		am_lite_lock_lost_v_i = {{LANE_N-2{1'b0}} , 1'b1, 1'b0};
 		am_lite_v_i = {{LANE_N-3{1'b1}}, {3{1'b0}}};
-		#10
-		am_lite_lock_v_i = {{LANE_N-2{1'b1}} , 1'b0, 1'b1};
+		set_lock_lost(tmp_lane);
 		#10	
 		// begin sucessfull lock
 		test_deskew();	

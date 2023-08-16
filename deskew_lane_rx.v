@@ -52,7 +52,13 @@ generate
 		assign buff_next[i] = buff_q[i-1];
 	end
 
-	for(i=0; i < MAX_SKEW_BLOCK_N; i++) begin	
+	for(i=0; i < MAX_SKEW_BLOCK_N; i++) begin : loop_buff
+		`ifdef DEBUG
+		logic [BLOCK_W-1:0] db_buff_next;
+		logic [BLOCK_W-1:0] db_buff_q;
+		assign db_buff_next = buff_next[i];
+		assign db_buff_q = buff_q[i];
+		`endif	
 		always @(posedge clk) begin
 			buff_q[i] <= buff_next[i];
 		end
