@@ -2,6 +2,7 @@
 `define TB_MARKER {BLOCK_W{1'b1}}
 `define SYNC_CTRL 2'b10
 `define SYNC_DATA 2'b01
+`define TB_SKEW_RANGE 5
 
 module deskew_rx_tb;
 localparam LANE_N = 4;
@@ -56,22 +57,25 @@ endfunction
 int skew[LANE_N];
 int skew_max = 4;
 task create_skew();
+	assert(`TB_SKEW_RANGE <= MAX_SKEW_BLOCK_N );
 	for(int i=0; i < LANE_N; i++ ) begin
-		skew[i] = i+1;
+		skew[i] = $random % `TB_SKEW_RANGE;
+		skew[i] = ( skew[i] < 0 )? -skew[i] : skew[i];
 	end	
 endtask
 `endif
 
-task simulate_skew();
+task test_deskew();
 	assert( skew_max <= MAX_SKEW_BLOCK_N );
 
 	valid_i = {LANE_N{1'b1}};
-	am_lite_lock_lost_v_i = {LANE_N{1'b1}};
 	for(int j=0; j <= skew_max; j++ ) begin
 		#10;
 		am_lite_lock_lost_v_i = {LANE_N{1'b0}};
 		for(int i=0; i< LANE_N; i++) begin
+			`ifdef DEBUG
 			$display("lane %d j %d skew %d", i, j, skew[i]);
+			`endif
 			tb_data_i[i] = { $random, $random, $random };
 			am_lite_lock_v_i[i] = 1'b0;
 			am_lite_v_i[i] = 1'b0;
@@ -80,7 +84,9 @@ task simulate_skew();
 				am_lite_v_i[i] = 1'b1;
 			end
 			if ( j > skew[i] ) begin
+				`ifdef DEBUG
 				$display("Set lock for lane %d", i);
+				`endif
 				am_lite_lock_v_i[i] = 1'b1;
 			end
 		end
@@ -124,14 +130,46 @@ initial begin
 	am_lite_v_i = '0;
 	am_lite_lock_lost_v_i = '0;
 	am_lite_lock_v_i = '0;
-	create_skew();
 
-	// test 1 
+	// test 1 : run a sequence of 3 different test 
+	// each time with a different skew configuration
 	$display("Test 1 %t", $time);
-	simulate_skew();
 	for(int i=0; i < `TB_LOOP_CNT; i++) begin
-		simulate_stream();
-	end
+		
+		create_skew();
+		// test 1 : simple locking on multiple lanes
+		// lost lock got to lock on all lanes 
+		$display("Test 1.1 %t", $time);
+		test_deskew();
+		
+		// test 2 : lose lock on a lane while locked
+		// and test reset of deskew
+		$display("Test 1.2 %t", $time);
+		am_lite_lock_lost_v_i = {{LANE_N-1{1'b0}} , 1'b1};
+		#10
+		test_deskew();
+	
+		// test 3 : lose locking on a lane after having locked
+		$display("Test 1.3 %t", $time);
+		// start by re-losing lock, lane 1 this time
+		am_lite_lock_lost_v_i = { {LANE_N-2{1'b0}} , 1'b1, 1'b0 };
+		#10
+		// sending am_v and lock on first 3 lanes
+		am_lite_v_i = { {LANE_N-3{1'b0}}, {3{1'b1}} };
+		#10
+		am_lite_lock_v_i = { {LANE_N-3{1'b0}}, {3{1'b1}} };
+		// lose lock on lane 1 while we see marker on missing lanes
+		#10
+		am_lite_lock_lost_v_i = {{LANE_N-2{1'b0}} , 1'b1, 1'b0};
+		am_lite_v_i = {{LANE_N-3{1'b1}}, {3{1'b0}}};
+		#10
+		am_lite_lock_v_i = {{LANE_N-2{1'b1}} , 1'b0, 1'b1};
+		#10	
+		// begin sucessfull lock
+		test_deskew();	
+	
+	end	
+		
 	#20	
 	$display("Test finished");
 	$finish;
