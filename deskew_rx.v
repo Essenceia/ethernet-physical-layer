@@ -15,8 +15,9 @@ module deskew_rx #(
 
 	input [LANE_N-1:0] valid_i, // valid blocks, signal_ok and block lock
 	// alignement marker lock interface	
-	input [LANE_N-1:0] am_slip_v_i, 
-	input [LANE_N-1:0] am_lock_v_i,
+	input [LANE_N-1:0] am_lite_v_i,
+	input [LANE_N-1:0] am_lite_lock_v_i, 
+	input [LANE_N-1:0] am_lite_lock_lost_v_i,
 	
 	// block data
 	input [LANE_N*BLOCK_W-1:0] data_i,
@@ -24,9 +25,8 @@ module deskew_rx #(
 	// deskwed data	
 	output [LANE_N*BLOCK_W-1:0] data_o
 );
-logic am_full_lock_v;
-assign am_full_lock_v = &( valid_i & am_lock_v_i);
-
+logic am_lite_lock_full_v;
+assign am_lite_lock_full_v = &( am_lite_lock_v_i & valid_i );
 genvar l;
 generate
 	for(l=0; l<LANE_N; l++) begin
@@ -38,8 +38,9 @@ generate
 		)m_deskew_lane(
 			.clk(clk),
 			.nreset(nreset),
-			.am_slip_v_i(am_slip_v_i[l]),
-			.am_full_lock_v_i(am_full_lock_v),
+			.am_lite_v_i(am_lite_v_i[l]),
+			.am_lite_lock_lost_v_i(am_lite_lock_lost_v_i[l]),
+			.am_lite_lock_full_v_i(am_lite_lock_full_v),
 			.data_i(data_i[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W]),
 			.data_o(data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W])
 		);

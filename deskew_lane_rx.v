@@ -13,20 +13,14 @@ module deskew_lane_rx #(
 	input clk,
 	input nreset,
 
-	input am_slip_v_i, // alignement marker block slip
-	// lane alignement marker valid	
-	//input am_v_i, 
-	// have seen all the alignement markers 
-	input am_full_lock_v_i,
+	input am_lite_v_i, // alignement marker block valid this cycle
+	input am_lite_lock_lost_v_i, // am lock lost 
+	input am_lite_lock_full_v_i, // all lanes have seen there alignement marker
 	input [BLOCK_W-1:0] data_i,
-
-	// has alignement marker stored
-	//output am_v_o,
 
 	// deskewed lane data
 	output [BLOCK_W-1:0] data_o 
 );
-
 // keep track of skew 
 reg   [SKEW_CNT_W-1:0] skew_q;
 logic [SKEW_CNT_W-1:0] skew_next;  
@@ -35,13 +29,15 @@ logic                  skew_add_overflow;
 logic skew_rst;
 logic skew_en;
 
-assign skew_rst = am_slip_v_i;
+assign skew_rst = am_lite_v_i;
 
 assign { skew_add_overflow, skew_add } = skew_q + { {SKEW_CNT_W-1{1'b0}}, 1'b1};
-assign skew_next = skew_rst ? {SKEW_CNT_W{1'b0}} : skew_q;
-assign skew_en = ~am_full_lock_v_i;
+assign skew_next = skew_rst ? {SKEW_CNT_W{1'b0}} : skew_add;
+assign skew_en = ~am_lite_lock_full_v_i;
 always @(posedge clk) begin
-	if ( skew_en ) begin
+	if ( ~nreset ) begin
+		skew_q <= '0;
+	end else if ( skew_en ) begin
 		skew_q <= skew_next;
 	end
 end
