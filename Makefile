@@ -39,11 +39,11 @@ pcs_10g_enc_tb: pcs_10g_enc.v pcs_enc_lite.v
 pcs_10g_tx : pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v 
 	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v
 
-pcs_40g_tx : pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v 
-	iverilog ${FLAGS} -s pcs_40g_tx -o ${BUILD}/pcs_40g_tx pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v
+pcs_tx : pcs_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v 
+	iverilog ${FLAGS} -s pcs_tx -o ${BUILD}/pcs_tx pcs_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v
 
-pcs_40g_tx_tb : ${TB_DIR}/pcs_40g_tx_tb.sv pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v 
-	iverilog ${FLAGS} -s pcs_40g_tx_tb -o ${BUILD}/pcs_40g_tx_tb pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v ${TB_DIR}/pcs_40g_tx_tb.sv
+pcs_tb : ${TB_DIR}/pcs_tb.sv pcs_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v 
+	iverilog ${FLAGS} -s pcs_tb -o ${BUILD}/pcs_tb pcs_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v ${TB_DIR}/pcs_tb.sv
 
 pcs_rx : pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v 64b66b_rx dec_lite_rx.v
 	iverilog ${FLAGS} -s pcs_rx -o ${BUILD}/pcs_rx pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v 66b64b.v dec_lite_rx.v 
@@ -73,8 +73,8 @@ run_64b66b: 64b66b_tb
 run_gearbox_tx: gearbox_tx_tb
 	vvp ${BUILD}/gearbox_tx_tb
 
-run_pcs_40g_tx: pcs_40g_tx_tb vpi
-	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/pcs_40g_tx_tb
+run_pcs_tx: pcs_tb vpi
+	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/pcs_tb
 
 run_am_tx: am_tx_tb vpi_marker
 	mv $(VPI_DIR)/$(BUILD)/tb_marker.vpi $(VPI_DIR)/$(BUILD)/tb.vpi
@@ -95,7 +95,7 @@ run_xgmii_dec_rx: xgmii_dec_rx_tb
 run_deskew_rx: deskew_rx_tb
 	vvp ${BUILD}/deskew_rx_tb
 
-run: run_pcs_40g_tx
+run: run_pcs_tx
 
 vpi:
 	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEFINES) $(40GBASE_ARGS)
@@ -107,13 +107,13 @@ wave: config
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
 valgrind: 
-	valgrind vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
+	valgrind vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_tb
 
-valgrind2: pcs_40g_tx_tb vpi
-	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
+valgrind2: pcs_tb vpi
+	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_tb
 
-gdb: pcs_40g_tx_tb vpi
-	gdb -x $(CONF)/$(GDB_CONF) --args vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_40g_tx_tb
+gdb: pcs_tb vpi
+	gdb -x $(CONF)/$(GDB_CONF) --args vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_tb
 
 clean:
 	cd $(VPI_DIR) && $(MAKE) clean

@@ -1,11 +1,20 @@
 `ifndef TB_LOOP_CNT_N
 `define TB_LOOP_CNT_N 300
 `endif
-module pcs_40g_tx_tb;
+module pcs_tb;
 
+`define _40GBASE
+
+`ifdef _40GBASE
+localparam IS_10G = 0;
 localparam LANE_N = 4;
+`else
+localparam IS_10G = 1;
+localparam LANE_N = 1;
+`endif
+
 localparam DATA_W = 64;
-localparam KEEP_W = $clog2(DATA_W);
+localparam KEEP_W = DATA_W/8;
 	
 localparam PMA_DATA_W = 16; 
 localparam PMA_CNT_N  = (LANE_N*DATA_W)/PMA_DATA_W;
@@ -54,7 +63,7 @@ end
 
 initial begin
 	$dumpfile("build/wave.vcd");
-	$dumpvars(0, pcs_40g_tx_tb);
+	$dumpvars(0, pcs_tb);
 	nreset = 1'b0;
 	tb_nreset = 1'b0;
 	#10
@@ -103,8 +112,8 @@ generate
 endgenerate
 
 // uut
-pcs_40g_tx #( .LANE_N(LANE_N), .DATA_W(DATA_W), .KEEP_W(KEEP_W))
-m_pcs_40g_tx(
+pcs_tx #( .IS_10G(IS_10G), .LANE_N(LANE_N), .DATA_W(DATA_W), .KEEP_W(KEEP_W))
+m_pcs_tx(
 	.clk(clk),
 	.nreset(nreset),
 	.ctrl_v_i(ctrl_v_i),

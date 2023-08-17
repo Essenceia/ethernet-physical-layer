@@ -3,13 +3,13 @@
 * Add control additional control blocks.
 */
 module pcs_enc_lite #(
-	parameter IS_40G = 0,
+	parameter IS_10G = 0,
 	parameter DATA_W = 64,
 	parameter KEEP_W = DATA_W/8,
 	parameter BLOCK_W = 64,
 	parameter CNT_N = BLOCK_W/DATA_W,
 	parameter CNT_W = $clog2( CNT_N ),
-	parameter LANE0_CNT_N = IS_40G ? 1 : BLOCK_W/( 4 * 8),
+	parameter LANE0_CNT_N = IS_10G ? 2 : 1,
 	parameter FULL_KEEP_W = CNT_N*KEEP_W,
 	parameter BLOCK_TYPE_W = 8,
 	parameter CTRL_W  = 7
@@ -64,7 +64,7 @@ logic                    keep_full;
 logic                    block_type_v;
 logic [BLOCK_TYPE_W-1:0] block_type;
 assign block_type_v = ctrl_v_i;
-if ( !IS_40G ) begin	
+if ( IS_10G ) begin	
 assign block_type   = {BLOCK_TYPE_W{start_v_i[0] }} & BLOCK_TYPE_START_0
 					| {BLOCK_TYPE_W{start_v_i[1] }} & BLOCK_TYPE_START_4
 					| {BLOCK_TYPE_W{term_v_i}} & term_block_type

@@ -7,10 +7,13 @@
  * In 10g each block had 2x4 lanes, in 40g the xgmii data
  * is composed of 4 lanes of 1 block width.
  * */
-module pcs_40g_tx#(
-	parameter LANE_N = 4,
+module pcs_tx#(
+	parameter IS_10G = 1,
+	parameter LANE_N = IS_10G ? 1 : 4,
 	parameter DATA_W = 64,
+	parameter HEAD_W = 2,
 	parameter KEEP_W = DATA_W/8,
+	parameter LANE0_CNT_N = IS_10G ? 2 : 1,
 	parameter XGMII_DATA_W = LANE_N*DATA_W,
 	parameter XGMII_KEEP_W = LANE_N*KEEP_W,
 	parameter CNT_N = DATA_W/XGMII_DATA_W,
@@ -24,20 +27,19 @@ module pcs_40g_tx#(
 	input nreset,
 
 	// MAC
-	input [LANE_N-1:0]       ctrl_v_i,
-	input [LANE_N-1:0]       idle_v_i,
-	input [LANE_N-1:0]       start_v_i,
-	input [LANE_N-1:0]       term_v_i,
-	input [LANE_N-1:0]       err_v_i,
-	input [XGMII_DATA_W-1:0] data_i, // tx data
-	input [XGMII_KEEP_W-1:0] keep_i,
+	input [LANE_N-1:0]             ctrl_v_i,
+	input [LANE_N-1:0]             idle_v_i,
+	input [LANE_N*LANE0_CNT_N-1:0] start_v_i,
+	input [LANE_N-1:0]             term_v_i,
+	input [LANE_N-1:0]             err_v_i,
+	input [XGMII_DATA_W-1:0]       data_i, // tx data
+	input [XGMII_KEEP_W-1:0]       keep_i,
 
 
 	output                           ready_o,	
 	// PMA
 	output [PMA_CNT_N*PMA_DATA_W-1:0] data_o
 );
-localparam HEAD_W = 2;
 localparam SEQ_W  = $clog2(DATA_W/HEAD_W+1);
 // data
 logic [XGMII_DATA_W-1:0] data_enc; // encoded
@@ -73,14 +75,14 @@ genvar l;
 generate
 for( l = 0; l < LANE_N; l++ ) begin
 // encode
-pcs_enc_lite #(.DATA_W(DATA_W), .IS_40G(1))
+pcs_enc_lite #(.DATA_W(DATA_W), .IS_10G(IS_10G))
 m_pcs_enc(
 	.clk(clk),
 	.nreset(nreset),
 
 	.ctrl_v_i(ctrl_v_i[l]),
 	.idle_v_i(idle_v_i[l]),
-	.start_v_i(start_v_i[l]),
+	.start_v_i(start_v_i[l*LANE0_CNT_N+LANE0_CNT_N-1:l*LANE0_CNT_N]),
 	.term_v_i(term_v_i[l]),
 	.err_v_i(err_v_i[l]),
 	.part_i('0),
@@ -115,6 +117,7 @@ m_64b66b_tx(
 	.scram_o(data_scram)
 );
 
+if ( !IS_10G ) begin
 // alignement marker
 am_tx #(.LANE_N(LANE_N), .HEAD_W( HEAD_W ), .DATA_W(DATA_W))
 m_align_market(
@@ -126,6 +129,10 @@ m_align_market(
 	.head_o(sync_head_mark ),
 	.data_o(data_mark )
 );
+end else begin
+	// TODO write this part
+end
+
 assign scram_v = ~gearbox_full[0] & ~marker_v; 
 assign ready_o = scram_v;
 
