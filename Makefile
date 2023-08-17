@@ -73,7 +73,7 @@ run_64b66b: 64b66b_tb
 run_gearbox_tx: gearbox_tx_tb
 	vvp ${BUILD}/gearbox_tx_tb
 
-run_pcs_tx: pcs_tb vpi
+run_pcs: pcs_tb vpi
 	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/pcs_tb
 
 run_am_tx: am_tx_tb vpi_marker
@@ -95,7 +95,7 @@ run_xgmii_dec_rx: xgmii_dec_rx_tb
 run_deskew_rx: deskew_rx_tb
 	vvp ${BUILD}/deskew_rx_tb
 
-run: run_pcs_tx
+run: run_pcs
 
 vpi:
 	cd $(VPI_DIR) && $(MAKE) $(BUILD)/tb.vpi $(DEFINES) $(40GBASE_ARGS)
