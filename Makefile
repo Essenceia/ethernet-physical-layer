@@ -45,6 +45,9 @@ pcs_40g_tx : pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_t
 pcs_40g_tx_tb : ${TB_DIR}/pcs_40g_tx_tb.sv pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v 
 	iverilog ${FLAGS} -s pcs_40g_tx_tb -o ${BUILD}/pcs_40g_tx_tb pcs_40g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v ${TB_DIR}/pcs_40g_tx_tb.sv
 
+pcs_rx : pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v 64b66b_rx dec_lite_rx.v
+	iverilog ${FLAGS} -s pcs_rx -o ${BUILD}/pcs_rx pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v 66b64b.v dec_lite_rx.v 
+
 am_tx_tb : ${TB_DIR}/am_tx_tb.sv am_tx.v am_lane_tx.v 
 	iverilog ${FLAGS} -s am_tx_tb -o ${BUILD}/am_tx_tb am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv
 
