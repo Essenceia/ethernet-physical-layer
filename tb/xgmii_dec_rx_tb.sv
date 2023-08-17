@@ -149,7 +149,7 @@ end
 
 
 // decoder
-pcs_dec_lite #( .IS_40G(IS_40G))
+dec_lite_rx #( .IS_40G(IS_40G))
 m_dec_lite(
 .head_i(head_i),
 .data_i(data_i),

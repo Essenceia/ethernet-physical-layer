@@ -57,8 +57,8 @@ am_lock_rx_tb: $(TB_DIR)/am_lock_rx_tb.sv am_lock_rx.v
 lane_reorder_rx_tb: $(TB_DIR)/lane_reorder_rx_tb.sv lane_reorder_rx.v
 	iverilog ${FLAGS} -s lane_reorder_rx_tb -o ${BUILD}/lane_reorder_rx_tb lane_reorder_rx.v ${TB_DIR}/lane_reorder_rx_tb.sv
 
-xgmii_dec_rx_tb: $(TB_DIR)/xgmii_dec_rx_tb.sv pcs_dec_lite.v xgmii_dec_intf_rx.v
-	iverilog ${FLAGS} -s xgmii_dec_rx_tb -o ${BUILD}/xgmii_dec_rx_tb pcs_dec_lite.v xgmii_dec_intf_rx.v ${TB_DIR}/xgmii_dec_rx_tb.sv
+xgmii_dec_rx_tb: $(TB_DIR)/xgmii_dec_rx_tb.sv dec_lite_rx.v xgmii_dec_intf_rx.v
+	iverilog ${FLAGS} -s xgmii_dec_rx_tb -o ${BUILD}/xgmii_dec_rx_tb dec_lite_rx.v xgmii_dec_intf_rx.v ${TB_DIR}/xgmii_dec_rx_tb.sv
 
 deskew_rx_tb: $(TB_DIR)/deskew_rx_tb.sv deskew_rx.v deskew_lane_rx.v
 	iverilog ${FLAGS} -s deskew_rx_tb -o ${BUILD}/deskew_rx_tb deskew_lane_rx.v deskew_rx.v ${TB_DIR}/deskew_rx_tb.sv

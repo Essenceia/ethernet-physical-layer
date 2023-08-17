@@ -2,7 +2,7 @@
 * Received block data may be invalid if it is
 * deemed malformed.
 */
-module pcs_dec_lite #(
+module dec_lite_rx #(
 	parameter IS_40G = 0,
 	parameter HEAD_W = 2,
 	parameter DATA_W = 64,
