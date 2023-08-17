@@ -7,8 +7,7 @@ module dec_lite_rx #(
 	parameter HEAD_W = 2,
 	parameter DATA_W = 64,
 	parameter KEEP_W = DATA_W/8,
-	parameter BLOCK_W = 64,
-	parameter LANE0_CNT_N = IS_40G ? 1 : BLOCK_W/( 4 * 8),
+	parameter LANE0_CNT_N = IS_40G ? 1 : 2,
 	parameter BLOCK_TYPE_W = 8
 )(
 	input [HEAD_W-1:0] head_i,

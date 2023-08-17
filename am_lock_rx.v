@@ -10,6 +10,11 @@ module am_lock_rx #(
 
 	output              slip_v_o,
 	output              lock_v_o,
+
+	// lite interface used by deskew
+	output              lite_am_v_o,
+	output              lite_lock_v_o,
+
 	output [LANE_N-1:0] lane_o	
 );
 localparam GAP_N = 16383;
@@ -140,6 +145,9 @@ assign lock_v_o = lock_q;
 assign lane_o   = lane_q;
 
 assign slip_v_o = slip_v;
+
+assign lite_am_v_o   = am_first_v;
+assign lite_lock_v_o = first_q | lock_q; 
 
 `ifdef FORMAL
 logic [3:0] f_fsm;
