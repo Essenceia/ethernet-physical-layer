@@ -1,12 +1,12 @@
 /* PCS RX top level module */
 module pcs_rx #(
-	parameter IS_40G = 1,
+	parameter IS_10G = 0,
 	parameter HEAD_W = 2,
 	parameter DATA_W = 64,
 	parameter KEEP_W = DATA_W/8,
 	parameter LANE_N = 4,
 	parameter BLOCK_W = HEAD_W+DATA_W,
-	parameter LANE0_CNT_N = IS_40G ? 1 : 2,
+	parameter LANE0_CNT_N = !IS_10G ? 1 : 2,
 	parameter MAX_SKEW_BIT_N = 1856
 )(
 	input clk,
@@ -127,10 +127,11 @@ m_deskew_rx(
 );
 // alignement marker removal
 // mask validity of block on alignement marker
+// TODO : use marker valid from deskew not lock
 assign amr_block_v = bs_lock_v & am_lite_lock_v & ~am_lite_v;
 
 // descramble
-assign scram_v = &amr_block_v;
+assign scram_v = amr_block_v[0];
 generate
 	for(l=0; l<LANE_N; l++) begin
 		// remove head, get only data
@@ -160,7 +161,7 @@ assign dec_head[l] = deskew_block[l*BLOCK_W+HEAD_W-1:l*BLOCK_W];
 assign dec_data[l] = descram_data[l*DATA_W+DATA_W-1:l*DATA_W];
 
 dec_lite_rx #(
-	.IS_40G(IS_40G),
+	.IS_40G(!IS_10G),
 	.HEAD_W(HEAD_W),
 	.DATA_W(DATA_W),
 	.KEEP_W(KEEP_W))

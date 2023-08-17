@@ -13,14 +13,20 @@ localparam IS_10G = 1;
 localparam LANE_N = 1;
 `endif
 
+localparam HEAD_W = 2;
 localparam DATA_W = 64;
 localparam KEEP_W = DATA_W/8;
-	
+localparam BLOCK_W = HEAD_W+DATA_W;
+localparam LANE0_CNT_N = !IS_10G ? 1 : 2;	
+
 localparam PMA_DATA_W = 16; 
 localparam PMA_CNT_N  = (LANE_N*DATA_W)/PMA_DATA_W;
 
+localparam MAX_SKEW_BIT_N = 1856;
+
 localparam DEBUG_ID_W = 64;
 
+// TX
 // MAC
 logic [LANE_N-1:0] ctrl_v_i;
 logic [LANE_N-1:0] idle_v_i;
@@ -46,6 +52,23 @@ logic [DATA_W-1:0] tb_pma_lane[LANE_N-1:0];
 logic [DEBUG_ID_W-1:0] data_debug_id_lane[LANE_N-1:0];
 logic [DEBUG_ID_W-1:0] pma_debug_id_lane[LANE_N-1:0];
 
+// RX
+// transiver
+logic [LANE_N-1:0]        serdes_v_i;
+logic [LANE_N*DATA_W-1:0] serdes_data_i;
+logic [LANE_N*HEAD_W-1:0] serdes_head_i;
+logic [LANE_N-1:0]        gearbox_slip_o;
+// MAC
+logic [LANE_N-1:0]              valid_o;
+logic [LANE_N-1:0]              ctrl_v_o;
+logic [LANE_N-1:0]              idle_v_o;
+logic [LANE_N*LANE0_CNT_N-1:0]  start_v_o;
+logic [LANE_N-1:0]              term_v_o;
+logic [LANE_N-1:0]              err_v_o;
+logic [LANE_N-1:0]              ord_v_o;
+logic [LANE_N*DATA_W-1:0]       data_o; 
+logic [LANE_N*KEEP_W-1:0]       keep_o;
+
 
 reg   clk = 1'b0;
 logic nreset;
@@ -60,6 +83,13 @@ always @(posedge clk) begin
 		assert(tb_pma == pma_o);
 	end
 end
+
+task tb_rx();
+	// Temporary rx
+	serdes_v_i = '1;
+	serdes_data_i = {LANE_N{ $random, $random }};
+	serdes_head_i = {LANE_N{2'b10}};
+endtask
 
 initial begin
 	$dumpfile("build/wave.vcd");
@@ -87,6 +117,7 @@ initial begin
 					// expected result
 				$tb_exp(i, tb_pma_lane[i], pma_debug_id_lane[i]);
 		end
+		tb_rx();
 		#10
 		$display("loop %d", t);
 	end
@@ -111,7 +142,9 @@ generate
 	end
 endgenerate
 
-// uut
+
+// PCS TX
+
 pcs_tx #( .IS_10G(IS_10G), .LANE_N(LANE_N), .DATA_W(DATA_W), .KEEP_W(KEEP_W))
 m_pcs_tx(
 	.clk(clk),
@@ -127,4 +160,34 @@ m_pcs_tx(
 	.data_o(pma_o)
 );
 
+// PCS RX
+
+pcs_rx #(
+	.IS_10G(IS_10G),
+	.HEAD_W(HEAD_W),
+	.DATA_W(DATA_W),
+	.KEEP_W(KEEP_W),
+	.LANE_N(LANE_N),
+	.BLOCK_W(BLOCK_W),
+	.LANE0_CNT_N(LANE0_CNT_N),
+	.MAX_SKEW_BIT_N(MAX_SKEW_BIT_N)
+)
+m_pcs_rx
+(
+	.clk(clk),
+	.nreset(nreset),
+    .serdes_v_i(serdes_v_i),
+    .serdes_data_i(serdes_data_i),
+    .serdes_head_i(serdes_head_i),
+    .gearbox_slip_o(gearbox_slip_o),
+	.valid_o(valid_o),
+	.ctrl_v_o(ctrl_v_o),
+	.idle_v_o(idle_v_o),
+	.start_v_o(start_v_o),
+	.term_v_o(term_v_o),
+	.err_v_o(err_v_o),
+	.ord_v_o(ord_v_o),
+	.data_o(data_o), 
+	.keep_o(keep_o)
+);
 endmodule
