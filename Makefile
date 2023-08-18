@@ -68,7 +68,6 @@ xgmii_dec_rx_tb: $(TB_DIR)/xgmii_dec_rx_tb.sv dec_lite_rx.v xgmii_dec_intf_rx.v
 deskew_rx_tb: $(TB_DIR)/deskew_rx_tb.sv deskew_rx.v deskew_lane_rx.v
 	iverilog ${FLAGS} -s deskew_rx_tb -o ${BUILD}/deskew_rx_tb deskew_lane_rx.v deskew_rx.v ${TB_DIR}/deskew_rx_tb.sv
 
-
 run_64b66b: 64b66b_tb
 	vvp ${BUILD}/lite_64b66b_tb
 

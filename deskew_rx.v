@@ -22,9 +22,16 @@ module deskew_rx #(
 	// block data
 	input [LANE_N*BLOCK_W-1:0] data_i,
 
+	// deskewed alignement marker valid
+	output                      am_v_o,
 	// deskwed data	
 	output [LANE_N*BLOCK_W-1:0] data_o
 );
+// identify slowest lane in order to find
+// the alignement marker
+logic [LANE_N-1:0] slow_lane;
+assign am_v_o = |(am_lite_v_i & slow_lane);
+
 logic am_lite_lock_full_v;
 assign am_lite_lock_full_v = &( am_lite_lock_v_i & valid_i );
 genvar l;
@@ -42,6 +49,7 @@ generate
 			.am_lite_lock_lost_v_i(am_lite_lock_lost_v_i[l]),
 			.am_lite_lock_full_v_i(am_lite_lock_full_v),
 			.data_i(data_i[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W]),
+			.skew_zero_o(slow_lane[l]),
 			.data_o(data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W])
 		);
 	end

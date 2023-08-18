@@ -18,6 +18,8 @@ module deskew_lane_rx #(
 	input am_lite_lock_full_v_i, // all lanes have seen there alignement marker
 	input [BLOCK_W-1:0] data_i,
 
+	// skew offset is zero, used to identify lattest lane
+	output               skew_zero_o,
 	// deskewed lane data
 	output [BLOCK_W-1:0] data_o 
 );
@@ -73,5 +75,7 @@ always_comb begin
 	end
 end
 // output
+assign skew_o = ~|skew_q;
+
 assign data_o = buff_rd;
 endmodule

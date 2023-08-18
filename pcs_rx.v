@@ -51,6 +51,7 @@ logic [LANE_N*BLOCK_W-1:0] nord_block;
 logic [LANE_N*BLOCK_W-1:0] ord_block;
 
 // deskew
+logic                      deskew_am_v;
 logic [LANE_N*BLOCK_W-1:0] deskew_block;
 
 // alignement marker removal
@@ -61,9 +62,13 @@ logic               scram_v;
 logic [SCRAM_W-1:0] scram_data;
 logic [SCRAM_W-1:0] descram_data;
 
+// decoder
+logic [HEAD_W-1:0] dec_head[LANE_N-1:0];
+logic [DATA_W-1:0] dec_data[LANE_N-1:0];
+
 genvar l;
 generate
-for(l=0; l<LANE_N; l++)begin : lane
+for(l=0; l<LANE_N; l++)begin : lane_loop
 
 assign bs_head[l] = serdes_head_i[l*HEAD_W+HEAD_W-1:l*HEAD_W];
 
@@ -123,24 +128,23 @@ m_deskew_rx(
 	.am_lite_lock_v_i(am_lite_lock_v), 
 	.am_lite_lock_lost_v_i(am_slip_v),
 	.data_i(ord_block),
+	.am_v_o(deskew_am_v),
 	.data_o(deskew_block)
 );
 // alignement marker removal
 // mask validity of block on alignement marker
-// TODO : use marker valid from deskew not lock
-assign amr_block_v = bs_lock_v & am_lite_lock_v & ~am_lite_v;
+assign amr_block_v = ~deskew_am_v & (&bs_lock_v); 
 
 // descramble
-assign scram_v = amr_block_v[0];
+assign scram_v = amr_block_v;
 generate
-	for(l=0; l<LANE_N; l++) begin
+	for(l=0; l<LANE_N; l++) begin : scram_data_loop
 		// remove head, get only data
 		assign scram_data[l*DATA_W+DATA_W-1:l*DATA_W] = deskew_block[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W+HEAD_W];
 	end
 endgenerate
 descrambler_64b66b_rx #(
-	.LEN(SCRAM_W)
-)
+	.LEN(SCRAM_W))
 m_descrambler_rx(
 	.clk(clk),
 	.nreset(nreset),
@@ -150,12 +154,8 @@ m_descrambler_rx(
 );
 
 // decode
-
-logic [HEAD_W-1:0] dec_head[LANE_N-1:0];
-logic [DATA_W-1:0] dec_data[LANE_N-1:0];
-
 generate
-for(l=0; l<LANE_N; l++) begin
+for(l=0; l<LANE_N; l++) begin : dec_lane_loop
 
 assign dec_head[l] = deskew_block[l*BLOCK_W+HEAD_W-1:l*BLOCK_W];
 assign dec_data[l] = descram_data[l*DATA_W+DATA_W-1:l*DATA_W];
