@@ -75,7 +75,7 @@ always_comb begin
 	end
 end
 // output
-assign skew_o = ~|skew_q;
+assign skew_zero_o = ~|skew_q;
 
 assign data_o = buff_rd;
 endmodule
