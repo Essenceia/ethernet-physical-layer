@@ -51,6 +51,9 @@ logic [LANE_N*HEAD_W-1:0] sync_head_mark;
 // gearbox full has the same value every gearbox
 // regardless of the lane, we can ignore all of them but 1
 logic [LANE_N-1:0] gearbox_full;
+logic [DATA_W-1:0] gb_data[LANE_N-1:0];
+logic [HEAD_W-1:0] gb_head[LANE_N-1:0];
+
 logic              marker_v;
 logic              scram_v; 
 // pcs fsm
@@ -94,13 +97,20 @@ m_pcs_enc(
 	.data_o(data_enc[l*DATA_W+DATA_W-1:l*DATA_W])	
 );
 // gearbox
+assign gb_head[l] = sync_head_mark[l*HEAD_W+HEAD_W-1:l*HEAD_W];
+if ( IS_10G ) begin
+assign gb_data[l] = data_scram[l*DATA_W+DATA_W-1:l*DATA_W];
+end else begin
+assign gb_data[l] = data_mark[l*DATA_W+DATA_W-1:l*DATA_W];
+end
+
 gearbox_tx #( .DATA_W(DATA_W), .BLOCK_DATA_W(DATA_W))
 m_gearbox_tx (
 	.clk(clk),
 	.nreset(nreset),
 	.seq_i(seq_q),
-	.head_i(sync_head_mark[l*HEAD_W+HEAD_W-1:l*HEAD_W]),
-	.data_i(data_mark[l*DATA_W+DATA_W-1:l*DATA_W]),
+	.head_i(gb_head[l]),
+	.data_i(gb_data[l]),
 	.full_v_o(gearbox_full[l]),
 	.data_o(data_o[l*DATA_W+DATA_W-1:l*DATA_W])
 );
@@ -129,8 +139,6 @@ m_align_market(
 	.head_o(sync_head_mark ),
 	.data_o(data_mark )
 );
-end else begin
-	// TODO write this part
 end
 
 assign scram_v = ~gearbox_full[0] & ~marker_v; 

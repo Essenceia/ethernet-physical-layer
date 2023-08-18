@@ -11,7 +11,6 @@
 . RX 
     - dec : add support for control codes 0
     - discard alignement markers in top
-    - modify am\_lock tb to support added deskew
-      wires
     - modify top level to exclude alignement marker
       related features for 10g
+    - fake gearbox in tb

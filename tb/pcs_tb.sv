@@ -87,8 +87,11 @@ end
 task tb_rx();
 	// Temporary rx
 	serdes_v_i = '1;
-	serdes_data_i = {LANE_N{ $random, $random }};
-	serdes_head_i = {LANE_N{2'b10}};
+endtask
+
+// fake gearbox 64 -> 66
+task fake_gearbox_rx();
+	// TODO
 endtask
 
 initial begin
@@ -133,12 +136,19 @@ end
 genvar x;
 generate 
 	for( x=0 ; x < LANE_N ; x++ ) begin
+		// TX 
 		assign data_i[x*DATA_W+DATA_W-1:x*DATA_W] = data_lane[x];
 		assign keep_i[x*KEEP_W+KEEP_W-1:x*KEEP_W] = keep_lane[x];
 		assign tb_pma[x*DATA_W+DATA_W-1:x*DATA_W] = tb_pma_lane[x];
 
 		assign data_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W] = data_debug_id_lane[x];
 		assign pma_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W]  = pma_debug_id_lane[x];
+
+		// RX
+		// hardwire tx gearbox input to serdes output, 
+		// temporary steping stone
+		assign serdes_data_i[x*DATA_W+DATA_W-1:x*DATA_W] = m_pcs_tx.gb_data[x];
+		assign serdes_head_i[x*HEAD_W+HEAD_W-1:x*HEAD_W] = m_pcs_tx.gb_head[x];
 	end
 endgenerate
 
@@ -170,10 +180,8 @@ pcs_rx #(
 	.LANE_N(LANE_N),
 	.BLOCK_W(BLOCK_W),
 	.LANE0_CNT_N(LANE0_CNT_N),
-	.MAX_SKEW_BIT_N(MAX_SKEW_BIT_N)
-)
-m_pcs_rx
-(
+	.MAX_SKEW_BIT_N(MAX_SKEW_BIT_N))
+m_pcs_rx(
 	.clk(clk),
 	.nreset(nreset),
     .serdes_v_i(serdes_v_i),
