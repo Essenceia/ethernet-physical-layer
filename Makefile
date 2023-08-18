@@ -74,8 +74,9 @@ run_64b66b: 64b66b_tb
 run_gearbox_tx: gearbox_tx_tb
 	vvp ${BUILD}/gearbox_tx_tb
 
+run_pcs_cmd := vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/pcs_tb
 run_pcs: pcs_tb vpi
-	vvp -M $(VPI_DIR)/$(BUILD) -mtb ${BUILD}/pcs_tb
+	$(run_pcs_cmd)
 
 run_am_tx: am_tx_tb vpi_marker
 	mv $(VPI_DIR)/$(BUILD)/tb_marker.vpi $(VPI_DIR)/$(BUILD)/tb.vpi
@@ -108,10 +109,13 @@ wave: config
 	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
 valgrind: 
-	valgrind vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_tb
+	valgrind $(run_pcs_cmd)
 
 valgrind2: pcs_tb vpi
-	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_tb
+	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. $(run_pcs_cmd)
+
+profile: pcs_tb vpi
+	valgrind --tool=callgrind $(run_pcs_cmd)
 
 gdb: pcs_tb vpi
 	gdb -x $(CONF)/$(GDB_CONF) --args vvp -M $(VPI_DIR)/$(BUILD) -mtb $(BUILD)/pcs_tb
@@ -120,4 +124,5 @@ clean:
 	cd $(VPI_DIR) && $(MAKE) clean
 	rm -fr ${BUILD}/*
 	rm vgcore.* vgd.log*
+	rm callgrind.out.*
 	
