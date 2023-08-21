@@ -6,7 +6,6 @@ TB_DIR=tb
 BUILD=build
 VPI_DIR=$(TB_DIR)/vpi
 CONF=conf
-FLAGS=-Wall -g2012 -gassertions -gstrict-expr-width
 WAVE_FILE=wave.vcd
 VIEW=gtkwave
 WAVE_CONF=wave.conf
@@ -15,6 +14,26 @@ DEBUG_FLAG=$(if $(debug), debug=1)
 DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 all: run wave
 40GBASE_ARGS:= 40GBASE=1
+
+
+IVERILOG=0
+VERILATOR=1
+# Define simulator we are using, priority to iverilog
+SIM=$(if $(IVERILOG $gt 0),I,V)
+$(info "SIM $(SIM)")
+
+I_FLAGS=-Wall -g2012 -gassertions -gstrict-expr-width
+FLAGS=$(I_FLAGS)
+V_FLAGS=-Wall -Wpedantic
+
+# define functions to be used based on the simulator
+define LINT_I
+	iverilog $(I_FLAGS) -s $3 -o $2 $1
+endef
+define LINT_V
+	verilator --lint-only $(V_FLAGS) $1
+endef
+
 config:
 	@mkdir -p ${CONF}
 
@@ -22,7 +41,8 @@ build:
 	@mkdir -p ${BUILD}
 
 64b66b_tx : 64b66b.v build
-	iverilog ${FLAGS} -s scrambler_64b66b_tx -o ${BUILD}/64b66b_tx 64b66b.v
+	$(call LINT_$(SIM), 64b66b.v,$(BUILD)/64b66b_tx,scrambler_64b66b_tx)
+	#iverilog ${FLAGS} -s scrambler_64b66b_tx -o ${BUILD}/64b66b_tx 64b66b.v
 
 64b66b_rx : 66b64b.v build
 	iverilog ${FLAGS} -s descrambler_64b66b_rx -o ${BUILD}/64b66b_rx 66b64b.v
