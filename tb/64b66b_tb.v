@@ -65,7 +65,7 @@ initial begin
 	$finish;
 end
 
-scrambler_64b66b_tx #( .LEN(LEN))
+_64b66b_tx #( .LEN(LEN))
 m_64b66b_tx(
 	.clk(clk),
 	.nreset(nreset),
@@ -75,7 +75,7 @@ m_64b66b_tx(
 );
 
 
-descrambler_64b66b_rx #( .LEN(LEN))
+_64b66b_rx #( .LEN(LEN))
 m_66b64b_rx(
 	.clk(clk),
 	.nreset(nreset),

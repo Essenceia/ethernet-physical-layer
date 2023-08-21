@@ -7,6 +7,7 @@
     - add testbench for full pcs tx lite in 16b
 - TX
     - enc : add support for control codes O
+    - end : add error
 
 . RX 
     - dec : add support for control codes 0

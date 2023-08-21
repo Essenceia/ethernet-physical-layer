@@ -9,7 +9,7 @@ module gearbox_tx #(
 	parameter SEQ_W  = $clog2(DATA_W/HEAD_W+1)
 )(
 	input clk,
-	input nreset,
+	//input nreset,
 
 	input [SEQ_W-1:0]  seq_i, // sequence cnt
 	input [HEAD_W-1:0] head_i, // sync header
@@ -28,8 +28,7 @@ localparam SHIFT_N = DATA_W/HEAD_W;
 // current fifo depth is derrived from the sequence number
 logic [FIFO_W-1:0] fifo_next;
 reg   [FIFO_W-1:0] fifo_q;
-logic [FIFO_W-1:0] rd_data;
-logic [FIFO_W-1:0] wr_data;
+
 // input sync header is valid
 logic head_v;
 
@@ -98,9 +97,9 @@ always @(posedge clk) begin
 end
 
 // buffer is full, tell mac to not send next cycle
-logic [DATA_W-1:0] fifo_data;
-assign fifo_data = rd_fifo_mask & fifo_q;
-
+/* verilator lint_off WIDTHEXPAND */
 assign full_v_o = seq_i == SEQ_FULL;
+/* verilator lint_on WIDTHEXPAND */
+
 assign data_o = rd_fifo_mask & fifo_q | ~rd_fifo_mask & rd_data_shifted;
 endmodule

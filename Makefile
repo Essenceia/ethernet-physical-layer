@@ -20,18 +20,18 @@ IVERILOG=0
 VERILATOR=1
 # Define simulator we are using, priority to iverilog
 SIM=$(if $(IVERILOG $gt 0),I,V)
-$(info "SIM $(SIM)")
+$(info Using simulator: $(SIM))
 
-I_FLAGS=-Wall -g2012 -gassertions -gstrict-expr-width
-FLAGS=$(I_FLAGS)
-V_FLAGS=-Wall -Wpedantic
+FLAGS_I=-Wall -g2012 -gassertions -gstrict-expr-width
+FLAGS=$(FLAGS_I)
+FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH
 
 # define functions to be used based on the simulator
 define LINT_I
-	iverilog $(I_FLAGS) -s $3 -o $2 $1
+	iverilog $(FLAGS_I) -s $2 -o $(BUILD)/$2 $1
 endef
 define LINT_V
-	verilator --lint-only $(V_FLAGS) $1
+	verilator --lint-only $(FLAGS_V) $1
 endef
 
 config:
@@ -40,15 +40,26 @@ config:
 build:
 	@mkdir -p ${BUILD}
 
-64b66b_tx : 64b66b.v build
-	$(call LINT_$(SIM), 64b66b.v,$(BUILD)/64b66b_tx,scrambler_64b66b_tx)
-	#iverilog ${FLAGS} -s scrambler_64b66b_tx -o ${BUILD}/64b66b_tx 64b66b.v
+# LINT
 
-64b66b_rx : 66b64b.v build
-	iverilog ${FLAGS} -s descrambler_64b66b_rx -o ${BUILD}/64b66b_rx 66b64b.v
+lint_64b66b_tx : _64b66b_tx.v build
+	$(call LINT_$(SIM), _64b66b_tx.v, $64b66b_tx)
+
+lint_64b66b_rx : _64b66b_rx.v build
+	$(call LINT_$(SIM), _64b66b_rx.v,$,64b66b_rx)
+
+pcs_tx_deps := pcs_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v am_tx.v am_lane_tx.v  
+lint_pcs_tx : $(pcs_tx_deps)
+	$(call LINT_$(SIM), $(pcs_tx_deps),pcs_tx)
+
+pcs_rx_deps := pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v _64b66b_rx.v dec_lite_rx.v 
+lint_pcs_rx: $(pcs_rx_deps)
+	$(call LINT_$(SIM), $(pcs_rx_deps),pcs_rx)
+	
+# Test bench 
 
 64b66b_tb: 64b66b_tx 64b66b_rx ${TB_DIR}/64b66b_tb.v
-	iverilog ${FLAGS} -s lite_64b66b_tb -o ${BUILD}/lite_64b66b_tb 64b66b.v 66b64b.v ${TB_DIR}/64b66b_tb.v
+	iverilog ${FLAGS} -s lite_64b66b_tb -o ${BUILD}/lite_64b66b_tb _64b66b_tx.v _64b66b_rx.v ${TB_DIR}/64b66b_tb.v
 
 gearbox_tx_tb: gearbox_tx.v build
 	iverilog ${FLAGS} -s gearbox_tx_tb -o ${BUILD}/gearbox_tx_tb gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
@@ -56,16 +67,9 @@ gearbox_tx_tb: gearbox_tx.v build
 pcs_10g_enc_tb: pcs_10g_enc.v pcs_enc_lite.v
 	iverilog ${FLAGS} -s pcs_10g_enc_tb -o ${BUILD}/pcs_10g_enc_tb pcs_10g_enc.v pcs_enc_lite.v ${TB_DIR}/pcs_10g_enc_tb.sv
 
-pcs_10g_tx : pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v 
-	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v
+pcs_10g_tx : pcs_10g_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v 
+	iverilog ${FLAGS} -s pcs_10g_tx -o ${BUILD}/pcs_10g_tx pcs_10g_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v
 
-pcs_tx_deps := pcs_tx.v pcs_enc_lite.v 64b66b.v gearbox_tx.v am_tx.v am_lane_tx.v  
-pcs_tx : $(pcs_tx_deps)
-	iverilog ${FLAGS} -s pcs_tx -o ${BUILD}/pcs_tx pcs_tx.v $(pcs_tx_deps) 
-
-pcs_rx_deps := pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v 66b64b.v dec_lite_rx.v 
-pcs_rx : $(pcs_rx_deps) 
-	iverilog ${FLAGS} -s pcs_rx -o ${BUILD}/pcs_rx pcs_rx.v $(pcs_rx_deps) 
 
 pcs_tb : ${TB_DIR}/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
 	iverilog ${FLAGS} -s pcs_tb -o ${BUILD}/pcs_tb $(pcs_tx_deps) $(pcs_rx_deps) ${TB_DIR}/pcs_tb.sv

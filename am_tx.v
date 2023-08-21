@@ -2,8 +2,7 @@ module am_tx #(
 	parameter LANE_N = 4,
 	parameter HEAD_W = 2,
 	parameter DATA_W = 64,
-	parameter BLOCK_W = HEAD_W+DATA_W,
-	parameter [BLOCK_W-1:0]
+	parameter [DATA_W-1:0]
  	// 0x90, 0x76, 0x47, BIP3 , 0x6F, 0x89, 0xB8, BIP7
 	MARKER_LANE0 = { {8{1'bx}}, 8'hb8, 8'h89, 8'h6f, {8{1'bx}}, 8'h47, 8'h76, 8'h90 },
 	// 0xF0, 0xC4, 0xE6, BIP3 , 0x0F, 0x3B, 0x19, BIP7
@@ -13,7 +12,7 @@ module am_tx #(
 	// 0xA2, 0x79, 0x3D, BIP3 , 0x5D, 0x86, 0xC2, BIP7
 	MARKER_LANE3 = { {8{1'bx}}, 8'hc2, 8'h86, 8'h5d, {8{1'bx}}, 8'h3d, 8'h79, 8'ha2 },
 
-	parameter [LANE_N*BLOCK_W-1:0] MARKER_LANE={ MARKER_LANE3, MARKER_LANE2, MARKER_LANE1, MARKER_LANE0}
+	parameter [LANE_N*DATA_W-1:0] MARKER_LANE={ MARKER_LANE3, MARKER_LANE2, MARKER_LANE1, MARKER_LANE0}
 )
 (
 	input clk,
@@ -33,8 +32,8 @@ localparam GAP_W = 14;
 reg   [GAP_W-1:0] gap_q;
 logic [GAP_W-1:0] gap_next;
 logic [GAP_W-1:0] gap_add;
-logic             gap_add_overflow;
-assign { gap_add_overflow, gap_add } = gap_q + {{GAP_W-1{1'b0}}, 1'b1};
+logic             unused_gap_add_of;
+assign { unused_gap_add_of, gap_add } = gap_q + {{GAP_W-1{1'b0}}, 1'b1};
 assign gap_next = gap_add;
  
 logic add_market_v_next;
@@ -67,7 +66,7 @@ for( i = 0; i < LANE_N; i++) begin
 	assign head = head_i[i*HEAD_W+HEAD_W-1:i*HEAD_W];	
 	assign data_o[i*DATA_W+DATA_W-1:i*DATA_W] = data_m;
 	assign head_o[i*HEAD_W+HEAD_W-1:i*HEAD_W] = head_m;
-	am_lane_tx #(.LANE_ENC(MARKER_LANE[i*BLOCK_W+BLOCK_W-1:i*BLOCK_W]))
+	am_lane_tx #(.LANE_ENC(MARKER_LANE[i*DATA_W+DATA_W-1:i*DATA_W]))
 	m_market_lane(
 		.clk(clk),
 		.nreset(nreset),

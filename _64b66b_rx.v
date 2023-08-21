@@ -2,7 +2,7 @@
 *
 * data(x) = sdata(x) ^ sdata_lsr(38) ^ sdata_lsr(57)
  */
-module descrambler_64b66b_rx #(
+module _64b66b_rx #(
 	// descrabler input data
 	parameter LEN = 264
 )(
@@ -57,3 +57,4 @@ always @(posedge clk) begin
 end
 
 endmodule
+

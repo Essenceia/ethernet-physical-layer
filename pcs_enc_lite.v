@@ -8,32 +8,43 @@ module pcs_enc_lite #(
 	parameter KEEP_W = DATA_W/8,
 	parameter BLOCK_W = 64,
 	parameter CNT_N = BLOCK_W/DATA_W,
-	parameter CNT_W = $clog2( CNT_N ),
+	//parameter CNT_W = $clog2( CNT_N ),
+	parameter PART_MSB = CNT_N > 1 ? CNT_N-1:0,
+	parameter KEEP_NEXT_MSB = CNT_N > 1 ? (CNT_N-1)*KEEP_W-1 : 0,
 	parameter LANE0_CNT_N = IS_10G ? 2 : 1,
 	parameter FULL_KEEP_W = CNT_N*KEEP_W,
 	parameter BLOCK_TYPE_W = 8,
 	parameter CTRL_W  = 7
 )(
 	// data clk
-	input clk,
-	input nreset,
+	//input clk,
+	//input nreset,
 
 	input                    ctrl_v_i,
 	input                    idle_v_i,
 	input [LANE0_CNT_N-1:0]  start_v_i,
 	input                    term_v_i,
+
+	/* verilator lint_off UNUSEDSIGNAL*/
+	// TODO : add encoding of error 
 	input                    err_v_i,
+	/* verilator lint_on UNUSEDSIGNAL*/	
+
 	input [DATA_W-1:0] data_i, // tx data
 	input [KEEP_W-1:0] keep_i,
 
-	input [CNT_W-1:0]                  part_i,
-	input [(CNT_N-1)*KEEP_W-1:0] keep_next_i,
-
+	/* verilator lint_off ASCRANGE */
+	/* verilator lint_off UNUSEDSIGNAL*/
+	input [PART_MSB:0]        part_i,
+	input [KEEP_NEXT_MSB:0]   keep_next_i,
+	/* verilator lint_on UNUSEDSIGNAL*/	
+	/* verilator lint_on ASCRANGE */
 
 	output                    head_v_o,
 	output [1:0]              sync_head_o, 
 	output [DATA_W-1:0] data_o		
 );
+/* verilator lint_off UNUSEDPARAM*/
 localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_CTRL     = 8'h1e, // C7 C6 C5 C4 C3 C2 C1 C0 BT
     BLOCK_TYPE_OS_4     = 8'h2d, // D7 D6 D5 O4 C3 C2 C1 C0 BT
@@ -50,6 +61,7 @@ localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_TERM_5   = 8'hd2, // C7 C6    D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_6   = 8'he1, // C7    D5 D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_7   = 8'hff; //    D6 D5 D4 D3 D2 D1 D0 BT
+/* verilator lint_on UNUSEDPARAM*/
 
 localparam [CTRL_W-1:0] CTRL_IDLE = 7'h00;
 
@@ -57,9 +69,8 @@ logic part_zero;
 // block type
 logic [FULL_KEEP_W-1:0]  block_keep;
 logic [FULL_KEEP_W-1:0]  term_mask_lite;
-logic                    term_mask_lite_overflow;
+logic                    unused_term_mask_lite_of;
 logic [BLOCK_TYPE_W-1:0] term_block_type;
-logic                    keep_full;
 // block type field
 logic                    block_type_v;
 logic [BLOCK_TYPE_W-1:0] block_type;
@@ -77,8 +88,12 @@ assign block_type   = {BLOCK_TYPE_W{start_v_i}} & BLOCK_TYPE_START_0
 end
 
 // terminate block type
-assign block_keep = { keep_next_i, keep_i };
-assign { term_mask_lite_overflow, term_mask_lite } = block_keep + {{FULL_KEEP_W-1{1'b0}}, 1'b1};
+if ( CNT_N > 1 ) begin
+	assign block_keep = { keep_next_i, keep_i };
+end else begin
+	assign block_keep =  keep_i;
+end
+assign { unused_term_mask_lite_of, term_mask_lite } = block_keep + {{FULL_KEEP_W-1{1'b0}}, 1'b1};
 always @(term_mask_lite) begin
 	case ( term_mask_lite ) 
 		8'b00000001 : term_block_type = BLOCK_TYPE_TERM_0;
@@ -94,7 +109,7 @@ always @(term_mask_lite) begin
 end
 // data 
 logic [DATA_W-BLOCK_TYPE_W-1:0] data_ctrl;
-assign data_ctrl = idle_v_i ? {7{CTRL_IDLE}} : data_i[DATA_W-1:BLOCK_TYPE_W];
+assign data_ctrl = idle_v_i ? {8{CTRL_IDLE}} : data_i[DATA_W-1:BLOCK_TYPE_W];
 // output data
 assign data_o = { data_ctrl , block_type_v ? block_type : data_i[BLOCK_TYPE_W-1:0] };
 // sync header data or control

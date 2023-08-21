@@ -143,7 +143,7 @@ generate
 		assign scram_data[l*DATA_W+DATA_W-1:l*DATA_W] = deskew_block[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W+HEAD_W];
 	end
 endgenerate
-descrambler_64b66b_rx #(
+_64b66b_rx #(
 	.LEN(SCRAM_W))
 m_descrambler_rx(
 	.clk(clk),
