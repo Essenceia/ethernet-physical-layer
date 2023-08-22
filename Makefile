@@ -2,10 +2,15 @@ ifndef debug
 #debug :=
 endif
 
-ifndef
+ifndef wave
 wave:=1
 endif
 
+# Define simulator we are using, priority to verilator
+ifndef SIM
+SIM:=I
+endif
+$(info Using simulator: $(SIM))
 
 TB_DIR=tb
 VPI_DIR=$(TB_DIR)/vpi
@@ -19,12 +24,6 @@ DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 40GBASE_ARGS:= 40GBASE=1
 
 all: run wave
-
-IVERILOG=0
-VERILATOR=1
-# Define simulator we are using, priority to iverilog
-SIM=$(if $(IVERILOG $gt 0),I,V)
-$(info Using simulator: $(SIM))
 
 # Lint flags
 FLAGS_I=-Wall -g2012 -gassertions -gstrict-expr-width

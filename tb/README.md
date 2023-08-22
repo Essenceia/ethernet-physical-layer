@@ -1,5 +1,6 @@
 # Test bench
 
+## VPI
 In order to test these PCS implementations multiple test benches are available.
 
 These test benches use `iverilog` as a simulator.
@@ -8,7 +9,7 @@ These test benches use `iverilog` as a simulator.
 Currently only 40Gbe test benches are in use, as such there is no guaranty on the state 
 of the 10Gbe benches.
 
-## Setup VPI library
+### Setup VPI library
 
 Some of our test benches use a golden model coded in `C` and the `vpi` to interface with our system verilog test bench.
 These golden models will be compiled into a dynamically relocatable library that will
@@ -20,6 +21,24 @@ provide the `path` to the folder where `iverilog` library files reside.
 This is set by the `IVERILOG` variable in the `tb/vpi/makefile`.
 
 If this is not set correctly during the `vpi` build process `vpi_user.h` will not be found.
+
+
+## Simulators 
+
+This project support **2 simulators** `iverilog` and `verilator`.
+To switch between simulators set the `SIM` variable when invoking make.
+
+```
+make SIM=<I or V> ...
+```
+
+By default `iverilog` will be used.
+
+`SIM` values :
+
+- `I` : use `iverilog`
+
+- `V` : use `verilator`
 
 ## Full 40Gbe PCS
 
