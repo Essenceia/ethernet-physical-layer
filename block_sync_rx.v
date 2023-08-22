@@ -47,7 +47,7 @@ logic             cnt_1024;
 logic [NV_CNT_W-1:0] nv_cnt_next;
 reg   [NV_CNT_W-1:0] nv_cnt_q;// sh_invalid_cnt 
 logic [NV_CNT_W-1:0] nv_cnt_add;
-logic                nv_cnt_add_overflow; 
+logic                unused_nv_cnt_add_of; 
 logic                nv_cnt_65; 
 
 logic cnt_rst_v; // reset counters ( RESET_CNT )
@@ -59,7 +59,7 @@ logic slip_v; // SLIP
 assign cnt_rst_v = invalid_q | lock_v | slip_v | cnt_1024; 
 
 assign { cnt_add_overflow,    cnt_add    } = cnt_q    + {{ CNT_W-1{1'b0}}, sh_v|lock_q };
-assign { nv_cnt_add_overflow, nv_cnt_add } = nv_cnt_q + {{NV_CNT_W-1{1'b0}}, ~sh_v }; 
+assign { unused_nv_cnt_add_of, nv_cnt_add } = nv_cnt_q + {{NV_CNT_W-1{1'b0}}, ~sh_v }; 
 
 assign cnt_next = cnt_rst_v ? {CNT_W{1'b0}} : cnt_add;
 assign nv_cnt_next = cnt_rst_v ? {NV_CNT_W{1'b0}} : nv_cnt_add;

@@ -40,7 +40,7 @@ logic [LANE_N-1:0] bs_lock_v;
 // alignement marker lock
 logic [BLOCK_W-1:0] am_block[LANE_N-1:0];
 logic [LANE_N-1:0]  am_lane_id[LANE_N-1:0]; // lane onehot identified
-logic [LANE_N-1:0]  am_slip_v;
+// logic [LANE_N-1:0]  am_slip_v;
 logic [LANE_N-1:0]  am_lock_v;
 logic [LANE_N-1:0]  am_lite_v;
 logic [LANE_N-1:0]  am_lite_lock_v;
@@ -55,7 +55,7 @@ logic                      deskew_am_v;
 logic [LANE_N*BLOCK_W-1:0] deskew_block;
 
 // alignement marker removal
-logic [LANE_N-1:0] amr_block_v;
+logic amr_block_v;
 
 // descrambler
 logic               scram_v;
@@ -65,6 +65,9 @@ logic [SCRAM_W-1:0] descram_data;
 // decoder
 logic [HEAD_W-1:0] dec_head[LANE_N-1:0];
 logic [DATA_W-1:0] dec_data[LANE_N-1:0];
+
+// full lane lock
+logic full_lock_v;
 
 genvar l;
 generate
@@ -93,7 +96,7 @@ m_am_lock_rx(
 	.nreset(nreset),
 	.valid_i(serdes_v_i[l]),
 	.block_i(am_block[l]),
-	.slip_v_o(am_slip_v[l]),
+//	.slip_v_o(am_slip_v[l]),
 	.lock_v_o(am_lock_v[l]),
 	.lite_am_v_o(am_lite_v[l]),
 	.lite_lock_v_o(am_lite_lock_v[l]),
@@ -126,14 +129,16 @@ m_deskew_rx(
 	.valid_i(bs_lock_v),
 	.am_lite_v_i(am_lite_v),
 	.am_lite_lock_v_i(am_lite_lock_v), 
-	.am_lite_lock_lost_v_i(am_slip_v),
+//	.am_lite_lock_lost_v_i(am_slip_v),
 	.data_i(ord_block),
 	.am_v_o(deskew_am_v),
 	.data_o(deskew_block)
 );
+// full lock includes both sync and, if present am lock
+assign full_lock_v = &am_lock_v & &bs_lock_v;
 // alignement marker removal
 // mask validity of block on alignement marker
-assign amr_block_v = ~deskew_am_v & (&bs_lock_v); 
+assign amr_block_v = ~deskew_am_v; 
 
 // descramble
 assign scram_v = amr_block_v;
@@ -178,7 +183,7 @@ m_dec_lite_rx(
 	.keep_o(keep_o[l*KEEP_W+KEEP_W-1:l*KEEP_W])
 );
 
-assign valid_o[l] = amr_block_v[l];
+assign valid_o[l] = amr_block_v & full_lock_v;
 end
 endgenerate
 

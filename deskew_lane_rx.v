@@ -14,7 +14,7 @@ module deskew_lane_rx #(
 	input nreset,
 
 	input am_lite_v_i, // alignement marker block valid this cycle
-	input am_lite_lock_lost_v_i, // am lock lost 
+	//input am_lite_lock_lost_v_i, // am lock lost 
 	input am_lite_lock_full_v_i, // all lanes have seen there alignement marker
 	input [BLOCK_W-1:0] data_i,
 
@@ -27,13 +27,13 @@ module deskew_lane_rx #(
 reg   [SKEW_CNT_W-1:0] skew_q;
 logic [SKEW_CNT_W-1:0] skew_next;  
 logic [SKEW_CNT_W-1:0] skew_add;  
-logic                  skew_add_overflow;  
+logic                  unused_skew_add_of;  
 logic skew_rst;
 logic skew_en;
 
 assign skew_rst = am_lite_v_i;
 
-assign { skew_add_overflow, skew_add } = skew_q + { {SKEW_CNT_W-1{1'b0}}, 1'b1};
+assign { unused_skew_add_of, skew_add } = skew_q + { {SKEW_CNT_W-1{1'b0}}, 1'b1};
 assign skew_next = skew_rst ? {SKEW_CNT_W{1'b0}} : skew_add;
 assign skew_en = ~am_lite_lock_full_v_i;
 always @(posedge clk) begin
@@ -71,7 +71,9 @@ endgenerate
 logic [BLOCK_W-1:0] buff_rd;
 always_comb begin
 	for(int j=0; j<MAX_SKEW_BLOCK_N; j++) begin
+		/* verilator lint_off WIDTHEXPAND */
 		if( skew_q == j ) buff_rd = buff_q[j];
+		/* verilator lint_on WIDTHEXPAND */
 	end
 end
 // output

@@ -23,6 +23,7 @@ module dec_lite_rx #(
 	output [DATA_W-1:0]       data_o, // x(l)gmii data
 	output [KEEP_W-1:0]       keep_o
 );
+/* verilator lint_off UNUSEDPARAM*/
 localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_CTRL     = 8'h1e, // C7 C6 C5 C4 C3 C2 C1 C0 BT
     BLOCK_TYPE_OS_4     = 8'h2d, // D7 D6 D5 O4 C3 C2 C1 C0 BT
@@ -39,6 +40,7 @@ localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_TERM_5   = 8'hd2, // C7 C6    D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_6   = 8'he1, // C7    D5 D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_7   = 8'hff; //    D6 D5 D4 D3 D2 D1 D0 BT
+/* verilator lint_on UNUSEDPARAM*/
 
 // recieved block data is invalid, it is malformed.
 // follows rules outlined in 49.2.4.6
