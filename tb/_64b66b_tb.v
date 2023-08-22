@@ -6,13 +6,22 @@ localparam TV_W = 64;
 
 reg clk = 1'b0;
 reg nreset;
-logic                  valid_i;
+logic           valid_i;
 logic [LEN-1:0] data_i;
 logic [LEN-1:0] data_o;
 logic [LEN-1:0] scram_o;
-logic [LEN-1:0] data_diff;
 
+
+/* debug signals
+ * db_data_diff : check binary differences between 
+ * original input to scrambler - descrambler pair 
+ * and final output.
+ * We expect there to be no difference */
+logic [LEN-1:0] db_data_diff;
+
+/*verilator lint_off BLKSEQ*/
 always #5 clk = ~clk;
+/*verilator lint_on BLKSEQ*/
 
 logic [TV_W-1:0] tb_data  = 64'h1e ;
 // expected output can be generated using the program
@@ -29,17 +38,17 @@ task test_sramble_decramble(int loop_cnt);
 	for( int i = 0; i < loop_cnt; i++) begin
 		data_i = test;
 		#1
-		assert(data_o == data_i);
+		assert(~|db_data_diff);
 		#9
 		test = $random;
 	end
 endtask
 
-assign data_diff = data_i ^ data_o; 
+assign db_data_diff = data_i ^ data_o; 
 
 initial begin
 	$dumpfile("build/wave.vcd");
-	$dumpvars(0, lite_64b66b_tb);
+	$dumpvars(0, _64b66b_tb);
 	nreset = 1'b0;
 	#10
 	nreset = 1'b1;
@@ -58,10 +67,11 @@ initial begin
 
 	// test 2 : verify the output of the descambler
 	// matches initial data
+	$display("test 2 %t", $time);
 	test_sramble_decramble(`TB_LOOP_CNT);
 
 	#10
-	$display("Test finished");
+	$display("Test finished\n");
 	$finish;
 end
 
