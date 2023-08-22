@@ -4,6 +4,7 @@ endif
 
 TB_DIR=tb
 BUILD=build
+OBJ_DIR=obj_dir
 VPI_DIR=$(TB_DIR)/vpi
 CONF=conf
 WAVE_FILE=wave.vcd
@@ -33,12 +34,29 @@ endef
 define LINT_V
 	verilator --lint-only $(FLAGS_V) $1
 endef
+define BUILD_I
+	iverilog $(FLAGS_I) -s $2 -o $(BUILD)/$2 $1
+endef
+define BUILD_V
+	verilator --binary -j 4 -o $2 $1  
+endef
+define RUN_I
+	vvp $(BUILD)/$1
+endef
+define RUN_V
+	./$(BUILD)/$1	
+endef
 
 config:
 	@mkdir -p ${CONF}
 
 build:
 	@mkdir -p ${BUILD}
+
+# DEPS 
+
+pcs_tx_deps := pcs_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v am_tx.v am_lane_tx.v  
+pcs_rx_deps := pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v _64b66b_rx.v dec_lite_rx.v 
 
 # LINT
 
@@ -48,18 +66,17 @@ lint_64b66b_tx : _64b66b_tx.v build
 lint_64b66b_rx : _64b66b_rx.v build
 	$(call LINT_$(SIM), _64b66b_rx.v,$,64b66b_rx)
 
-pcs_tx_deps := pcs_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v am_tx.v am_lane_tx.v  
 lint_pcs_tx : $(pcs_tx_deps)
 	$(call LINT_$(SIM), $(pcs_tx_deps),pcs_tx)
 
-pcs_rx_deps := pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v _64b66b_rx.v dec_lite_rx.v 
 lint_pcs_rx: $(pcs_rx_deps)
 	$(call LINT_$(SIM), $(pcs_rx_deps),pcs_rx)
 	
 # Test bench 
 
-64b66b_tb: 64b66b_tx 64b66b_rx ${TB_DIR}/64b66b_tb.v
-	iverilog ${FLAGS} -s lite_64b66b_tb -o ${BUILD}/lite_64b66b_tb _64b66b_tx.v _64b66b_rx.v ${TB_DIR}/64b66b_tb.v
+_64b66b_tb: _64b66b_tx.v _64b66b_rx.v ${TB_DIR}/_64b66b_tb.v
+	$(call BUILD_$(SIM),$^,$@)
+#	iverilog ${FLAGS} -s lite_64b66b_tb -o ${BUILD}/lite_64b66b_tb _64b66b_tx.v _64b66b_rx.v ${TB_DIR}/64b66b_tb.v
 
 gearbox_tx_tb: gearbox_tx.v build
 	iverilog ${FLAGS} -s gearbox_tx_tb -o ${BUILD}/gearbox_tx_tb gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
@@ -149,4 +166,5 @@ clean:
 	rm -fr ${BUILD}/*
 	rm vgcore.* vgd.log*
 	rm callgrind.out.*
+	rm -fr $(OBJ_DIR)
 	

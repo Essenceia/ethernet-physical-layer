@@ -1,6 +1,6 @@
 `define TB_LOOP_CNT 100 
 
-module lite_64b66b_tb;
+module _64b66b_tb;
 localparam LEN = 32;
 localparam TV_W = 64;
 
