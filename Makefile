@@ -125,7 +125,7 @@ lane_reorder_rx_tb: lane_reorder_rx.v $(TB_DIR)/lane_reorder_rx_tb.sv
 	$(call BUILD_$(SIM),$^,$@)
 
 xgmii_dec_rx_tb: dec_lite_rx.v xgmii_dec_intf_rx.v $(TB_DIR)/xgmii_dec_rx_tb.sv 
-	$(call BUILD_$(SIM),$^,$@
+	$(call BUILD_$(SIM),$^,$@)
 
 deskew_rx_tb: deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv 
 	$(call BUILD_$(SIM),$^,$@)

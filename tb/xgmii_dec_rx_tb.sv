@@ -14,6 +14,7 @@ localparam XGMII_CTRL_W = XGMII_DATA_W/8;
 localparam SYNC_HEAD_CTRL = 2'b10;
 localparam SYNC_HEAD_DATA = 2'b01;
 
+/*verilator lint_off UNUSEDPARAM */
 localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_CTRL     = 8'h1e, // C7 C6 C5 C4 C3 C2 C1 C0 BT
     BLOCK_TYPE_IDLE     = 8'h00,
@@ -31,12 +32,15 @@ localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_TERM_5   = 8'hd2, // C7 C6    D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_6   = 8'he1, // C7    D5 D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_7   = 8'hff; //    D6 D5 D4 D3 D2 D1 D0 BT
+/*verilator lint_off UNUSEDPARAM */
 
 localparam [BLOCK_TYPE_W-1:0] 
 	XGMII_CTRL_IDLE  = 8'h07,	
 	XGMII_CTRL_START = 8'hfb,	
 	XGMII_CTRL_TERM  = 8'hfd,
 	XGMII_CTRL_ERR   = 8'hfe;
+
+localparam DATA_N_TYPE_W = DATA_W - BLOCK_TYPE_W; 
 
 logic [HEAD_W-1:0]      head_i;
 logic [DATA_W-1:0]      data_i;
@@ -69,7 +73,7 @@ assign term_ctrl_arr[7] = BLOCK_TYPE_TERM_7;
 task check_full_idle();
 	head_i = SYNC_HEAD_CTRL; 	
 	data_i[BLOCK_TYPE_W-1:0] = BLOCK_TYPE_IDLE;
-	data_i[DATA_W-1:BLOCK_TYPE_W] = { $random, $random };
+	data_i[DATA_W-1:BLOCK_TYPE_W] = DATA_N_TYPE_W'({ $random, $random });
 	#10
 	assert(&xgmii_txc_o);
 	for(int i=0; i<KEEP_W; i++) begin
@@ -82,7 +86,7 @@ endtask
 task check_ctrl(logic [BLOCK_TYPE_W-1:0] cc, logic [XGMII_CTRL_W-1:0] xcc);
 	head_i = SYNC_HEAD_CTRL; 	
 	data_i[BLOCK_TYPE_W-1:0] = cc;
-	data_i[DATA_W-1:BLOCK_TYPE_W] = { $random, $random };
+	data_i[DATA_W-1:BLOCK_TYPE_W] = DATA_N_TYPE_W'({ $random, $random });
 	#10
 	assert(xgmii_txc_o[0]);
 	assert(~|xgmii_txc_o[7:1]);
@@ -99,7 +103,7 @@ task check_term();
 	head_i = SYNC_HEAD_CTRL;
 	for(int i=0; i < KEEP_W; i++)begin
 		#10
-		data_i = { $random, $random , term_ctrl_arr[i] };
+		data_i = DATA_W'({ $random, $random , term_ctrl_arr[i] });
 		#10
 		assert(xgmii_txc_o[i]);
 		assert(tb_txd_byte[i] == XGMII_CTRL_TERM);
@@ -115,6 +119,17 @@ task check_term();
 endtask
 
 
+// send data
+// no ctrl, expecting the decoder to be transparent
+task check_data();
+	logic [DATA_W-1:0] db_data;
+	head_i = SYNC_HEAD_DATA;
+	db_data = DATA_W'({$random, $random});
+	data_i = db_data;
+	#10
+	assert(data_i == xgmii_txd_o);
+endtask
+
 genvar x;
 generate
 	for(x=0; x< KEEP_W; x++) begin
@@ -124,9 +139,9 @@ generate
 endgenerate
 
 initial begin
-	$dumpfile("build/wave.vcd");
+	$dumpfile("wave/xgmii_dec_rx_tb.vcd");
 	$dumpvars(0, xgmii_dec_rx_tb);
-	
+
 	// test 1 : send idle
 	$display("test 1 %t", $time);
 	check_full_idle();
@@ -143,6 +158,11 @@ initial begin
 	$display("test 4 %t", $time);
 	check_term();
 
+	// test 5: send data
+	$display("test 5 %t", $time);
+	check_data();
+				
+	#10
 	$display("Test finished"); 
 	$finish;
 end
