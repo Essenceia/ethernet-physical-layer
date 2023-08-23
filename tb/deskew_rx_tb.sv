@@ -26,16 +26,19 @@ logic nreset;
 
 logic [LANE_N-1:0] valid_i;
 logic [LANE_N-1:0] am_lite_v_i; 
-logic [LANE_N-1:0] am_lite_lock_lost_v_i;
 logic [LANE_N-1:0] am_lite_lock_v_i;
 logic [LANE_N*BLOCK_W-1:0] data_i;
 logic [LANE_N*BLOCK_W-1:0] data_o;
+/* verilator lint_off UNUSEDSIGNAL*/
+logic                      am_v_o;
+/* verilator lint_on UNUSEDSIGNAL*/
 
 logic [BLOCK_W-1:0] tb_data_i[LANE_N-1:0];
 logic [BLOCK_W-1:0] tb_data_o[LANE_N-1:0];
 
-
+/*verilator lint_off BLKSEQ */
 always clk = #5 ~clk;
+/*verilator lint_on BLKSEQ */
 
 int skew[LANE_N];
 int skew_max;
@@ -55,7 +58,6 @@ task test_deskew();
 	valid_i = {LANE_N{1'b1}};
 	for(int j=0; j <= skew_max; j++ ) begin
 		#10;
-		am_lite_lock_lost_v_i = {LANE_N{1'b0}};
 		`ifdef DEBUG
 		$display("t %t skew %d", $time, j);
 		`endif
@@ -63,7 +65,7 @@ task test_deskew();
 			`ifdef DEBUG
 			$display("lane %d j %d skew %d", i, j, skew[i]);
 			`endif
-			tb_data_i[i] = { $random, $random, $random };
+			tb_data_i[i] = BLOCK_W'({ $random, $random, $random });
 			am_lite_lock_v_i[i] = 1'b0;
 			am_lite_v_i[i] = 1'b0;
 			if ( j == skew[i] ) begin
@@ -96,12 +98,10 @@ endtask
 
 task set_lock_lost(int lane);
 	for(int i=0; i < LANE_N; i++) begin
-		am_lite_lock_lost_v_i[i] = (lane == i)? 1'b1 : 1'b0;
-		// mask lock valid when lock lost
-		am_lite_lock_v_i[i] = am_lite_lock_v_i[i] & ~am_lite_lock_lost_v_i[i];	
+		am_lite_lock_v_i[i] = (lane == i)? 1'b0 : 1'b1;
 	end
 	#10
-	am_lite_lock_lost_v_i = { LANE_N{ 1'b0 }};
+	am_lite_lock_v_i = { LANE_N{ 1'b1 }};
 endtask
 
 function int get_rand_lane();
@@ -114,29 +114,31 @@ endfunction
 task simulate_stream();
 	#10
 	for(int i=0; i< LANE_N; i++) begin
-		tb_data_i[i] = { $random, $random, $random };
+		tb_data_i[i] = BLOCK_W'({ $random, $random, $random });
 	end
 endtask
 
-genvar i;
+genvar l;
 generate
-	for(i=0; i< LANE_N; i++) begin
-		assign data_i[i*BLOCK_W+BLOCK_W-1:i*BLOCK_W] = tb_data_i[i];
-		assign tb_data_o[i] = data_o[i*BLOCK_W+BLOCK_W-1:i*BLOCK_W];
+	for(l=0; l< LANE_N; l++) begin
+		assign data_i[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = tb_data_i[l];
+		assign tb_data_o[l] = data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W];
 	end
 endgenerate
 int tmp_lane; 
 initial begin
-	$dumpfile("build/wave.vcd");
+	$dumpfile("wave/deskew_rx_tb.vcd");
 	$dumpvars(0, deskew_rx_tb);
 	nreset = 1'b0;
 	#10;
 	nreset = 1'b1;
 	valid_i = '0;
 	am_lite_v_i = '0;
-	am_lite_lock_lost_v_i = '0;
 	am_lite_lock_v_i = '0;
 
+	`ifdef VERILATOR
+	$display("ERROR: Test bench not supported to verilator, use iverilog");
+	`endif
 	// test 1 : run a sequence of 3 different test 
 	// each time with a different skew configuration
 	$display("Test 1 %t", $time);
@@ -189,8 +191,8 @@ deskew_rx #(
 	.valid_i(valid_i),
 	.am_lite_v_i(am_lite_v_i),
 	.am_lite_lock_v_i(am_lite_lock_v_i),
-	.am_lite_lock_lost_v_i(am_lite_lock_lost_v_i),
 	.data_i(data_i),
+	.am_v_o(am_v_o),
 	.data_o(data_o)
 );
 endmodule

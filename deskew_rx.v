@@ -17,7 +17,6 @@ module deskew_rx #(
 	// alignement marker lock interface	
 	input [LANE_N-1:0] am_lite_v_i,
 	input [LANE_N-1:0] am_lite_lock_v_i, 
-	//input [LANE_N-1:0] am_lite_lock_lost_v_i,
 	
 	// block data
 	input [LANE_N*BLOCK_W-1:0] data_i,
