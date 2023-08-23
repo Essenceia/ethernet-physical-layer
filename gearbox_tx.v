@@ -9,7 +9,6 @@ module gearbox_tx #(
 	parameter SEQ_W  = $clog2(DATA_W/HEAD_W+1)
 )(
 	input clk,
-	//input nreset,
 
 	input [SEQ_W-1:0]  seq_i, // sequence cnt
 	input [HEAD_W-1:0] head_i, // sync header

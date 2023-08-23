@@ -35,7 +35,7 @@ all: run wave
 # Lint flags
 FLAGS_I=-Wall -g2012 -gassertions -gstrict-expr-width
 FLAGS=$(FLAGS_I)
-FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH 
+FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH --assert 
 
 #Build flags
 BUILD_FLAGS_V=$(if $(wave), --trace --trace-underscore) $(if $(cov), --coverage --coverage-underscore) 
@@ -164,7 +164,7 @@ vpi_marker:
 	cd $(VPI_DIR) && $(MAKE) $(BUILD_DIR_I)/tb_marker.vpi $(DEFINES) $(40GBASE_ARGS)
 
 wave: config
-	${VIEW} $(BUILD_DIR_I)/${WAVE_FILE} ${CONF}/${WAVE_CONF}
+	${VIEW} $(WAVE_DIR)/${WAVE_FILE} ${CONF}/${WAVE_CONF}
 
 valgrind: 
 	valgrind $(run_pcs_cmd)

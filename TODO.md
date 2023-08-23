@@ -1,7 +1,7 @@
 # TODO list
 
 - add formal assertions
-
+- verilator : set default values to 'X
 - LINT :
     - remove `-Wno-LATCH` 
 
@@ -10,6 +10,7 @@
 - TX
     - enc : add support for control codes O
     - enc : add error
+    - fix gearbox self check tb
 
 . RX 
     - dec : add support for control codes 0
