@@ -6,11 +6,12 @@ module am_lock_rx #(
 	input nreset,
 
 	input               valid_i,
+
 	/* verilator lint_off UNUSEDSIGNAL*/
+	// block data, bip3 and bip7 will not be checked 
 	input [BLOCK_W-1:0] block_i,
 	/* verilator lint_on UNUSEDSIGNAL*/
 
-//	output              slip_v_o,
 	output              lock_v_o,
 
 	// lite interface used by deskew
