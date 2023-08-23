@@ -2,8 +2,14 @@ ifndef debug
 #debug :=
 endif
 
+# Enable waves by default
 ifndef wave
 wave:=1
+endif
+
+# Dissable coverage by default
+ifndef cov
+cov:=
 endif
 
 # Define simulator we are using, priority to verilator
@@ -16,6 +22,7 @@ TB_DIR=tb
 VPI_DIR=$(TB_DIR)/vpi
 CONF=conf
 WAVE_FILE=wave.vcd
+WAVE_DIR=wave
 VIEW=gtkwave
 WAVE_CONF=wave.conf
 GDB_CONF=.gdbinit
@@ -31,7 +38,7 @@ FLAGS=$(FLAGS_I)
 FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH 
 
 #Build flags
-BUILD_FLAGS_V=$(if $(wave), --trace --trace-depth 4 --coverage) 
+BUILD_FLAGS_V=$(if $(wave), --trace --trace-underscore) $(if $(cov), --coverage --coverage-underscore) 
 
 
 BUILD_DIR_I=build
@@ -54,7 +61,7 @@ define RUN_I
 	vvp $(BUILD_DIR_I)/$1
 endef
 define RUN_V
-	$(shell	./$(BUILD_DIR_V)/$1	)
+	./$(BUILD_DIR_V)/$1 $(if $(wave),+trace) 
 endef
 
 config:
@@ -89,7 +96,6 @@ _64b66b_tb: _64b66b_tx.v _64b66b_rx.v ${TB_DIR}/_64b66b_tb.v
 
 gearbox_tx_tb: gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
 	$(call BUILD_$(SIM),$^,$@)
-#	iverilog ${FLAGS} -s gearbox_tx_tb -o $(BUILD_DIR_I)/gearbox_tx_tb gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
 
 #pcs_10g_enc_tb: pcs_10g_enc.v pcs_enc_lite.v ${TB_DIR}/pcs_10g_enc_tb.sv
 #	#iverilog ${FLAGS} -s pcs_10g_enc_tb -o $(BUILD_DIR_I)/pcs_10g_enc_tb pcs_10g_enc.v pcs_enc_lite.v ${TB_DIR}/pcs_10g_enc_tb.sv
@@ -100,31 +106,24 @@ gearbox_tx_tb: gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
 
 pcs_tb : ${TB_DIR}/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
 	$(call BUILD_$(SIM),$^,$@)
-#	iverilog ${FLAGS} -s pcs_tb -o $(BUILD_DIR_I)/pcs_tb $(pcs_tx_deps) $(pcs_rx_deps) ${TB_DIR}/pcs_tb.sv
 
 am_tx_tb :  am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv 
 	$(call BUILD_$(SIM),$^,$@)
-#	iverilog ${FLAGS} -s am_tx_tb -o $(BUILD_DIR_I)/am_tx_tb am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv
 
 block_sync_rx_tb: block_sync_rx.v $(TB_DIR)/block_sync_rx_tb.sv 
 	$(call BUILD_$(SIM),$^,$@)
-#	iverilog ${FLAGS} -s block_sync_rx_tb -o $(BUILD_DIR_I)/block_sync_rx_tb block_sync_rx.v ${TB_DIR}/block_sync_rx_tb.sv
 
 am_lock_rx_tb: am_lock_rx.v $(TB_DIR)/am_lock_rx_tb.sv 
 	$(call BUILD_$(SIM),$^,$@)
-#	iverilog ${FLAGS} -s am_lock_rx_tb -o $(BUILD_DIR_I)/am_lock_rx_tb am_lock_rx.v ${TB_DIR}/am_lock_rx_tb.sv
 
 lane_reorder_rx_tb: lane_reorder_rx.v $(TB_DIR)/lane_reorder_rx_tb.sv 
 	$(call BUILD_$(SIM),$^,$@)
-#	iverilog ${FLAGS} -s lane_reorder_rx_tb -o $(BUILD_DIR_I)/lane_reorder_rx_tb lane_reorder_rx.v ${TB_DIR}/lane_reorder_rx_tb.sv
 
 xgmii_dec_rx_tb: dec_lite_rx.v xgmii_dec_intf_rx.v $(TB_DIR)/xgmii_dec_rx_tb.sv 
-	$(call BUILD_$(SIM),$^,$@)
-#	iverilog ${FLAGS} -s xgmii_dec_rx_tb -o $(BUILD_DIR_I)/xgmii_dec_rx_tb dec_lite_rx.v xgmii_dec_intf_rx.v ${TB_DIR}/xgmii_dec_rx_tb.sv
+	$(call BUILD_$(SIM),$^,$@
 
 deskew_rx_tb: deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv 
 	$(call BUILD_$(SIM),$^,$@)
-#	iverilog ${FLAGS} -s deskew_rx_tb -o $(BUILD_DIR_I)/deskew_rx_tb deskew_lane_rx.v deskew_rx.v ${TB_DIR}/deskew_rx_tb.sv
 
 # Classic TB run 
 run_64b66b: _64b66b_tb
@@ -134,19 +133,19 @@ run_gearbox_tx: gearbox_tx_tb
 	$(call RUN_$(SIM),$^)
 
 run_sync_rx: block_sync_rx_tb
-	vvp $(BUILD_DIR_I)/block_sync_rx_tb
+	$(call RUN_$(SIM),$^)
 
 run_am_lock_rx: am_lock_rx_tb
-	vvp $(BUILD_DIR_I)/am_lock_rx_tb
+	$(call RUN_$(SIM),$^)
 
 run_lane_reorder_rx: lane_reorder_rx_tb
-	vvp $(BUILD_DIR_I)/lane_reorder_rx_tb
+	$(call RUN_$(SIM),$^)
 
 run_xgmii_dec_rx: xgmii_dec_rx_tb
-	vvp $(BUILD_DIR_I)/xgmii_dec_rx_tb
+	$(call RUN_$(SIM),$^)
 
 run_deskew_rx: deskew_rx_tb
-	vvp $(BUILD_DIR_I)/deskew_rx_tb
+	$(call RUN_$(SIM),$^)
 
 # Run VPI
 run_pcs_cmd := vvp -M $(VPI_DIR)/$(BUILD_DIR_I) -mtb $(BUILD_DIR_I)/pcs_tb
@@ -185,4 +184,5 @@ clean:
 	rm -f vgcore.* vgd.log*
 	rm -f callgrind.out.*
 	rm -fr $(BUILD_DIR_V)/*
+	rm -fr $(WAVE_DIR)/*
 	

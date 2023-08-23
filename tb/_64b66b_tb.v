@@ -1,4 +1,6 @@
-`define TB_LOOP_CNT 100 
+`ifndef TB_LOOP_N
+`define TB_LOOP_N 100 
+`endif
 
 module _64b66b_tb;
 localparam LEN = 32;
@@ -47,7 +49,7 @@ endtask
 assign db_data_diff = data_i ^ data_o; 
 
 initial begin
-	$dumpfile("build/wave.vcd");
+	$dumpfile("wave/_64b66b_tb.vcd");
 	$dumpvars(0, _64b66b_tb);
 	nreset = 1'b0;
 	#10
@@ -68,7 +70,7 @@ initial begin
 	// test 2 : verify the output of the descambler
 	// matches initial data
 	$display("test 2 %t", $time);
-	test_sramble_decramble(`TB_LOOP_CNT);
+	test_sramble_decramble(`TB_LOOP_N);
 
 	#10
 	$display("Test finished\n");
