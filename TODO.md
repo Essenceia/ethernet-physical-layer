@@ -1,7 +1,11 @@
 # TODO list
 
 - add formal assertions
-- verilator : set default values to 'X
+
+- verilator sim: 
+    - set default values to 'X
+    - find a way to force re-evaliation of assignations in generate constructs for tb
+
 - LINT :
     - remove `-Wno-LATCH` 
 

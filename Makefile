@@ -12,6 +12,11 @@ ifndef cov
 cov:=
 endif
 
+# Asserts, enabled by default
+ifndef assert
+assert:=1
+endif
+
 # Define simulator we are using, priority to verilator
 ifndef SIM
 SIM:=I
@@ -33,9 +38,9 @@ DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 all: run wave
 
 # Lint flags
-FLAGS_I=-Wall -g2012 -gassertions -gstrict-expr-width
+FLAGS_I=-Wall -g2012 $(if $(assert),-gassertions) -gstrict-expr-width
 FLAGS=$(FLAGS_I)
-FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH --assert 
+FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH $(if $(assert),--assert)
 
 #Build flags
 BUILD_FLAGS_V=$(if $(wave), --trace --trace-underscore) $(if $(cov), --coverage --coverage-underscore) 
