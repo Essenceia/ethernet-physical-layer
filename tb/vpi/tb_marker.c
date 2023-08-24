@@ -5,12 +5,13 @@
  * 
  * This code is provided "as is" without any express or implied warranties. */ 
 
+#include "tb_marker.h"
 #include "pcs_defs.h"
 #include "pcs_marker.h"
 #include "tb_rand.h"
-#include <vpi_user.h>
 #include <assert.h>
 #include "defs.h"
+#include "tb_utils.h"
 #define LANE_N 4
 #ifndef SEED
 #define SEED 10
@@ -68,8 +69,8 @@ static int tb_marker_calltf(char*user_data)
 	// data
 	uint64_t data_i[LANE_N];	
 	uint64_t data_o[LANE_N];
-	format_data(in, &data_i);	
-	format_data(out, &data_o);	
+	format_data(in, (uint64_t*) &data_i);	
+	format_data(out,(uint64_t*) &data_o);	
 
 	// in
 	info("HEAD %x\n", head_o);

@@ -176,7 +176,7 @@ vpi:
 	cd $(VPI_DIR) && $(MAKE) $(BUILD_VPI_DIR_$(SIM))/tb.vpi SIM=$(SIM) $(DEFINES) $(40GBASE_ARGS)
 
 vpi_marker:
-	cd $(VPI_DIR) && $(MAKE) $(BUILD_DIR_I)/tb_marker.vpi $(DEFINES) $(40GBASE_ARGS)
+	cd $(VPI_DIR) && $(MAKE) $(BUILD_VPI_DIR_$(SIM))/tb_marker.vpi SIM=$(SIM) $(DEFINES) $(40GBASE_ARGS)
 
 wave: config
 	${VIEW} $(WAVE_DIR)/${WAVE_FILE} ${CONF}/${WAVE_CONF}
