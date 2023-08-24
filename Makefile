@@ -73,8 +73,8 @@ define BUILD_VPI_I
 endef
 define BUILD_VPI_V
 	# Manually invoke vpi to not polute dependancy list
-	@$(MAKE) -f Makefile vpi
-	verilator --binary -j 4 $(FLAGS_V) --vpi --Mdir $()  $(BUILD_FLAGS_V) -o $2 $1  
+	@$(MAKE) -f Makefile $3
+	verilator --binary -j 4 $(FLAGS_V) --vpi --Mdir $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) $(BUILD_FLAGS_V) -o $2 $1  
 endef
 
 define RUN_I
@@ -83,7 +83,12 @@ endef
 define RUN_V
 	./$(BUILD_DIR_V)/$1 $(if $(wave),+trace) 
 endef
-
+define RUN_VPI_I
+	vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) -mtb $(BUILD_DIR_$(SIM))/$1
+endef
+define RUN_VPI_V
+	$(call RUN_V,$1)
+endef
 config:
 	@mkdir -p ${CONF}
 
@@ -138,7 +143,7 @@ deskew_rx_tb: deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv
 # VPI Test bench 
 
 pcs_tb : ${TB_DIR}/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
-	$(call BUILD_$(SIM),$^,$@)
+	$(call BUILD_VPI_$(SIM),$^,$@,vpi)
 
 # Classic TB run 
 run_64b66b: _64b66b_tb
@@ -163,13 +168,14 @@ run_deskew_rx: deskew_rx_tb
 	$(call RUN_$(SIM),$^)
 
 # Run VPI
-run_pcs_cmd := vvp -M $(VPI_DIR)/$(BUILD_DIR_I) -mtb $(BUILD_DIR_I)/pcs_tb
-run_pcs: pcs_tb vpi
-	$(run_pcs_cmd)
+run_pcs_cmd := vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) -mtb $(BUILD_DIR_$(SIM))/pcs_tb
+run_pcs: pcs_tb
+	$(call RUN_VPI_$(SIM),$^)
+	#$(run_pcs_cmd)
 
 run_am_tx: am_tx_tb vpi_marker
-	mv $(VPI_DIR)/$(BUILD_DIR_I)/tb_marker.vpi $(VPI_DIR)/$(BUILD_DIR_I)/tb.vpi
-	vvp -M $(VPI_DIR)/$(BUILD_DIR_I) -mtb $(BUILD_DIR_I)/am_tx_tb
+	mv $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM))/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM))/tb.vpi
+	vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) -mtb $(BUILD_DIR_$(SIM))/am_tx_tb
 run: run_pcs
 
 vpi:
