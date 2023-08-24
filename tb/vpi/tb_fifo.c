@@ -39,14 +39,14 @@ void tb_pma_fifo_dtor(
  */
 void tb_pma_fifo_push(
 	tv_pma_fifo_t *fifo,
-	uint64_t *new,
+	uint64_t *nv,
 	ctrl_lite_s *ctrl,
 	uint64_t  debug_id
 )
 {
 	assert(fifo);
 	tv_pma_fifo_elem_t *elem = malloc_(tv_pma_fifo_elem_t);
-	elem->data = new;
+	elem->data = nv;
 	elem->ctrl=ctrl;
 	elem->debug_id = debug_id;
 	slisth_push(&fifo->elems, &elem->elems);

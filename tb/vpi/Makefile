@@ -17,14 +17,6 @@ ifndef SIM
 SIM:=I
 endif
 
-ifeq ($(SIM),I)
-BUILD=build
-else
-BUILD=obj_vpi
-endif
-
-$(info Using SIM=$(SIM), building to $(BUILD) dir)
-
 INC=inc
 
 AUR=$(HOME)/AUR
@@ -36,10 +28,22 @@ FLAGS = -std=gnu99 -Wall -Wextra -Wconversion -Wshadow -Wundef -fno-common -Wno-
 
 DEFINES = $(if $(debug),-DDEBUG -g) 
 DEFINES +=$(if $(40GBASE), -D_40GBASE)
-DEFINES += $(if $(SIM) $eq V,-DVERILATOR)
 
-CC = cc -g $(DEFINES)
-LD = cc -g $(DEFINES)  
+ifeq ($(SIM),I)
+BUILD=build
+COMPILER=cc
+else
+BUILD=obj_vpi
+COMPILER=g++
+FLAGS += -fpermissive
+DEFINES += -DVERILATOR
+endif
+
+$(info Using SIM=$(SIM), building to $(BUILD) dir)
+
+
+CC = $(COMPILER) -g $(DEFINES)
+LD = $(COMPILER) -g $(DEFINES)  
 
 
 $(BUILD)/test.o:test.c

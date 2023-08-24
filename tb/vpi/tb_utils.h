@@ -7,7 +7,11 @@
 
 #ifndef TB_UTILS_H
 #define TB_UTILS_H
+#ifdef VERILATOR
+#include "verilated_vpi.h" 
+#else
 #include <vpi_user.h>
+#endif
 void tb_vpi_put_logic_1b_t(vpiHandle argv, uint8_t var);
 
 void tb_vpi_put_logic_uint8_t(vpiHandle argv, uint8_t var);

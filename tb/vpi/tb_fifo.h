@@ -250,7 +250,7 @@ void tb_pma_fifo_dtor(
  */
 void tb_pma_fifo_push(
 	tv_pma_fifo_t *fifo,
-	uint64_t *new,
+	uint64_t *nv,
 	ctrl_lite_s *ctrl,
 	uint64_t debug_id
 );
