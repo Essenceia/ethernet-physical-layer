@@ -12,12 +12,32 @@
 % :: SCCS/%
 % :: SCCS/s.%
 
+# Define simulator we are going to use, priority to iverilog
+ifndef SIM
+SIM:=I
+endif
 
+ifeq ($(SIM),I)
 BUILD=build
+else
+BUILD=obj_vpi
+endif
+
+$(info Using SIM=$(SIM), building to $(BUILD) dir)
+
 INC=inc
-IVERILOG=/home/pitchu/AUR/iverilog
+
+AUR=$(HOME)/AUR
+VPI_INC_I=$(AUR)/iverilog
+VPI_INC_V=$(AUR)/verilator/include
+
+
 FLAGS = -std=gnu99 -Wall -Wextra -Wconversion -Wshadow -Wundef -fno-common -Wno-unused-parameter -Wno-type-limits -fpic
-DEFINES = $(if $(debug),-DDEBUG -g) $(if $(40GBASE), -D_40GBASE)
+
+DEFINES = $(if $(debug),-DDEBUG -g) 
+DEFINES +=$(if $(40GBASE), -D_40GBASE)
+DEFINES += $(if $(SIM) $eq V,-DVERILATOR)
+
 CC = cc -g $(DEFINES)
 LD = cc -g $(DEFINES)  
 
@@ -53,19 +73,19 @@ $(BUILD)/tb_fifo.o: tb_fifo.h tb_fifo.c
 
 $(BUILD)/tv.o: tv.c tv.h
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(IVERILOG) -c tv.c $(FLAGS)
+	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c tv.c $(FLAGS)
 
 $(BUILD)/tb_utils.o: tb_utils.c tb_utils.h
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(IVERILOG) -c tb_utils.c $(FLAGS)
+	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c tb_utils.c $(FLAGS)
 
 $(BUILD)/tb.o: tb.c tb.h
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(IVERILOG) -c tb.c $(FLAGS)
+	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c tb.c $(FLAGS)
 
 $(BUILD)/tb_marker.o: tb_marker.c tb_marker.h
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(IVERILOG) -c tb_marker.c $(FLAGS)
+	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c tb_marker.c $(FLAGS)
 
 
 40g_deps := $(if $(40GBASE),pcs_marker.o)
@@ -92,7 +112,8 @@ $(BUILD)/tb_marker.vpi: $(tb_marker_deps)
 
 
 clean:
-	rm -rf $(BUILD)/*	
+	rm -rf build/*	
+	rm -rf obj_vpi/*	
 	rm -f test	
 	rm -f vgcore.*	
 

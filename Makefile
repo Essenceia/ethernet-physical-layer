@@ -17,7 +17,7 @@ ifndef assert
 assert:=1
 endif
 
-# Define simulator we are using, priority to verilator
+# Define simulator we are using, priority to iverilog
 ifndef SIM
 SIM:=I
 endif
@@ -48,20 +48,35 @@ BUILD_FLAGS_V=$(if $(wave), --trace --trace-underscore) $(if $(cov), --coverage 
 
 BUILD_DIR_I=build
 BUILD_DIR_V=obj_dir
+BUILD_VPI_DIR_I=build
+BUILD_VPI_DIR_V=obj_vpi
 
 # define functions to be used based on the simulator
+
 define LINT_I
 	iverilog $(FLAGS_I) -s $2 -o $(BUILD_DIR_I)/$2 $1
 endef
 define LINT_V
 	verilator --lint-only $(FLAGS_V) $1
 endef
+
 define BUILD_I
 	iverilog $(FLAGS_I) -s $2 -o $(BUILD_DIR_I)/$2 $1
 endef
 define BUILD_V
 	verilator --binary -j 4 $(FLAGS_V) $(BUILD_FLAGS_V) -o $2 $1  
 endef
+
+define BUILD_VPI_I
+	# Same as normal build
+	iverilog $(FLAGS_I) -s $2 -o $(BUILD_DIR_I)/$2 $1
+endef
+define BUILD_VPI_V
+	# Manually invoke vpi to not polute dependancy list
+	@$(MAKE) -f Makefile vpi
+	verilator --binary -j 4 $(FLAGS_V) --vpi --Mdir $()  $(BUILD_FLAGS_V) -o $2 $1  
+endef
+
 define RUN_I
 	vvp $(BUILD_DIR_I)/$1
 endef
@@ -102,16 +117,6 @@ _64b66b_tb: _64b66b_tx.v _64b66b_rx.v ${TB_DIR}/_64b66b_tb.v
 gearbox_tx_tb: gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
 	$(call BUILD_$(SIM),$^,$@)
 
-#pcs_10g_enc_tb: pcs_10g_enc.v pcs_enc_lite.v ${TB_DIR}/pcs_10g_enc_tb.sv
-#	#iverilog ${FLAGS} -s pcs_10g_enc_tb -o $(BUILD_DIR_I)/pcs_10g_enc_tb pcs_10g_enc.v pcs_enc_lite.v ${TB_DIR}/pcs_10g_enc_tb.sv
-
-#pcs_10g_tx : pcs_10g_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v 
-#	iverilog ${FLAGS} -s pcs_10g_tx -o $(BUILD_DIR_I)/pcs_10g_tx pcs_10g_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v
-
-
-pcs_tb : ${TB_DIR}/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
-	$(call BUILD_$(SIM),$^,$@)
-
 am_tx_tb :  am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv 
 	$(call BUILD_$(SIM),$^,$@)
 
@@ -128,6 +133,11 @@ xgmii_dec_rx_tb: dec_lite_rx.v xgmii_dec_intf_rx.v $(TB_DIR)/xgmii_dec_rx_tb.sv
 	$(call BUILD_$(SIM),$^,$@)
 
 deskew_rx_tb: deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv 
+	$(call BUILD_$(SIM),$^,$@)
+
+# VPI Test bench 
+
+pcs_tb : ${TB_DIR}/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
 	$(call BUILD_$(SIM),$^,$@)
 
 # Classic TB run 
@@ -163,7 +173,7 @@ run_am_tx: am_tx_tb vpi_marker
 run: run_pcs
 
 vpi:
-	cd $(VPI_DIR) && $(MAKE) $(BUILD_DIR_I)/tb.vpi $(DEFINES) $(40GBASE_ARGS)
+	cd $(VPI_DIR) && $(MAKE) $(BUILD_VPI_DIR_$(SIM))/tb.vpi SIM=$(SIM) $(DEFINES) $(40GBASE_ARGS)
 
 vpi_marker:
 	cd $(VPI_DIR) && $(MAKE) $(BUILD_DIR_I)/tb_marker.vpi $(DEFINES) $(40GBASE_ARGS)
