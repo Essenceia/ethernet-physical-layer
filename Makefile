@@ -36,15 +36,16 @@ DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 40GBASE_ARGS:= 40GBASE=1
 
 all: run wave
+BUILD_FLAGS_I=
 
 # Lint flags
 FLAGS_I=-Wall -g2012 $(if $(assert),-gassertions) -gstrict-expr-width
+FLAGS_I+=$(if $(debug),-DDEBUG) 
 FLAGS=$(FLAGS_I)
 FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH $(if $(assert),--assert)
 
 #Build flags
 BUILD_FLAGS_V=$(if $(wave), --trace --trace-underscore) $(if $(cov), --coverage --coverage-underscore) 
-
 
 BUILD_DIR_I=build
 BUILD_DIR_V=obj_dir
@@ -68,6 +69,8 @@ define BUILD_V
 endef
 
 define BUILD_VPI_I
+	# Manually invoke vpi to not polute dependancy list
+	@$(MAKE) -f Makefile $3
 	# Same as normal build
 	iverilog $(FLAGS_I) -s $2 -o $(BUILD_DIR_I)/$2 $1
 endef
@@ -122,9 +125,6 @@ _64b66b_tb: _64b66b_tx.v _64b66b_rx.v ${TB_DIR}/_64b66b_tb.v
 gearbox_tx_tb: gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
 	$(call BUILD_$(SIM),$^,$@)
 
-am_tx_tb :  am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv 
-	$(call BUILD_$(SIM),$^,$@)
-
 block_sync_rx_tb: block_sync_rx.v $(TB_DIR)/block_sync_rx_tb.sv 
 	$(call BUILD_$(SIM),$^,$@)
 
@@ -141,6 +141,8 @@ deskew_rx_tb: deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv
 	$(call BUILD_$(SIM),$^,$@)
 
 # VPI Test bench 
+am_tx_tb :  am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv 
+	$(call BUILD_VPI_$(SIM),$^,$@,vpi_marker)
 
 pcs_tb : ${TB_DIR}/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
 	$(call BUILD_VPI_$(SIM),$^,$@,vpi)
@@ -173,9 +175,11 @@ run_pcs: pcs_tb
 	$(call RUN_VPI_$(SIM),$^)
 	#$(run_pcs_cmd)
 
-run_am_tx: am_tx_tb vpi_marker
+run_am_tx: am_tx_tb
 	mv $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM))/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM))/tb.vpi
-	vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) -mtb $(BUILD_DIR_$(SIM))/am_tx_tb
+	#vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) -mtb $(BUILD_DIR_$(SIM))/am_tx_tb
+	$(call RUN_VPI_$(SIM),$^)
+
 run: run_pcs
 
 vpi:
@@ -201,9 +205,9 @@ gdb: pcs_tb vpi
 
 clean:
 	cd $(VPI_DIR) && $(MAKE) clean
-	rm -fr $(BUILD_DIR_I)/*
 	rm -f vgcore.* vgd.log*
 	rm -f callgrind.out.*
+	rm -fr $(BUILD_DIR_I)/*
 	rm -fr $(BUILD_DIR_V)/*
 	rm -fr $(WAVE_DIR)/*
 	

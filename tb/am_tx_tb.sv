@@ -1,4 +1,6 @@
+`ifndef TB_LOOP_N
 `define TB_LOOP_N 60000
+`endif
 /* marker_tb
  * TB to test the market alignement feature.
  * Written to help test this feature in isolation
@@ -15,24 +17,24 @@ parameter BLOCK_W = HEAD_W+DATA_W;
 reg clk = 1'b0;
 reg 		nreset;
 
-logic [LANE_N*HEAD_W-1:0] head_i;
-logic [LANE_N*DATA_W-1:0] data_i;
+logic [LANE_N*HEAD_W-1:0] head_i; /*verilator public_flat*/
+logic [LANE_N*DATA_W-1:0] data_i; /*verilator public_flat*/
 
 logic [LANE_N*HEAD_W-1:0] head_o;
 logic [LANE_N*DATA_W-1:0] data_o;
 
-logic [LANE_N*DATA_W-1:0] tb_data_o;
-logic [LANE_N*HEAD_W-1:0] tb_head_o;
+logic [LANE_N*DATA_W-1:0] tb_data_o;/*verilator public_flat*/
+logic [LANE_N*HEAD_W-1:0] tb_head_o;/*verilator public_flat*/
 
 logic [LANE_N*DATA_W-1:0] tb_data_diff;
 
 logic marker_v_o;
-logic tb_marker_v_o;
+logic tb_marker_v_o;/*verilator public_flat*/
 
 always #5 clk = ~clk;
 
 initial begin
-	$dumpfile("build/wave.vcd");
+	$dumpfile("wave/am_tx_tb.vcd");
 	$dumpvars(0, am_tx_tb);
 	nreset = 1'b0;
 	#10
@@ -43,7 +45,9 @@ initial begin
 		`ifdef DEBUG
 		$display("time %t", $time);
 		`endif
+		`ifndef VERILATOR
 		$tb_marker(head_i,data_i, tb_marker_v_o, tb_head_o, tb_data_o); 
+		`endif
 		#1
 		check();
 	end

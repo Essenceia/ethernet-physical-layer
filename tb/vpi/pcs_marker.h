@@ -2,6 +2,15 @@
 #define PCS_MARKER_H
 #include "pcs_defs.h"
 
+/* Alignement marker specific code, this
+ * file should only be compiled if we are
+ * targetting a physical layer on 40GBASE
+ * or 100GBASE */
+#ifndef _40GBASE
+#ifndef _100GBASE
+#error "Error in defines, alignement marker is a 40G and upper feature"
+#endif
+#endif
 uint8_t calculate_bip_per_lane(
 	uint8_t bip, 
 	const block_s out);

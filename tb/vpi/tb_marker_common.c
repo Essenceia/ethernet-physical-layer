@@ -5,17 +5,18 @@
  * 
  * This code is provided "as is" without any express or implied warranties. */ 
 
-#include "tb_marker.h"
+#include "tb_marker_common.h"
 #include "pcs_defs.h"
 #include "pcs_marker.h"
 #include "tb_rand.h"
 #include <assert.h>
 #include "defs.h"
 #include "tb_utils.h"
+
+#ifndef LANE_N
 #define LANE_N 4
-#ifndef SEED
-#define SEED 10
 #endif
+
 static marker_s state;
 
 uint8_t format_head(block_s b[LANE_N]){
@@ -29,30 +30,30 @@ uint8_t format_head(block_s b[LANE_N]){
 void format_data(block_s b[LANE_N], uint64_t *d){
 	for(int i=0; i<LANE_N; i++){
 		d[i] = b[i].data;
+		info("lane %d d %x data %x\n",i,d[i], b[i].data);
 	}
 }
 
-static int tb_marker_compiletf(char*user_data)
-{
-	tb_rand_init(SEED);	
-    return 0;
-}
-
-// Drive PCS marker aligment input values
-static int tb_marker_calltf(char*user_data)
-{
-	vpiHandle sys;
-	vpiHandle argv;
-	
-	sys = vpi_handle(vpiSysTfCall, 0);
-	assert(sys);
-	argv = vpi_iterate(vpiArgument, sys);
-	assert(argv);
+/* main function, called by both iverilog and verialtor vpi */
+int tb_marker(
+	vpiHandle h_head_i,
+	vpiHandle h_data_i,
+	vpiHandle h_marker_v, 
+	vpiHandle h_head_o,
+	vpiHandle h_data_o
+){
+	// check all handlers are valid
+	assert(h_head_i);
+	assert(h_data_i);
+	assert(h_marker_v); 
+	assert(h_head_o);
+	assert(h_data_o); 
 
 	// create rand packet
 	block_s in[LANE_N];
 	for(uint8_t i=0; i<LANE_N; i++){
 		in[i].data = tb_rand_uint64_t();
+		info("Random data, lane %d, data %x\n", i, in[i].data);
 		in[i].head = ( tb_rand_uint8_t() % 2 )? 0x1 : 0x2;
 
 	}
@@ -74,32 +75,13 @@ static int tb_marker_calltf(char*user_data)
 
 	// in
 	info("HEAD %x\n", head_o);
-	tb_vpi_put_logic_uint8_t(argv, head_i);
-	tb_vpi_put_logic_uint64_t_var_arr(argv, data_i, LANE_N);
+	tb_vpi_put_logic_uint8_t(h_head_i, head_i);
+	tb_vpi_put_logic_uint64_t_var_arr(h_data_i, data_i, LANE_N);
 	// out
-	tb_vpi_put_logic_uint8_t(argv, marker_v);
-	tb_vpi_put_logic_uint8_t(argv, head_o);
-	tb_vpi_put_logic_uint64_t_var_arr(argv, data_o, LANE_N);	
+	tb_vpi_put_logic_uint8_t(h_marker_v, marker_v);
+	tb_vpi_put_logic_uint8_t(h_head_o, head_o);
+	tb_vpi_put_logic_uint64_t_var_arr(h_data_o, data_o, LANE_N);	
 	
 	return 0;
-}
-void tb_marker_register()
-{
-      s_vpi_systf_data tf_data;
-
-      tf_data.type      = vpiSysTask;
-      tf_data.sysfunctype  = 0;
-      tf_data.tfname    = "$tb_marker";
-      tf_data.calltf    = tb_marker_calltf;
-      tf_data.compiletf = tb_marker_compiletf;
-      tf_data.sizetf    = 0;
-      tf_data.user_data = 0;
-      vpi_register_systf(&tf_data);
-}
-
-void (*vlog_startup_routines[])() = {
-    tb_marker_register,
-    0
 };
-
 

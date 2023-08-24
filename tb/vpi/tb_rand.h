@@ -1,48 +1,27 @@
 #ifndef TB_RAND_H
 #define TB_RAND_H
 
-#include <stdlib.h>
-#include "tb_config.h"
+#include <stdint.h>
+#include <stddef.h>
+
+#ifndef SEED
+#define SEED 10
+#endif
 
 #define LFSR(x) ((x >> 1) | (( ((x >> 0) ^ (x >> 2) ^ (x >> 3) ^ (x >> 5)) & 1u) << 15)) 
 
-static uint16_t lfsr; 
-static inline void tb_rand_init(uint16_t seed){
-	lfsr = seed;
-}
+void tb_rand_init(uint16_t seed);
 
-static inline uint16_t tb_rand_get_lfsr(){
-	return lfsr;
-};
+uint16_t tb_rand_get_lfsr();
 
-static inline uint16_t tb_rand_get_packet_len(){
-	lfsr = LFSR(lfsr);
-	uint16_t rand_cnt = (uint16_t) ( lfsr % (PACKET_LEN_MAX-PACKET_LEN_MIN)) + PACKET_LEN_MIN;
-	return rand_cnt;
-}
+uint16_t tb_rand_get_packet_len();
 
+uint16_t tb_rand_packet_idle_cntdown();
 
-static inline uint16_t tb_rand_packet_idle_cntdown(){
-	lfsr = LFSR(lfsr);
-	return ( lfsr % (PACKET_IDLE_CNT_MAX-PACKET_IDLE_CNT_MIN )) + PACKET_IDLE_CNT_MIN;
-}
+uint64_t tb_rand_uint64_t();
 
-static inline uint64_t tb_rand_uint64_t(){
-	uint64_t r = 0;
-	for( int i=0; i<4; i++){
-		lfsr = LFSR(lfsr);
-		r |= (uint64_t)lfsr << 16*i;
-	}
-	return r;
-}
-static inline uint8_t tb_rand_uint8_t(){
-	lfsr = LFSR(lfsr);
-	return (uint8_t) lfsr;
-}
-static inline void tb_rand_fill_packet(uint8_t * p, size_t len){
-	for(size_t i=0; i < len; i++){
-		lfsr = LFSR(lfsr);
-		p[i] = (uint8_t) lfsr;
-	}
-}
+uint8_t tb_rand_uint8_t();
+
+void tb_rand_fill_packet(uint8_t * p, size_t len);
+
 #endif//TB_RAND_H

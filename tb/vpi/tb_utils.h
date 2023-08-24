@@ -12,28 +12,30 @@
 #else
 #include <vpi_user.h>
 #endif
-void tb_vpi_put_logic_1b_t(vpiHandle argv, uint8_t var);
 
-void tb_vpi_put_logic_uint8_t(vpiHandle argv, uint8_t var);
+/* Includes scanning */
+void tb_vpi_put_logic_1b_t(vpiHandle h, uint8_t var);
 
-void tb_vpi_put_logic_uint32_t(vpiHandle argv, uint32_t var);
+void tb_vpi_put_logic_uint8_t(vpiHandle h, uint8_t var);
 
-static inline void tb_vpi_put_logic_uint16_t(vpiHandle argv, uint16_t var){
-	tb_vpi_put_logic_uint32_t(argv, (uint32_t) var);
+void tb_vpi_put_logic_uint32_t(vpiHandle h, uint32_t var);
+
+static inline void tb_vpi_put_logic_uint16_t(vpiHandle h, uint16_t var){
+	tb_vpi_put_logic_uint32_t(h, (uint32_t) var);
 };
 
-void tb_vpi_put_logic_uint64_t(vpiHandle argv, uint64_t var);
+void tb_vpi_put_logic_uint64_t(vpiHandle h, uint64_t var);
 
 
 // puts an array of char of variable length to a vector
-void _tb_vpi_put_logic_char_var_arr(vpiHandle argv, uint8_t *arr, size_t len);
+void _tb_vpi_put_logic_char_var_arr(vpiHandle h, uint8_t *arr, size_t len);
 
 // puts an array of uint64_t of variable length to a vector
-void tb_vpi_put_logic_uint64_t_var_arr(vpiHandle argv, uint64_t *arr, size_t len);
+void tb_vpi_put_logic_uint64_t_var_arr(vpiHandle h, uint64_t *arr, size_t len);
 
 #define TB_UTILS_PUT_CHAR_ARR(X) \
- static inline void tb_vpi_put_logic_char_##X##_t(vpiHandle argv, uint8_t *arr){ \
-	_tb_vpi_put_logic_char_var_arr( argv, arr, X ); \
+ static inline void tb_vpi_put_logic_char_##X##_t(vpiHandle h, uint8_t *arr){ \
+	_tb_vpi_put_logic_char_var_arr( h, arr, X ); \
 }
 static inline void tb_vpi_put_logic_char(vpiHandle argc, char var){
 	tb_vpi_put_logic_uint8_t(argc, (uint8_t) var);
