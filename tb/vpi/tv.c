@@ -17,8 +17,6 @@ tv_t  *tv_alloc(){
 	tv_t *tv;
 	info("tv alloc");
 	tv = (tv_t *) malloc( sizeof(tv_t));
-	// init rand
-	tb_rand_init(RAND_SEED);
 	// init fifo
 	for( size_t l = 0; l < LANE_N; l ++ ){
 		tv->pma[l]  = tb_pma_fifo_ctor();

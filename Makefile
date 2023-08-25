@@ -44,7 +44,7 @@ VIEW := gtkwave
 WAVE_CONF := wave.conf
 GDB_CONF := .gdbinit
 DEBUG_FLAG := $(if $(debug), debug=1)
-DEFINES := $(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
+DEFINES := $(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1) $(if $(wave),wave=1)
 40GBASE_ARGS:= 40GBASE=1
 
 # Current working directory.
@@ -235,8 +235,8 @@ run_pcs: pcs_tb
 	$(call RUN_VPI,$^)
 	#$(run_pcs_cmd)
 
-run_am_tx: am_tx_tb
-	mv $(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR)/tb.vpi
+run_am_tx: am_tx_tb 
+	#mv $(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR)/tb.vpi
 	#vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR) -mtb $(BUILD_DIR)/am_tx_tb
 	$(call RUN_VPI,$^)
 
@@ -274,8 +274,8 @@ clean:
 	cd $(VPI_DIR) && $(MAKE) clean
 	rm -f vgcore.* vgd.log*
 	rm -f callgrind.out.*
-	rm -fr $(BUILD_DIR)/*
-	rm -fr $(BUILD_DIR)/*
+	rm -fr build/*
+	rm -fr obj_dir/*
 	rm -fr $(WAVE_DIR)/*
 
 # Run

@@ -38,14 +38,14 @@ void format_data(block_s b[LANE_N], uint64_t *d){
 int tb_marker(
 	vpiHandle h_head_i,
 	vpiHandle h_data_i,
-	vpiHandle h_marker_v, 
+	vpiHandle h_marker_v_o, 
 	vpiHandle h_head_o,
 	vpiHandle h_data_o
 ){
 	// check all handlers are valid
 	assert(h_head_i);
 	assert(h_data_i);
-	assert(h_marker_v); 
+	assert(h_marker_v_o); 
 	assert(h_head_o);
 	assert(h_data_o); 
 
@@ -78,7 +78,7 @@ int tb_marker(
 	tb_vpi_put_logic_uint8_t(h_head_i, head_i);
 	tb_vpi_put_logic_uint64_t_var_arr(h_data_i, data_i, LANE_N);
 	// out
-	tb_vpi_put_logic_uint8_t(h_marker_v, marker_v);
+	tb_vpi_put_logic_uint8_t(h_marker_v_o, marker_v);
 	tb_vpi_put_logic_uint8_t(h_head_o, head_o);
 	tb_vpi_put_logic_uint64_t_var_arr(h_data_o, data_o, LANE_N);	
 	

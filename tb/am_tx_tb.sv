@@ -35,8 +35,10 @@ logic tb_marker_v_o;
 always #5 clk = ~clk;
 
 initial begin
+	`ifndef VERILATOR
 	$dumpfile("wave/am_tx_tb.vcd");
 	$dumpvars(0, am_tx_tb);
+	`endif
 	nreset = 1'b0;
 	#10
 	// begin testing

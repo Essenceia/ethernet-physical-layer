@@ -53,6 +53,7 @@ CC_CMD=g++
 LD_CMD=g++
 CC_FLAGS += -fpermissive
 CC_DEFS += -DVERILATOR
+CC_DEFS += $(if $(wave),-DVM_TRACE)
 VPI_INC := -I/usr/local/share/verilator/include 
 VPI_INC += -I/usr/local/share/verilator/include/vltstd
 VPI_INC += -I../../obj_dir
