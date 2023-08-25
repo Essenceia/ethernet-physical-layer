@@ -13,7 +13,6 @@ module am_tx_tb;
 parameter LANE_N = 4;
 parameter HEAD_W = 2;
 parameter DATA_W = 64;
-parameter BLOCK_W = HEAD_W+DATA_W;
 
 reg clk = 1'b0;
 reg 		nreset;
@@ -32,7 +31,9 @@ logic [LANE_N*DATA_W-1:0] tb_data_diff;
 logic marker_v_o;
 logic tb_marker_v_o;
 
+/*verilator lint_off BLKSEQ*/
 always #5 clk = ~clk;
+/*verilator lint_on BLKSEQ*/
 
 initial begin
 	`ifndef VERILATOR
@@ -41,6 +42,9 @@ initial begin
 	`endif
 	nreset = 1'b0;
 	#10
+	`ifdef VERILATOR
+	#1
+	`endif
 	// begin testing
 	for(int i=0; i< `TB_LOOP_N; i++)begin
 		#9

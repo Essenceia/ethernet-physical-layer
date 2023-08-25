@@ -60,7 +60,7 @@ ifeq ($(SIM),I)
 LINT_FLAGS += -Wall -g2012 $(if $(assert),-gassertions) -gstrict-expr-width
 LINT_FLAGS += $(if $(debug),-DDEBUG) 
 else
-LINT_FLAGS += -Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH $(if $(assert),--assert)
+LINT_FLAGS += -Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH
 endif
 
 # Lint commands.
@@ -86,6 +86,7 @@ BUILD_FLAGS :=
 else
 BUILD_DIR := obj_dir
 BUILD_FLAGS := 
+BUILD_FLAGS += $(if $(assert),--assert)
 BUILD_FLAGS += $(if $(wave), --trace --trace-underscore) 
 BUILD_FLAGS += $(if $(cov), --coverage --coverage-underscore) 
 BUILD_FLAGS += --timing
@@ -121,7 +122,7 @@ endef
 else
 define BUILD_VPI
 	@printf "\nVerilating vpi design and tb \n\n"
-	verilator -cc --exe --vpi --public-flat-rw $(BUILD_FLAGS) --top-module $2 -LDFLAGS "$(CWD)/$(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker_all.o Vam_tx_tb__ALL.a" -o $2 $1
+	verilator -cc --exe --vpi --public-flat-rw $(LINT_FLAGS) $(BUILD_FLAGS) --top-module $2 -LDFLAGS "$(CWD)/$(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker_all.o Vam_tx_tb__ALL.a" -o $2 $1
 	
 	@printf "\nMaking vpi shared object \n\n"
 	@$(MAKE) -f Makefile $3

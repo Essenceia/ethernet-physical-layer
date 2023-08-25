@@ -23,14 +23,14 @@ uint8_t format_head(block_s b[LANE_N]){
 	uint8_t h=0;
 	for(int i=0; i<LANE_N; i++){
 		h |= b[i].head  << 2*i;
-		info("%d h %x head %x\n",i,h, b[i].head);
+		//info("%d h %x head %x\n",i,h, b[i].head);
 	}
 	return h;
 }
 void format_data(block_s b[LANE_N], uint64_t *d){
 	for(int i=0; i<LANE_N; i++){
 		d[i] = b[i].data;
-		info("lane %d d %x data %x\n",i,d[i], b[i].data);
+		//info("lane %d d %x data %x\n",i,d[i], b[i].data);
 	}
 }
 
@@ -53,7 +53,6 @@ int tb_marker(
 	block_s in[LANE_N];
 	for(uint8_t i=0; i<LANE_N; i++){
 		in[i].data = tb_rand_uint64_t();
-		info("Random data, lane %d, data %x\n", i, in[i].data);
 		in[i].head = ( tb_rand_uint8_t() % 2 )? 0x1 : 0x2;
 
 	}
@@ -61,8 +60,9 @@ int tb_marker(
 	bool marker_v = false;
 	block_s out[LANE_N];
 	for(size_t i=0; i<LANE_N; i++){
+		info("\n%ld [%ld] data_i { %lx, %x }\n",state.gap, i, in[i].data, in[i].head);
 		marker_v |= alignement_marker( &state, i,in[i], &out[i]);
-		info("%ld [%ld] data_i { %lx, %x } ",state.gap, i, in[i].data, in[i].head);
+		info("marker_v %x data_o { %lx, %x }\n",marker_v, out[i].data, out[i].head);
 	}
 	//head
 	uint8_t head_i = format_head(in);

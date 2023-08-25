@@ -13,7 +13,6 @@ static uint16_t lfsr;
 void tb_rand_init(uint16_t seed){
 	lfsr = seed;
 	lfsr_init = true;
-	info("tb_rand_init lfsr %x %p\n", lfsr, &lfsr);
 }
 
 uint16_t tb_rand_get_lfsr(){
@@ -37,13 +36,10 @@ uint16_t tb_rand_packet_idle_cntdown(){
 uint64_t tb_rand_uint64_t(){
 	uint64_t r = 0;
 	LFSR_INIT;
-	info("tb_rand_uint64_t start lfsr %x at %p init %x\n", lfsr, &lfsr, lfsr_init);
 	for( int i=0; i<4; i++){
 		lfsr = LFSR(lfsr);
-		info("tb_rand_uint64_t lfsr %x\n", lfsr);
 		r |= (uint64_t)lfsr << 16*i;
 	}
-	info("tb_rand_uint64_t %x\n", r);
 	return r;
 }
 uint8_t tb_rand_uint8_t(){
