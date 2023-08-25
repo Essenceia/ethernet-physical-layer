@@ -216,4 +216,3 @@ void (*vlog_startup_routines[])() = {
     0
 };
 
-

@@ -18,5 +18,7 @@
 !vpi_i
 !vpi_v
 !*.c
+!*.cpp
 !*.h
+!*.hpp
 !*.md
