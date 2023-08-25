@@ -45,7 +45,11 @@ FLAGS=$(FLAGS_I)
 FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH $(if $(assert),--assert)
 
 #Build flags
-BUILD_FLAGS_V=$(if $(wave), --trace --trace-underscore) $(if $(cov), --coverage --coverage-underscore) 
+BUILD_FLAGS_V=$(if $(wave), --trace --trace-underscore) 
+BUILD_FLAGS_V+=$(if $(cov), --coverage --coverage-underscore) 
+BUILD_FLAGS_V+=--timing
+
+PWD := $(shell pwd)
 
 BUILD_DIR_I=build
 BUILD_DIR_V=obj_dir
@@ -75,9 +79,14 @@ define BUILD_VPI_I
 	iverilog $(FLAGS_I) -s $2 -o $(BUILD_DIR_I)/$2 $1
 endef
 define BUILD_VPI_V
-	# Manually invoke vpi to not polute dependancy list
+	@printf "\nVerilating vpi design and tb \n\n"
+	verilator -cc --exe --vpi --public-flat-rw $(BUILD_FLAGS_V) --top-module $2 -LDFLAGS "$(PWD)/$(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM))/tb_marker_all.o Vam_tx_tb__ALL.a" -o $2 $1
+	
+	@printf "\nMaking vpi shared object \n\n"
 	@$(MAKE) -f Makefile $3
-	verilator --binary -j 4 $(FLAGS_V) --vpi --Mdir $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) $(BUILD_FLAGS_V) -o $2 $1  
+	
+	@printf "\nInvoking generated makefile \n\n"
+	@$(MAKE) -C $(BUILD_DIR_V) -f V$2.mk
 endef
 
 define RUN_I
@@ -142,7 +151,7 @@ deskew_rx_tb: deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv
 
 # VPI Test bench 
 am_tx_tb :  am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv 
-	$(call BUILD_VPI_$(SIM),$^,$@,vpi_marker)
+	$(call BUILD_VPI_$(SIM),$^,$@,vpi_marker,tb_marker.vpi)
 
 pcs_tb : ${TB_DIR}/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
 	$(call BUILD_VPI_$(SIM),$^,$@,vpi)

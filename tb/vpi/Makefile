@@ -14,18 +14,20 @@
 
 # Define simulator we are going to use, priority to iverilog
 ifndef SIM
-SIM:=I
+SIM := I
 endif
 
-INC=inc
+AUR := $(HOME)/AUR
+VPI_INC_I := -I$(AUR)/iverilog
 
-AUR=$(HOME)/AUR
-VPI_INC_I=$(AUR)/iverilog
-VPI_INC_V=$(AUR)/verilator/include
-VPI_DIR_I=vpi_i
-VPI_DIR_V=vpi_v
+VPI_INC_V := -I/usr/local/share/verilator/include 
+VPI_INC_V += -I/usr/local/share/verilator/include/vltstd
+VPI_INC_V += -I../../obj_dir
 
-FLAGS = -std=gnu99 -Wall -Wextra -Wconversion -Wshadow -Wundef -fno-common -Wno-unused-parameter -Wno-type-limits -fpic
+VPI_DIR_I := vpi_i
+VPI_DIR_V := vpi_v
+
+FLAGS = -Wall -Wextra -Wconversion -Wshadow -Wundef -fno-common -Wno-unused-parameter -Wno-type-limits -fpic 
 
 DEFINES = $(if $(debug),-DDEBUG -g) 
 DEFINES +=$(if $(40GBASE), -D_40GBASE)
@@ -33,15 +35,17 @@ DEFINES +=$(if $(40GBASE), -D_40GBASE)
 ifeq ($(SIM),I)
 BUILD=build
 COMPILER=cc
+PP=
+FLAGS += -std=gnu99
 else
 BUILD=obj_vpi
 COMPILER=g++
 FLAGS += -fpermissive
 DEFINES += -DVERILATOR
+PP=pp
 endif
 
 $(info Using SIM=$(SIM), building to $(BUILD) dir)
-
 
 CC = $(COMPILER) -g $(DEFINES)
 LD = $(COMPILER) -g $(DEFINES)  
@@ -81,26 +85,26 @@ $(BUILD)/tb_fifo.o: tb_fifo.h tb_fifo.c
 
 $(BUILD)/tv.o: tv.c tv.h
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c tv.c $(FLAGS)
+	$(CC) -o $@ $(VPI_INC_$(SIM)) -c tv.c $(FLAGS)
 
 $(BUILD)/tb_utils.o: tb_utils.c tb_utils.h
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c tb_utils.c $(FLAGS)
+	$(CC) -o $@ $(VPI_INC_$(SIM)) -c tb_utils.c $(FLAGS)
 
 
 $(BUILD)/tb_marker_common.o: tb_marker_common.c tb_marker_common.h
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c tb_marker_common.c $(FLAGS)
+	$(CC) -o $@ $(VPI_INC_$(SIM)) -c tb_marker_common.c $(FLAGS)
 
 # Simulator specific code 
 
 $(BUILD)/tb.o: tb.c tb.h
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c tb.c $(FLAGS)
+	$(CC) -o $@ $(VPI_INC_$(SIM)) -c tb.c $(FLAGS)
 
-$(BUILD)/tb_marker.o: $(VPI_DIR_$(SIM))/tb_marker.c $(VPI_DIR_$(SIM))/tb_marker.h tb_rand.h
+$(BUILD)/tb_marker.o: $(VPI_DIR_$(SIM))/tb_marker.c$(PP) $(VPI_DIR_$(SIM))/tb_marker.h$(PP)
 	@mkdir -p $(@D)
-	$(CC) -o $@ -I$(INC) -I$(VPI_INC_$(SIM)) -c $(VPI_DIR_$(SIM))/tb_marker.c $(FLAGS)
+	$(CC) -o $@ $(VPI_INC_$(SIM)) -c $(VPI_DIR_$(SIM))/tb_marker.c$(PP) $(FLAGS)
 
 
 40g_deps := $(if $(40GBASE),pcs_marker.o)
@@ -121,10 +125,13 @@ $(BUILD)/tb.vpi: $(tb_deps)
 	@mkdir -p $(@D)
 	$(LD) -shared -o $(BUILD)/tb.vpi $^ -lvpi
 
-$(BUILD)/tb_marker.vpi: $(tb_marker_deps)
+$(BUILD)/tb_marker_all.o: $(tb_marker_deps)
+	@mkdir -p $(@D)
+	$(LD) -r -o $(BUILD)/tb_marker_all.o $^
+
+$(BUILD)/tb_marker.vpi: $(BUILD)/tb_marker_all.o
 	@mkdir -p $(@D)
 	$(LD) -shared -o $(BUILD)/tb_marker.vpi $^ -lvpi
-
 
 clean:
 	rm -rf build/*	

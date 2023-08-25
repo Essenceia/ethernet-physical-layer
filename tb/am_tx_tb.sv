@@ -1,6 +1,7 @@
 `ifndef TB_LOOP_N
 `define TB_LOOP_N 60000
 `endif
+
 /* marker_tb
  * TB to test the market alignement feature.
  * Written to help test this feature in isolation
@@ -17,19 +18,19 @@ parameter BLOCK_W = HEAD_W+DATA_W;
 reg clk = 1'b0;
 reg 		nreset;
 
-logic [LANE_N*HEAD_W-1:0] head_i; /*verilator public_flat*/
-logic [LANE_N*DATA_W-1:0] data_i; /*verilator public_flat*/
+logic [LANE_N*HEAD_W-1:0] head_i; 
+logic [LANE_N*DATA_W-1:0] data_i; 
 
 logic [LANE_N*HEAD_W-1:0] head_o;
 logic [LANE_N*DATA_W-1:0] data_o;
 
-logic [LANE_N*DATA_W-1:0] tb_data_o;/*verilator public_flat*/
-logic [LANE_N*HEAD_W-1:0] tb_head_o;/*verilator public_flat*/
+logic [LANE_N*DATA_W-1:0] tb_data_o;
+logic [LANE_N*HEAD_W-1:0] tb_head_o;
 
 logic [LANE_N*DATA_W-1:0] tb_data_diff;
 
 logic marker_v_o;
-logic tb_marker_v_o;/*verilator public_flat*/
+logic tb_marker_v_o;
 
 always #5 clk = ~clk;
 
