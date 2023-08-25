@@ -1,3 +1,8 @@
+
+###########
+# Configs #
+###########
+
 ifndef debug
 #debug :=
 endif
@@ -17,188 +22,236 @@ ifndef assert
 assert:=1
 endif
 
+############
+# Sim type #
+############
+
 # Define simulator we are using, priority to iverilog
-ifndef SIM
-SIM:=I
-endif
+SIM ?= I
 $(info Using simulator: $(SIM))
 
-TB_DIR=tb
-VPI_DIR=$(TB_DIR)/vpi
-CONF=conf
-WAVE_FILE=wave.vcd
-WAVE_DIR=wave
-VIEW=gtkwave
-WAVE_CONF=wave.conf
-GDB_CONF=.gdbinit
-DEBUG_FLAG=$(if $(debug), debug=1)
-DEFINES=$(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
+###########
+# Globals #
+###########
+
+# Global configs.
+TB_DIR := tb
+VPI_DIR := $(TB_DIR)/vpi
+CONF := conf
+WAVE_FILE := wave.vcd
+WAVE_DIR := wave
+VIEW := gtkwave
+WAVE_CONF := wave.conf
+GDB_CONF := .gdbinit
+DEBUG_FLAG := $(if $(debug), debug=1)
+DEFINES := $(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1)
 40GBASE_ARGS:= 40GBASE=1
 
-all: run wave
-BUILD_FLAGS_I=
+# Current working directory.
+CWD := $(shell pwd)
 
-# Lint flags
-FLAGS_I=-Wall -g2012 $(if $(assert),-gassertions) -gstrict-expr-width
-FLAGS_I+=$(if $(debug),-DDEBUG) 
-FLAGS=$(FLAGS_I)
-FLAGS_V=-Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH $(if $(assert),--assert)
+########
+# Lint #
+########
 
-#Build flags
-BUILD_FLAGS_V=$(if $(wave), --trace --trace-underscore) 
-BUILD_FLAGS_V+=$(if $(cov), --coverage --coverage-underscore) 
-BUILD_FLAGS_V+=--timing
+# Lint variables.
+LINT_FLAGS :=
+ifeq ($(SIM),I)
+LINT_FLAGS += -Wall -g2012 $(if $(assert),-gassertions) -gstrict-expr-width
+LINT_FLAGS += $(if $(debug),-DDEBUG) 
+else
+LINT_FLAGS += -Wall -Wpedantic -Wno-GENUNNAMED -Wno-LATCH $(if $(assert),--assert)
+endif
 
-PWD := $(shell pwd)
-
-BUILD_DIR_I=build
-BUILD_DIR_V=obj_dir
-BUILD_VPI_DIR_I=build
-BUILD_VPI_DIR_V=obj_vpi
-
-# define functions to be used based on the simulator
-
-define LINT_I
-	iverilog $(FLAGS_I) -s $2 -o $(BUILD_DIR_I)/$2 $1
+# Lint commands.
+# TODO ONELINER
+ifeq ($(SIM),I)
+define LINT
+	iverilog $(LINT_FLAGS) -s $2 -o $(BUILD_DIR)/$2 $1
 endef
-define LINT_V
-	verilator --lint-only $(FLAGS_V) $1
+else
+define LINT
+	verilator --lint-only $(LINT_FLAGS) $1
+endef
+endif
+
+#########
+# Build #
+#########
+
+# Build variables.
+ifeq ($(SIM),I)
+BUILD_DIR := build
+BUILD_FLAGS := 
+else
+BUILD_DIR := obj_dir
+BUILD_FLAGS := 
+BUILD_FLAGS += $(if $(wave), --trace --trace-underscore) 
+BUILD_FLAGS += $(if $(cov), --coverage --coverage-underscore) 
+BUILD_FLAGS += --timing
+endif
+
+# Build commands.
+define BUILD
+	iverilog $(LINT_FLAGS) -s $2 -o $(BUILD_DIR)/$2 $1
+endef
+define BUILD
+	verilator --binary -j 4 $(LINT_FLAGS) $(BUILD_FLAGS) -o $2 $1  
 endef
 
-define BUILD_I
-	iverilog $(FLAGS_I) -s $2 -o $(BUILD_DIR_I)/$2 $1
-endef
-define BUILD_V
-	verilator --binary -j 4 $(FLAGS_V) $(BUILD_FLAGS_V) -o $2 $1  
-endef
+#############
+# VPI build #
+#############
 
-define BUILD_VPI_I
+# VPU Build variables
+ifeq ($(SIM),I)
+BUILD_VPI_DIR := build
+else
+BUILD_VPI_DIR := obj_vpi
+endif
+
+# VPI build commands.
+ifeq ($(SIM),I)
+define BUILD_VPI
 	# Manually invoke vpi to not polute dependancy list
 	@$(MAKE) -f Makefile $3
 	# Same as normal build
-	iverilog $(FLAGS_I) -s $2 -o $(BUILD_DIR_I)/$2 $1
+	iverilog $(LINT_FLAGS) -s $2 -o $(BUILD_DIR)/$2 $1
 endef
-define BUILD_VPI_V
+else
+define BUILD_VPI
 	@printf "\nVerilating vpi design and tb \n\n"
-	verilator -cc --exe --vpi --public-flat-rw $(BUILD_FLAGS_V) --top-module $2 -LDFLAGS "$(PWD)/$(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM))/tb_marker_all.o Vam_tx_tb__ALL.a" -o $2 $1
+	verilator -cc --exe --vpi --public-flat-rw $(BUILD_FLAGS) --top-module $2 -LDFLAGS "$(CWD)/$(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker_all.o Vam_tx_tb__ALL.a" -o $2 $1
 	
 	@printf "\nMaking vpi shared object \n\n"
 	@$(MAKE) -f Makefile $3
 	
 	@printf "\nInvoking generated makefile \n\n"
-	@$(MAKE) -C $(BUILD_DIR_V) -f V$2.mk
+	$(MAKE) -C $(BUILD_DIR) -f V$2.mk
 endef
+endif
 
-define RUN_I
-	vvp $(BUILD_DIR_I)/$1
+#######
+# Run #
+#######
+
+# Run commands.
+ifeq ($(SIM),I)
+define RUN
+	vvp $(BUILD_DIR)/$1
 endef
-define RUN_V
-	./$(BUILD_DIR_V)/$1 $(if $(wave),+trace) 
+define RUN_VPI
+	vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR) -mtb $(BUILD_DIR)/$1
 endef
-define RUN_VPI_I
-	vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) -mtb $(BUILD_DIR_$(SIM))/$1
+else
+define RUN
+	./$(BUILD_DIR)/$1 $(if $(wave),+trace) 
 endef
-define RUN_VPI_V
-	$(call RUN_V,$1)
+define RUN_VPI
+	$(call RUN,$1)
 endef
+endif
+
 config:
-	@mkdir -p ${CONF}
+	@mkdir -p $(CONF)
 
 build:
-	@mkdir -p $(BUILD_DIR_I)
+	@mkdir -p $(BUILD_DIR)
 
-# DEPS 
+########
+# Lint #
+########
 
+# Dependencies for linter.
 pcs_tx_deps := pcs_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v am_tx.v am_lane_tx.v  
 pcs_rx_deps := pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v _64b66b_rx.v dec_lite_rx.v 
 
-# LINT
-
 lint_64b66b_tx : _64b66b_tx.v build
-	$(call LINT_$(SIM), _64b66b_tx.v, $64b66b_tx)
+	$(call LINT, _64b66b_tx.v, $64b66b_tx)
 
 lint_64b66b_rx : _64b66b_rx.v build
-	$(call LINT_$(SIM), _64b66b_rx.v,$,64b66b_rx)
+	$(call LINT, _64b66b_rx.v,$,64b66b_rx)
 
 lint_pcs_tx : $(pcs_tx_deps)
-	$(call LINT_$(SIM), $(pcs_tx_deps),pcs_tx)
+	$(call LINT, $(pcs_tx_deps),pcs_tx)
 
 lint_pcs_rx: $(pcs_rx_deps)
-	$(call LINT_$(SIM), $(pcs_rx_deps),pcs_rx)
-	
-# Test bench 
+	$(call LINT, $(pcs_rx_deps),pcs_rx)
 
-_64b66b_tb: _64b66b_tx.v _64b66b_rx.v ${TB_DIR}/_64b66b_tb.v
-	$(call BUILD_$(SIM),$^,$@)
 
-gearbox_tx_tb: gearbox_tx.v ${TB_DIR}/gearbox_tx_tb.sv
-	$(call BUILD_$(SIM),$^,$@)
+#############
+# Testbench #
+#############
 
-block_sync_rx_tb: block_sync_rx.v $(TB_DIR)/block_sync_rx_tb.sv 
-	$(call BUILD_$(SIM),$^,$@)
+# The list of testbenches.
+tbs := 64b66b gearbox_tx sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx run_deskew_rx
 
-am_lock_rx_tb: am_lock_rx.v $(TB_DIR)/am_lock_rx_tb.sv 
-	$(call BUILD_$(SIM),$^,$@)
+# Standard run recipe to build a given testbench
+define build_recipe
+$1_tb: $$($(1)_deps)
+	$$(call BUILD,$$^,$$@)
 
-lane_reorder_rx_tb: lane_reorder_rx.v $(TB_DIR)/lane_reorder_rx_tb.sv 
-	$(call BUILD_$(SIM),$^,$@)
+endef
 
-xgmii_dec_rx_tb: dec_lite_rx.v xgmii_dec_intf_rx.v $(TB_DIR)/xgmii_dec_rx_tb.sv 
-	$(call BUILD_$(SIM),$^,$@)
+# Dependencies for each testbench
+# TODO the pattern $(TB_DIR)/$(TB_NAME)_tb.sv can be optimized, if _64b66b_tb.v -> _64b66b_tb.sv is ok.
+_64b66b_deps := _64b66b_tx.v _64b66b_rx.v $(TB_DIR)/_64b66b_tb.v
+gearbox_tx_deps := gearbox_tx.v $(TB_DIR)/gearbox_tx_tb.sv
+block_sync_rx_deps := block_sync_rx.v $(TB_DIR)/block_sync_rx_tb.sv 
+am_lock_rx_deps := am_lock_rx.v $(TB_DIR)/am_lock_rx_tb.sv 
+lane_reorder_rx_deps := lane_reorder_rx.v $(TB_DIR)/lane_reorder_rx_tb.sv 
+xgmii_dec_rx_deps := dec_lite_rx.v xgmii_dec_intf_rx.v $(TB_DIR)/xgmii_dec_rx_tb.sv 
+deskew_rx_deps := deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv 
 
-deskew_rx_tb: deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv 
-	$(call BUILD_$(SIM),$^,$@)
+# Generate build recipes for each testbench.
+$(eval $(foreach x,$(tbs),$(call run_recipe,$x)))
+
+# Standard run recipe to run a given testbench
+define run_recipe
+run_$1: $1_tb
+	$$(call RUN,$$^)
+
+endef
+
+# Generate run recipes for each testbench.
+$(eval $(foreach x,$(tbs),$(call run_recipe,$x)))
+
+#################
+# VPI testbench #
+#################
+
+# WIP so didn't touch too much.
+
+pcs_tb : $(TB_DIR)/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
+	$(call BUILD_VPI,$^,$@,vpi)
 
 # VPI Test bench 
-am_tx_tb :  am_tx.v am_lane_tx.v ${TB_DIR}/am_tx_tb.sv 
-	$(call BUILD_VPI_$(SIM),$^,$@,vpi_marker,tb_marker.vpi)
-
-pcs_tb : ${TB_DIR}/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
-	$(call BUILD_VPI_$(SIM),$^,$@,vpi)
-
-# Classic TB run 
-run_64b66b: _64b66b_tb
-	$(call RUN_$(SIM),$^)
-
-run_gearbox_tx: gearbox_tx_tb
-	$(call RUN_$(SIM),$^)
-
-run_sync_rx: block_sync_rx_tb
-	$(call RUN_$(SIM),$^)
-
-run_am_lock_rx: am_lock_rx_tb
-	$(call RUN_$(SIM),$^)
-
-run_lane_reorder_rx: lane_reorder_rx_tb
-	$(call RUN_$(SIM),$^)
-
-run_xgmii_dec_rx: xgmii_dec_rx_tb
-	$(call RUN_$(SIM),$^)
-
-run_deskew_rx: deskew_rx_tb
-	$(call RUN_$(SIM),$^)
+am_tx_tb :  am_tx.v am_lane_tx.v $(TB_DIR)/am_tx_tb.sv 
+	$(call BUILD_VPI,$^,$@,vpi_marker,tb_marker.vpi)
 
 # Run VPI
-run_pcs_cmd := vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) -mtb $(BUILD_DIR_$(SIM))/pcs_tb
+run_pcs_cmd := vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR) -mtb $(BUILD_DIR)/pcs_tb
 run_pcs: pcs_tb
-	$(call RUN_VPI_$(SIM),$^)
+	$(call RUN_VPI,$^)
 	#$(run_pcs_cmd)
 
 run_am_tx: am_tx_tb
-	mv $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM))/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM))/tb.vpi
-	#vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR_$(SIM)) -mtb $(BUILD_DIR_$(SIM))/am_tx_tb
-	$(call RUN_VPI_$(SIM),$^)
-
-run: run_pcs
+	mv $(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR)/tb.vpi
+	#vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR) -mtb $(BUILD_DIR)/am_tx_tb
+	$(call RUN_VPI,$^)
 
 vpi:
-	cd $(VPI_DIR) && $(MAKE) $(BUILD_VPI_DIR_$(SIM))/tb.vpi SIM=$(SIM) $(DEFINES) $(40GBASE_ARGS)
+	cd $(VPI_DIR) && $(MAKE) $(BUILD_VPI_DIR)/tb.vpi SIM=$(SIM) $(DEFINES) $(40GBASE_ARGS)
 
 vpi_marker:
-	cd $(VPI_DIR) && $(MAKE) $(BUILD_VPI_DIR_$(SIM))/tb_marker.vpi SIM=$(SIM) $(DEFINES) $(40GBASE_ARGS)
+	cd $(VPI_DIR) && $(MAKE) $(BUILD_VPI_DIR)/tb_marker.vpi SIM=$(SIM) $(DEFINES) $(40GBASE_ARGS)
 
 wave: config
-	${VIEW} $(WAVE_DIR)/${WAVE_FILE} ${CONF}/${WAVE_CONF}
+	$(VIEW) $(WAVE_DIR)/$(WAVE_FILE) $(CONF)/$(WAVE_CONF)
+
+#################
+# Debug targets #
+#################
 
 valgrind: 
 	valgrind $(run_pcs_cmd)
@@ -210,13 +263,24 @@ profile: pcs_tb vpi
 	valgrind --tool=callgrind $(run_pcs_cmd)
 
 gdb: pcs_tb vpi
-	gdb -x $(CONF)/$(GDB_CONF) --args vvp -M $(VPI_DIR)/$(BUILD_DIR_I) -mtb $(BUILD_DIR_I)/pcs_tb
+	gdb -x $(CONF)/$(GDB_CONF) --args vvp -M $(VPI_DIR)/$(BUILD_DIR) -mtb $(BUILD_DIR)/pcs_tb
 
+####################
+# Standard targets #
+####################
+
+# Cleanup
 clean:
 	cd $(VPI_DIR) && $(MAKE) clean
 	rm -f vgcore.* vgd.log*
 	rm -f callgrind.out.*
-	rm -fr $(BUILD_DIR_I)/*
-	rm -fr $(BUILD_DIR_V)/*
+	rm -fr $(BUILD_DIR)/*
+	rm -fr $(BUILD_DIR)/*
 	rm -fr $(WAVE_DIR)/*
+
+# Run
+run: run_pcs
+
+# Default.
+all: run wave
 	

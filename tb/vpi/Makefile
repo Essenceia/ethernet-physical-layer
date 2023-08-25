@@ -12,111 +12,131 @@
 % :: SCCS/%
 % :: SCCS/s.%
 
-# Define simulator we are going to use, priority to iverilog
-ifndef SIM
-SIM := I
-endif
+############
+# Sim type #
+############
 
+# Define simulator we are using, priority to iverilog
+SIM ?= I
+$(info Using simulator: $(SIM))
+
+###########
+# Globals #
+###########
+
+# AUR Path.
 AUR := $(HOME)/AUR
-VPI_INC_I := -I$(AUR)/iverilog
 
-VPI_INC_V := -I/usr/local/share/verilator/include 
-VPI_INC_V += -I/usr/local/share/verilator/include/vltstd
-VPI_INC_V += -I../../obj_dir
+# Compilation flags.
+CC_FLAGS := -Wall -Wextra -Wconversion -Wshadow -Wundef -fno-common -Wno-unused-parameter -Wno-type-limits -fpic 
+CC_FLAGS += $(if $(debug),-g) 
 
-VPI_DIR_I := vpi_i
-VPI_DIR_V := vpi_v
+# Compilation defines.
+CC_DEFS := $(if $(debug),-DDEBUG) 
+CC_DEFS +=$(if $(40GBASE), -D_40GBASE)
 
-FLAGS = -Wall -Wextra -Wconversion -Wshadow -Wundef -fno-common -Wno-unused-parameter -Wno-type-limits -fpic 
+# Link flags.
+LD_FLAGS := $(if $(debug),-g) 
 
-DEFINES = $(if $(debug),-DDEBUG -g) 
-DEFINES +=$(if $(40GBASE), -D_40GBASE)
-
+# Per-testbench parameters.
 ifeq ($(SIM),I)
 BUILD=build
-COMPILER=cc
-PP=
-FLAGS += -std=gnu99
+CC_CMD=cc
+LD_CMD=cc
+CC_FLAGS += -std=gnu99
+VPI_INC := -I$(AUR)/iverilog
+VPI_DIR := vpi_i
+PP :=
 else
 BUILD=obj_vpi
-COMPILER=g++
-FLAGS += -fpermissive
-DEFINES += -DVERILATOR
-PP=pp
+CC_CMD=g++
+LD_CMD=g++
+CC_FLAGS += -fpermissive
+CC_DEFS += -DVERILATOR
+VPI_INC := -I/usr/local/share/verilator/include 
+VPI_INC += -I/usr/local/share/verilator/include/vltstd
+VPI_INC += -I../../obj_dir
+VPI_DIR := vpi_v
+PP := pp
 endif
 
+# Log.
 $(info Using SIM=$(SIM), building to $(BUILD) dir)
 
-CC = $(COMPILER) -g $(DEFINES)
-LD = $(COMPILER) -g $(DEFINES)  
+# Compilation utils.
+CC := $(CC_CMD) $(CC_FLAGS) $(CC_DEFS)
+LD := $(LD_CMD) $(LD_FLAGS)  
 
+###########
+# Headers #
+###########
 
-$(BUILD)/test.o:test.c
-	@mkdir -p $(@D)
-	$(CC) -o $@ -c test.c $(FLAGS)
+# All headers that are accessible to .c/cpp files.
+# Any change in those will cause any required .o file to be rebuilt.
+HDRS := pcs_gearbox.h pcs_defs.h pcs_enc.h pcs_marker.h pcs_tx.h
+HDRS += 64b66b.h
+HDRS += tb_rand.h tb_fifo.h tb_utils.h tb.h tb_marker_common.h
+HDRS += tv.h
+HDRS += $(VPI_DIR)/tb_marker.h$(PP)
 
-$(BUILD)/pcs_gearbox.o: pcs_gearbox.h pcs_gearbox.c pcs_defs.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ -c pcs_gearbox.c $(FLAGS)
+#########
+# Build #
+#########
 
-$(BUILD)/pcs_enc.o: pcs_enc.c pcs_enc.h pcs_defs.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ -c pcs_enc.c $(FLAGS)
+# General sources
+SRCS := test
+SRCS += pcs_gearbox pcs_enc pcs_marker pcs_tx
+SRCS += tb_rand tb_fifo tb_utils tb_marker_common tb
+SRCS += 64b66b
+SRCS += tv
 
-$(BUILD)/64b66b.o : 64b66b.c 64b66b.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ -c 64b66b.c $(FLAGS)
+# VPI sources
+VPI_SRCS := tb_marker
 
-$(BUILD)/pcs_marker.o : pcs_marker.c pcs_marker.h pcs_defs.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ -c pcs_marker.c $(FLAGS)
+# Standard object file build recipe.
+define obj_recipe
+$$(BUILD)/$1.o:$1.c $(HDRS)
+	@mkdir -p $$(@D)
+	$$(CC) $$(VPI_INC) -o $$@ -c $1.c
 
-$(BUILD)/tb_rand.o : tb_rand.c tb_rand.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ -c tb_rand.c $(FLAGS)
+endef
 
-$(BUILD)/pcs_tx.o: pcs_tx.h pcs_tx.c pcs_defs.h 
-	@mkdir -p $(@D)
-	$(CC) -o $@ -c pcs_tx.c $(FLAGS)
+# VPI object file build recipe.
+define vpi_obj_recipe
+$$(BUILD)/$1.o: $$(VPI_DIR)/$1.c$(PP) $$(HDRS)
+	@mkdir -p $$(@D)
+	$$(CC) $$(VPI_INC) -o $$@ -c $$(VPI_DIR)/$1.c$$(PP)
 
-$(BUILD)/tb_fifo.o: tb_fifo.h tb_fifo.c
-	@mkdir -p $(@D)
-	$(CC) -o $@ -c tb_fifo.c $(FLAGS)
+endef
 
-$(BUILD)/tv.o: tv.c tv.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ $(VPI_INC_$(SIM)) -c tv.c $(FLAGS)
+# Generate run recipes for each testbench.
+$(eval $(foreach x,$(SRCS),$(call obj_recipe,$x)))
+$(eval $(foreach x,$(VPI_SRCS),$(call vpi_obj_recipe,$x)))
 
-$(BUILD)/tb_utils.o: tb_utils.c tb_utils.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ $(VPI_INC_$(SIM)) -c tb_utils.c $(FLAGS)
+################
+# Dependencies #
+################
 
+# Dependencies for all tests. '.o'-s ommitted.
+40g_deps := $(if $(40GBASE),pcs_marker)
+deps_all := tv pcs_gearbox pcs_enc 64b66b pcs_tx tb_fifo tb_rand $(40g_deps)
 
-$(BUILD)/tb_marker_common.o: tb_marker_common.c tb_marker_common.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ $(VPI_INC_$(SIM)) -c tb_marker_common.c $(FLAGS)
+# Test dependencies names. '.o'-s ommitted.
+test_deps_names := test $(deps_all) 
+tb_deps_names := tb tb_utils $(deps_all)
+tb_marker_deps_names := tb_marker tb_utils tb_marker_common tb_rand pcs_marker
 
-# Simulator specific code 
+# Dependencies generator.
+gen_deps = $(foreach x,$($(1)_deps_names),$(BUILD)/$x.o)
 
-$(BUILD)/tb.o: tb.c tb.h
-	@mkdir -p $(@D)
-	$(CC) -o $@ $(VPI_INC_$(SIM)) -c tb.c $(FLAGS)
+# Dependencies.
+test_deps := $(call gen_deps,test)
+tb_deps := $(call gen_deps,tb)
+tb_marker_deps := $(call gen_deps,tb_marker)
 
-$(BUILD)/tb_marker.o: $(VPI_DIR_$(SIM))/tb_marker.c$(PP) $(VPI_DIR_$(SIM))/tb_marker.h$(PP)
-	@mkdir -p $(@D)
-	$(CC) -o $@ $(VPI_INC_$(SIM)) -c $(VPI_DIR_$(SIM))/tb_marker.c$(PP) $(FLAGS)
-
-
-40g_deps := $(if $(40GBASE),pcs_marker.o)
-test_deps_ := test.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o tb_rand.o tv.o $(40g_deps)
-test_deps := $(foreach x,$(test_deps_),$(BUILD)/$x)
-
-tb_deps_ := tb.o tv.o tb_utils.o pcs_gearbox.o pcs_enc.o 64b66b.o pcs_tx.o tb_fifo.o tb_rand.o $(40g_deps)
-tb_deps := $(foreach x,$(tb_deps_),$(BUILD)/$x)
-$(info TB DEPS $(tb_deps))
-
-tb_marker_deps_ := tb_marker.o tb_utils.o tb_marker_common.o tb_rand.o pcs_marker.o
-tb_marker_deps := $(foreach x,$(tb_marker_deps_),$(BUILD)/$x)
+###########
+# Targets #
+###########
 
 test: $(test_deps)
 	$(LD) -o test -g $^
@@ -133,11 +153,13 @@ $(BUILD)/tb_marker.vpi: $(BUILD)/tb_marker_all.o
 	@mkdir -p $(@D)
 	$(LD) -shared -o $(BUILD)/tb_marker.vpi $^ -lvpi
 
+####################
+# Standard targets #
+####################
+
 clean:
 	rm -rf build/*	
 	rm -rf obj_vpi/*	
 	rm -f test	
 	rm -f vgcore.*	
-
-TB_DIR=tb
 
