@@ -95,8 +95,10 @@ task fake_gearbox_rx();
 endtask
 
 initial begin
+	`ifndef VERILATOR
 	$dumpfile("build/wave.vcd");
 	$dumpvars(0, pcs_tb);
+	`endif
 	nreset = 1'b0;
 	tb_nreset = 1'b0;
 	#10
@@ -110,16 +112,16 @@ initial begin
 	nreset = 1'b1;
 
 	for(int t=0; t < `TB_LOOP_CNT_N; t++) begin
-		for( int i = 0; i < LANE_N; i++ ) begin
-		  // next block driver
-				$tb(ready_o, i,
-					ctrl_v_i[i], idle_v_i[i], start_v_i[i],
-					term_v_i[i], keep_lane[i],
-					err_v_i[i] , data_lane[i],
-					data_debug_id_lane[i]);	
-					// expected result
-				$tb_exp(i, tb_pma_lane[i], pma_debug_id_lane[i]);
-		end
+		`ifndef VERILATOR
+		// next block driver
+		$tb(ready_o,
+			ctrl_v_i, idle_v_i, start_v_i,
+			term_v_i, keep_lane,
+			err_v_i , data_i,
+			data_debug_id);	
+			// expected result
+		$tb_exp(i, tb_pma, pma_debug_id);
+		`endif
 		tb_rx();
 		#10
 		$display("loop %d", t);
@@ -130,16 +132,13 @@ initial begin
 	$finish;
 end
 
-// check : experiemtnation, don't know if this would work
-//assert( pma_o == tb_pma);
-
 genvar x;
 generate 
 	for( x=0 ; x < LANE_N ; x++ ) begin
 		// TX 
-		assign data_i[x*DATA_W+DATA_W-1:x*DATA_W] = data_lane[x];
-		assign keep_i[x*KEEP_W+KEEP_W-1:x*KEEP_W] = keep_lane[x];
-		assign tb_pma[x*DATA_W+DATA_W-1:x*DATA_W] = tb_pma_lane[x];
+		//assign data_i[x*DATA_W+DATA_W-1:x*DATA_W] = data_lane[x];
+		//assassign keep_i[x*KEEP_W+KEEP_W-1:x*KEEP_W] = keep_lane[x];
+		//assassign tb_pma[x*DATA_W+DATA_W-1:x*DATA_W] = tb_pma_lane[x];
 
 		assign data_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W] = data_debug_id_lane[x];
 		assign pma_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W]  = pma_debug_id_lane[x];

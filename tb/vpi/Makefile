@@ -76,9 +76,11 @@ LD := $(LD_CMD) $(LD_FLAGS)
 # Any change in those will cause any required .o file to be rebuilt.
 HDRS := pcs_gearbox.h pcs_defs.h pcs_enc.h pcs_marker.h pcs_tx.h
 HDRS += 64b66b.h
-HDRS += tb_rand.h tb_fifo.h tb_utils.h tb.h tb_marker_common.h
+HDRS += tb_rand.h tb_fifo.h tb_utils.h 
+HDRS += tb_pcs_common.h tb_marker_common.h
 HDRS += tv.h
 HDRS += $(VPI_DIR)/tb_marker.h$(PP)
+HDRS += $(VPI_DIR)/tb_pcs.h$(PP)
 
 #########
 # Build #
@@ -87,12 +89,14 @@ HDRS += $(VPI_DIR)/tb_marker.h$(PP)
 # General sources
 SRCS := test
 SRCS += pcs_gearbox pcs_enc pcs_marker pcs_tx
-SRCS += tb_rand tb_fifo tb_utils tb_marker_common tb
+SRCS += tb_rand tb_fifo tb_utils
+SRCS += tb_marker_common tb_pcs_common
 SRCS += 64b66b
 SRCS += tv
 
 # VPI sources
 VPI_SRCS := tb_marker
+VPI_SRCS += tb_pcs
 
 # Standard object file build recipe.
 define obj_recipe
@@ -124,7 +128,7 @@ deps_all := tv pcs_gearbox pcs_enc 64b66b pcs_tx tb_fifo tb_rand $(40g_deps)
 
 # Test dependencies names. '.o'-s ommitted.
 test_deps_names := test $(deps_all) 
-tb_deps_names := tb tb_utils $(deps_all)
+tb_deps_names := tb_pcs tb_pcs_common tb_utils $(deps_all)
 tb_marker_deps_names := tb_marker tb_utils tb_marker_common tb_rand pcs_marker
 
 # Dependencies generator.

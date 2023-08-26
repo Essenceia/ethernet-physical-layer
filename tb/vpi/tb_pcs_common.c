@@ -7,17 +7,97 @@
 
 #include "tv.h"
 #include "defs.h"
-#include "tb.h"
+#include "tb_pcs_common.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include "tb_utils.h"
 
-// Drive PCS input values
-int tb_pcs_tx(
-	tv_t *tv_s,
-	int lane, 
+#define FLATTEN_1b(ctrl, elem) \
+	elem = 0;\
+	for(int i=0; i<LANE_N; i++){\
+		elem |= ( ctrl[i].elem << i ); \
+	} 
 
+#define FLATTEN_START_Wb(ctrl, elem) \
+	elem = 0;\
+	for(int i=0; i<LANE_N; i++){\
+		for(int w=0; w<START_W; w++){\
+			elem |= ( ctrl[i].elem[w] << (i*START_W+w) ); \
+		}\
+	} 
+
+
+#define FLATTEN_8b(ctrl, elem) \
+	elem = 0;\
+	assert(sizeof(elem) >= LANE_N*8);\
+	for(int i=0; i<LANE_N; i++){\
+		elem |= ( ctrl[i].elem << (i*8) ); \
+	} 
+
+
+void tb_pcs_get_tx_lane(
+	tv_t *tv_s,
+	int lane,
+	ctrl_lite_s *ctrl,
+	uint64_t *data,
+	uint64_t *debug_id
+){
+	bool has_data;
+
+	// get ctrl and data to drive tx pcs
+	do{
+		has_data = tv_get_next_txd(tv_s, &ctrl, &data, debug_id, lane);
+		if (!has_data) tv_create_packet(tv_s, lane);
+	}while(!has_data);
+	info("tv data %016lx\n", *data);
+}
+
+void tb_pcs_set_data(
+	ctrl_lite_s ctrl[LANE_N],
+	uint64_t data[LANE_N],
+	uint64_t debug_id[LANE_N],
+	vpiHandle h_ready_o,
+	vpiHandle h_ctrl_v_i,
+	vpiHandle h_idle_v_i,
+	vpiHandle h_start_v_i,
+	vpiHandle h_term_v_i,
+	vpiHandle h_term_keep_i,
+	vpiHandle h_err_v_i,
+	vpiHandle h_data_i,
+	vpiHandle h_debug_id_i
+){
+	/* write ctrl */
+	uint32_t ctrl_v;
+	uint32_t idle_v;
+	uint32_t start_v;
+	uint32_t term_v;
+	uint32_t term_keep;
+	uint32_t err_v;
+	/* flatten data */
+	FLATTEN_1b(ctrl,ctrl_v);
+	FLATTEN_1b(ctrl,idle_v);
+	FLATTEN_START_Wb(ctrl,start_v);
+	FLATTEN_1b(ctrl,term_v);
+	FLATTEN_8b(ctrl,term_keep);
+	FLATTEN_1b(ctrl,err_v);
+	/* write */
+	tb_vpi_put_logic_uint32_t(h_ctrl_v_i, ctrl_v);
+	tb_vpi_put_logic_uint32_t(h_idle_v_i, idle_v);
+	tb_vpi_put_logic_uint32_t(h_start_v_i, start_v);
+	tb_vpi_put_logic_uint32_t(h_term_v_i, term_v);
+	tb_vpi_put_logic_uint32_t(h_term_keep_i, term_keep);
+	tb_vpi_put_logic_uint32_t(h_err_v_i, err_v);
+
+	/* data */
+	tb_vpi_put_logic_uint64_t_var_arr(h_data_i, data, LANE_N);
+	tb_vpi_put_logic_uint64_t_var_arr(h_debug_id_i, debug_id, LANE_N);
+}
+
+
+// Drive PCS input values
+void tb_pcs_tx(
+	tv_t *tv_s,	
 	vpiHandle h_ready_o,
 	vpiHandle h_ctrl_v_i,
 	vpiHandle h_idle_v_i,
@@ -32,7 +112,6 @@ int tb_pcs_tx(
 	int 	ready;
 
 	// aserts	
-	assert((lane < LANE_N) && ( lane > -1 )); 
 	assert(h_ready_o);
 	assert(h_ctrl_v_i);
 	assert(h_idle_v_i);
@@ -41,7 +120,7 @@ int tb_pcs_tx(
 	assert(h_term_keep_i);
 	assert(h_err_i);
 	assert(h_data_i);
-	assrt(h_debug_id_i);
+	assert(h_debug_id_i);
 	
 	// get value of ready
 	s_vpi_value ready_val;
@@ -53,86 +132,76 @@ int tb_pcs_tx(
 
 	// create a new packet if none exist
 	info("Getting next txd");
-	
-	if (ready) {
-		bool has_data;
-		uint64_t *data;
-		uint64_t debug_id;
-		ctrl_lite_s *ctrl;
 
-		// get ctrl and data to drive tx pcs
-		do{
-			has_data = tv_get_next_txd(tv_s, &ctrl, &data, &debug_id, lane);
-			if (!has_data) tv_create_packet(tv_s, lane);
-		}while(!has_data);
-		info("tv data %016lx\n", *data);
-		
-		// write signals through vpi interface
-		// ctrl
-		tb_vpi_put_logic_1b_t(h_ctrl_v_i, ctrl->ctrl_v);
-		tb_vpi_put_logic_1b_t(h_idle_v_i, ctrl->idle_v);
-		// start 
-		uint8_t s = 0;
-		for(int l=START_W-1; l>-1 ;l--)
-			s= (s<<1) | ctrl->start_v[l]; 
-		tb_vpi_put_logic_uint8_t(h_start_v_i, s);
-		tb_vpi_put_logic_1b_t(h_term_v_i, ctrl->term_v);
-		tb_vpi_put_logic_uint8_t(h_term_keep_i, ctrl->term_keep);
-		tb_vpi_put_logic_1b_t(h_err_i, ctrl->err_v);
 
-		// data
-		tb_vpi_put_logic_uint64_t(h_data_i, data[0] );
-		// debug id
- 		tb_vpi_put_logic_uint64_t(h_debug_id_i, debug_id);
-		//vpi_free_handle(argv);
-		free(data);
-		free(ctrl);
+	if(ready){
+		ctrl_lite_s cltr[LANE_N];
+		uint64_t data[LANE_N];
+		uint64_t debug_id[LANE_N];
 
+		for(int l=0; l<LANE_N; l++){
+
+			tb_pcs_get_tx_lane( tv_s,l,
+				&cltr[l], &data[l], &debug_id[l]);
+		}
+		// write data
+		tb_pcs_set_data(ctrl, data, debug_id
+			h_ready_o, h_ctrl_v_i, h_idle_v_i,
+			h_start_v_i, h_term_v_i, h_term_keep_i,
+			h_err_v_i, h_data_i, h_debug_id_i);
 	}
-	return 0;
+
 }
 
 
-/* Produce the expected output of the PCS and write it
- * to signals passed as parameter  */
-static PLI_INT32 tb_exp_calltf(
-	char *user_data
-)
-{
-	vpiHandle sys = vpi_handle(vpiSysTfCall, 0);
-	assert(sys);
-	vpiHandle argv = vpi_iterate(vpiArgument, sys);
-	assert(argv);
-		
-	// get lane n
-	vpiHandle lane_h = vpi_scan(argv);
-	assert(lane_h);
-	s_vpi_value lane_val;
-	lane_val.format = vpiIntVal;
-	vpi_get_value(lane_h, &lane_val);	
-	int lane = lane_val.value.integer;
+void tb_pcs_exp_get_lane(
+	tv_t *tv_s,
+	int lane,
+	uint64_t *pma,
+	uint64_t* debug_id
+){
 	assert((lane < LANE_N) && ( lane > -1 )); 
-	
-	// pop fifo
 	ctrl_lite_s *ctrl;
-	uint64_t debug_id;
-	uint64_t *pma;
 	// if the end of the fifo collides with a cycle the pcs
 	// doesn't accept a new data we much call creat packet
 	do{
-		pma = tb_pma_fifo_pop( tv_s->pma[lane], &debug_id, &ctrl);
+		pma = tb_pma_fifo_pop( tv_s->pma[lane], debug_id, &ctrl);
 		if(pma==NULL) tv_create_packet(tv_s, lane);
 	}while(pma == NULL);
 	assert(ctrl == NULL); // there is no crtl on pma
 	
-	// write pma
-	info("fifo lane %d pop %ld data %016lx\n", lane, debug_id, *pma);
-	tb_vpi_put_logic_uint64_t_var_arr(argv, pma, 1);
-		
-	// write debug id 
-	tb_vpi_put_logic_uint64_t(argv, debug_id);
+}
 
-	free(pma); 
-	return 0;
+void tb_pcs_exp_set_data(
+	uint64_t pma[LANE_N],
+	uint64_t debug_id[LANE_N],
+	vpiHandle h_pma_o,
+	vpiHandle h_debug_id_o		
+){
+	// pma
+	tb_vpi_put_logic_uint64_t_var_ar(h_pma_o, pma, LANE_N);
+	// debug id
+	tb_vpi_put_logic_uint64_t_var_ar(h_debug_id_o, debug_id, LANE_N);
+}
+
+/* Produce the expected output of the PCS and write it
+ * to signals passed as parameter  */
+void tb_pcs_tx_exp(
+	tv_t *tv_s,
+	vpiHandle h_pma_o,
+	vpiHandle h_debug_id_o
+){
+	assert(h_pma_o);
+	assert(h_debug_id_o);
+	
+	// pop fifo
+	ctrl_lite_s ctrl[LANE_N];
+	uint64_t pma[LANE_N];
+	uint64_t debug_id[LANE_N];
+
+	for(int l=0; l < LANE_N; l++){
+		tb_pcs_exp_get_lane(tv_s, l, pma[l], debug_id[l]);
+	}
+	tb_pcs_exp_set_data(pma, debug_id, h_pma_o, h_debug_id_o);
 }
 

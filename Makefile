@@ -224,7 +224,7 @@ $(eval $(foreach x,$(tbs),$(call run_recipe,$x)))
 # WIP so didn't touch too much.
 
 pcs_tb : $(TB_DIR)/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
-	$(call BUILD_VPI,$^,$@,vpi)
+	$(call BUILD_VPI,$^,$@,vpi,tb.vpi)
 
 # VPI Test bench 
 am_tx_tb :  am_tx.v am_lane_tx.v $(TB_DIR)/am_tx_tb.sv 
@@ -237,7 +237,7 @@ run_pcs: pcs_tb
 	#$(run_pcs_cmd)
 
 run_am_tx: am_tx_tb 
-	#mv $(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR)/tb.vpi
+	cp $(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR)/tb.vpi
 	#vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR) -mtb $(BUILD_DIR)/am_tx_tb
 	$(call RUN_VPI,$^)
 

@@ -36,7 +36,11 @@ bool get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uint64
 	#endif	
 	gb_full &= gearbox_full(state->gearbox_state[l]);
 
+	#ifdef _40GBASE
 	marker_v = is_alignement_marker(state->marker_state);
+	#else
+	marker_v = false;
+	#endif
 	
 	accept = !( gb_full || marker_v );
 	info("[%ld] accpet %d full %d marker %d\n",l, accept, gb_full, marker_v);

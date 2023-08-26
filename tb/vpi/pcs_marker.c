@@ -27,7 +27,10 @@ uint8_t calculate_bip_per_lane(
 {
 	uint64_t data = out.data;
 	uint8_t  head = out.head;
+
+	#ifdef DEBUG
 	uint8_t i = 0;
+	#endif
 
 	info("calculate bip per lane , data , head { %lx, %x }\n", data, head );
 	// 0

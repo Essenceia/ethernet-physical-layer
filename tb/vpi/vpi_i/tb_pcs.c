@@ -5,13 +5,12 @@
  * 
  * This code is provided "as is" without any express or implied warranties. */ 
 
-#include "tv.h"
-#include "defs.h"
-#include "tb.h"
+#include "tb_pcs.h"
+#include "../tb_pcs_common.h"
+#include "../tv.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
-#include "tb_utils.h"
 
 static tv_t  *tv_s = NULL;
 
@@ -27,10 +26,6 @@ static int tb_compiletf(char*user_data)
 // Drive PCS input values
 static int tb_calltf(char*user_data)
 {
-	int 	lane;
-	int 	ready;
-	bool    has_data;
-	
 	vpiHandle sys;
 	vpiHandle argv;
 	
@@ -41,68 +36,32 @@ static int tb_calltf(char*user_data)
 	#ifdef DEBUG
    	vpi_printf("TB call\n");
 	#endif
+
 	assert(tv_s);
 
-	// ready
-	s_vpi_value ready_val;
-	vpiHandle ready_h;
+	// handlers : the order matters
+	vpiHandle h_ready_o = vpi_scan(argv);
+	vpiHandle h_ctrl_v_i= vpi_scan(argv);
+	vpiHandle h_idle_v_i= vpi_scan(argv);
+	vpiHandle h_start_v_i= vpi_scan(argv);
+	vpiHandle h_term_v_i= vpi_scan(argv);
+	vpiHandle h_term_keep_i= vpi_scan(argv);
+	vpiHandle h_err_i= vpi_scan(argv);
+	vpiHandle h_data_i= vpi_scan(argv);
+	vpiHandle h_debug_id_i= vpi_scan(argv);
+
+
+	tb_pcs_tx(tv_s, 
+		h_ready_o, 
+		h_ctrl_v_i, 
+		h_idle_v_i,
+		h_start_v_i, 
+		h_term_v_i, 
+		h_term_keep_i,
+		h_err_i, 
+		h_data_i,
+		h_debug_id_i);	
 	
-	ready_h = vpi_scan(argv);
-	assert(ready_h);
-	ready_val.format = vpiIntVal;
-	vpi_get_value(ready_h, &ready_val);
-	ready = ready_val.value.integer;		
-	
-	// get lane n
-	s_vpi_value lane_val;
-	vpiHandle lane_h;
-		
-	lane_h = vpi_scan(argv);
-	assert(lane_h);
-	lane_val.format = vpiIntVal;
-	vpi_get_value(lane_h, &lane_val);	
-	lane = lane_val.value.integer;
-	assert((lane < LANE_N) && ( lane > -1 )); 
-
-	info("$tb ready %d called on lane %d\n", ready, lane);
-
-	// create a new packet if none exist
-	info("Getting next txd");
-	
-	if (ready) {
-		uint64_t *data;
-		uint64_t debug_id;
-		ctrl_lite_s *ctrl;
-
-		// get ctrl and data to drive tx pcs
-		do{
-			has_data = tv_get_next_txd(tv_s, &ctrl, &data, &debug_id, lane);
-			if (!has_data) tv_create_packet(tv_s, lane);
-		}while(!has_data);
-		info("tv data %016lx\n", *data);
-		
-		// write signals through vpi interface
-		// ctrl
-		tb_vpi_put_logic_1b_t(argv, ctrl->ctrl_v);
-		tb_vpi_put_logic_1b_t(argv, ctrl->idle_v);
-		// start 
-		uint8_t s = 0;
-		for(int l=START_W-1; l>-1 ;l--)
-			s= (s<<1) | ctrl->start_v[l]; 
-		tb_vpi_put_logic_uint8_t(argv, s);
-		tb_vpi_put_logic_1b_t(argv, ctrl->term_v);
-		tb_vpi_put_logic_uint8_t(argv, ctrl->term_keep);
-		tb_vpi_put_logic_1b_t(argv, ctrl->err_v);
-
-		// data
-		tb_vpi_put_logic_uint64_t(argv, data[0] );
-		// debug id
- 		tb_vpi_put_logic_uint64_t(argv, debug_id);
-		//vpi_free_handle(argv);
-		free(data);
-		free(ctrl);
-
-	}
 	return 0;
 }
 void tb_register()
@@ -135,36 +94,16 @@ static PLI_INT32 tb_exp_calltf(
 	vpiHandle argv = vpi_iterate(vpiArgument, sys);
 	assert(argv);
 		
-	// get lane n
-	vpiHandle lane_h = vpi_scan(argv);
-	assert(lane_h);
-	s_vpi_value lane_val;
-	lane_val.format = vpiIntVal;
-	vpi_get_value(lane_h, &lane_val);	
-	int lane = lane_val.value.integer;
-	assert((lane < LANE_N) && ( lane > -1 )); 
-	
-	// pop fifo
-	ctrl_lite_s *ctrl;
-	uint64_t debug_id;
-	uint64_t *pma;
-	// if the end of the fifo collides with a cycle the pcs
-	// doesn't accept a new data we much call creat packet
-	do{
-		pma = tb_pma_fifo_pop( tv_s->pma[lane], &debug_id, &ctrl);
-		if(pma==NULL) tv_create_packet(tv_s, lane);
-	}while(pma == NULL);
-	assert(ctrl == NULL); // there is no crtl on pma
-	
-	// write pma
-	info("fifo lane %d pop %ld data %016lx\n", lane, debug_id, *pma);
-	tb_vpi_put_logic_uint64_t_var_arr(argv, pma, 1);
-		
-	// write debug id 
-	tb_vpi_put_logic_uint64_t(argv, debug_id);
+	vpiHandle h_pma_o = vpi_scan(argv);
+	vpiHandle h_debug_id_o = vpi_scan(argv);	
 
-	free(pma); 
-	return 0;
+	// assert
+	assert(h_pma_o);
+	assert(h_debug_id_o);	
+
+	tb_pcs_tx_exp(tv_s, h_pma_o, h_debug_id_o);
+
+	return 0;	
 }
 
 void tb_exp_register()
