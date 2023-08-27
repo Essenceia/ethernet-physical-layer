@@ -73,7 +73,7 @@ bool get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uint64
 	gb_full_next &= gearbox(&state->gearbox_state[l], state->block_mark[l], pma);
 	info("Gearbox in x%016lx out x%016lx  state %d\n", state->block_mark[l].data, *pma, state->gearbox_state[l].len);
 	#else
-	gb_full_next = gearbox(&state->gearbox_state[l], state->block_scram[l], pma);
+	gb_full_next = gearbox(&state->gearbox_state[l], state->block_scram, pma);
 	#endif
 	if ( gb_full && ( gb_full_next == gb_full )){
 		fprintf(stderr, "Error, full state next should not match current state q %d next %d\n",

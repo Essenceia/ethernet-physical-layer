@@ -146,7 +146,11 @@ tb_marker_deps := $(call gen_deps,tb_marker)
 test: $(test_deps)
 	$(LD) -o test -g $^
 
-$(BUILD)/tb.vpi: $(tb_deps)
+$(BUILD)/tb_all.o: $(tb_deps)
+	@mkdir -p $(@D)
+	$(LD) -r -o $(BUILD)/tb_all.o $^
+
+$(BUILD)/tb.vpi: $(BUILD)/tb_all.o
 	@mkdir -p $(@D)
 	$(LD) -shared -o $(BUILD)/tb.vpi $^ -lvpi
 

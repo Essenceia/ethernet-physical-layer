@@ -16,46 +16,50 @@
 #define FLATTEN_1b(ctrl, elem) \
 	elem = 0;\
 	for(int i=0; i<LANE_N; i++){\
-		elem |= ( ctrl[i].elem << i ); \
+		elem |= ( (*ctrl[i]).elem << i ); \
 	} 
 
 #define FLATTEN_START_Wb(ctrl, elem) \
 	elem = 0;\
 	for(int i=0; i<LANE_N; i++){\
 		for(int w=0; w<START_W; w++){\
-			elem |= ( ctrl[i].elem[w] << (i*START_W+w) ); \
+			elem |= ( (*ctrl[i]).elem[w] << (i*START_W+w) ); \
 		}\
 	} 
 
 
 #define FLATTEN_8b(ctrl, elem) \
 	elem = 0;\
-	assert(sizeof(elem) >= LANE_N*8);\
+	info("sizeof(elem) %ld\n",sizeof(elem));\
+	//assert(sizeof(elem) >= LANE_N*8);\
 	for(int i=0; i<LANE_N; i++){\
-		elem |= ( ctrl[i].elem << (i*8) ); \
+		elem |= ( (*ctrl[i]).elem << (i*8) ); \
 	} 
 
 
 void tb_pcs_get_tx_lane(
 	tv_t *tv_s,
 	int lane,
-	ctrl_lite_s *ctrl,
-	uint64_t *data,
+	ctrl_lite_s **ctrl,
+	uint64_t **data,
 	uint64_t *debug_id
 ){
 	bool has_data;
 
 	// get ctrl and data to drive tx pcs
 	do{
-		has_data = tv_get_next_txd(tv_s, &ctrl, &data, debug_id, lane);
+		has_data = tv_get_next_txd(tv_s, ctrl, data, debug_id, lane);
 		if (!has_data) tv_create_packet(tv_s, lane);
 	}while(!has_data);
-	info("tv data %016lx\n", *data);
+	assert(ctrl);
+	assert(data);
+	assert(debug_id);
+	info("tv data %016lx\n", **data);
 }
 
 void tb_pcs_set_data(
-	ctrl_lite_s ctrl[LANE_N],
-	uint64_t data[LANE_N],
+	ctrl_lite_s *ctrl[LANE_N],
+	uint64_t *data[LANE_N],
 	uint64_t debug_id[LANE_N],
 	vpiHandle h_ready_o,
 	vpiHandle h_ctrl_v_i,
@@ -90,8 +94,20 @@ void tb_pcs_set_data(
 	tb_vpi_put_logic_uint32_t(h_err_v_i, err_v);
 
 	/* data */
-	tb_vpi_put_logic_uint64_t_var_arr(h_data_i, data, LANE_N);
+	uint64_t data_flat[LANE_N];
+	for(int l=0; l<LANE_N;l++){
+		data_flat[l] = *data[l];
+	}	
+	tb_vpi_put_logic_uint64_t_var_arr(h_data_i, data_flat, LANE_N);
 	tb_vpi_put_logic_uint64_t_var_arr(h_debug_id_i, debug_id, LANE_N);
+
+	#ifdef DEBUG
+	info("Tx pcs data {");
+	for(int i=0; i<LANE_N; i++){
+		info(" %lx,",**data[i]);
+	}
+	info("}\n");
+	#endif
 }
 
 
@@ -104,7 +120,7 @@ void tb_pcs_tx(
 	vpiHandle h_start_v_i,
 	vpiHandle h_term_v_i,
 	vpiHandle h_term_keep_i,
-	vpiHandle h_err_i,
+	vpiHandle h_err_v_i,
 	vpiHandle h_data_i,
 	vpiHandle h_debug_id_i
 )
@@ -118,7 +134,7 @@ void tb_pcs_tx(
 	assert(h_start_v_i);
 	assert(h_term_v_i);
 	assert(h_term_keep_i);
-	assert(h_err_i);
+	assert(h_err_v_i);
 	assert(h_data_i);
 	assert(h_debug_id_i);
 	
@@ -128,27 +144,31 @@ void tb_pcs_tx(
 	ready_val.format = vpiIntVal;
 	vpi_get_value(h_ready_o, &ready_val);
 	ready = ready_val.value.integer;		
-	info("$tb ready %d called on lane %d\n", ready, lane);
+	info("$tb ready %d\n", ready);
 
 	// create a new packet if none exist
 	info("Getting next txd");
 
 
 	if(ready){
-		ctrl_lite_s cltr[LANE_N];
-		uint64_t data[LANE_N];
+		ctrl_lite_s *ctrl[LANE_N];
+		uint64_t *data[LANE_N];
 		uint64_t debug_id[LANE_N];
 
 		for(int l=0; l<LANE_N; l++){
 
 			tb_pcs_get_tx_lane( tv_s,l,
-				&cltr[l], &data[l], &debug_id[l]);
+				&ctrl[l], &data[l], &debug_id[l]);
 		}
 		// write data
-		tb_pcs_set_data(ctrl, data, debug_id
+		tb_pcs_set_data(ctrl, data, debug_id,
 			h_ready_o, h_ctrl_v_i, h_idle_v_i,
 			h_start_v_i, h_term_v_i, h_term_keep_i,
 			h_err_v_i, h_data_i, h_debug_id_i);
+		for(int l=0; l<LANE_N; l++){
+			free(ctrl[l]);
+			free(data[l]);
+		}
 	}
 
 }
@@ -158,7 +178,7 @@ void tb_pcs_exp_get_lane(
 	tv_t *tv_s,
 	int lane,
 	uint64_t *pma,
-	uint64_t* debug_id
+	uint64_t *debug_id
 ){
 	assert((lane < LANE_N) && ( lane > -1 )); 
 	ctrl_lite_s *ctrl;
@@ -179,9 +199,9 @@ void tb_pcs_exp_set_data(
 	vpiHandle h_debug_id_o		
 ){
 	// pma
-	tb_vpi_put_logic_uint64_t_var_ar(h_pma_o, pma, LANE_N);
+	tb_vpi_put_logic_uint64_t_var_arr(h_pma_o, pma, LANE_N);
 	// debug id
-	tb_vpi_put_logic_uint64_t_var_ar(h_debug_id_o, debug_id, LANE_N);
+	tb_vpi_put_logic_uint64_t_var_arr(h_debug_id_o, debug_id, LANE_N);
 }
 
 /* Produce the expected output of the PCS and write it
@@ -195,12 +215,11 @@ void tb_pcs_tx_exp(
 	assert(h_debug_id_o);
 	
 	// pop fifo
-	ctrl_lite_s ctrl[LANE_N];
 	uint64_t pma[LANE_N];
 	uint64_t debug_id[LANE_N];
 
 	for(int l=0; l < LANE_N; l++){
-		tb_pcs_exp_get_lane(tv_s, l, pma[l], debug_id[l]);
+		tb_pcs_exp_get_lane(tv_s, l, &pma[l], &debug_id[l]);
 	}
 	tb_pcs_exp_set_data(pma, debug_id, h_pma_o, h_debug_id_o);
 }

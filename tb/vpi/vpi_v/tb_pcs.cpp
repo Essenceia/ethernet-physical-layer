@@ -13,7 +13,7 @@ double sc_time_stamp() { return main_time; }
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-
+	tv_t *tv_s = tv_alloc();
 
 	const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
     const std::unique_ptr<VMODULE> top{new VMODULE{contextp.get()}};
@@ -23,19 +23,25 @@ int main(int argc, char** argv) {
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace (tfp, 15);// trace 15 levels of hierachy
-    tfp->open ("wave/"MODULE_STR".vcd");	// Open the dump file
+    tfp->open ("wave/"STR(MODULE)".vcd");	// Open the dump file
 	#endif
 
 
     //contextp->internalsDump();  // See scopes to help debug
 
 	// vpiHandlers
-	vpiHandle h_ready_o = vpi_handle_by_name((PLI_BYTE8*)"TOP."MODULE_STR".ready_o", NULL);
-
-	vpiHandle h_data_i = vpi_handle_by_name((PLI_BYTE8*)"TOP.am_tx_tb.data_i", NULL);
-	vpiHandle h_marker_v_o = vpi_handle_by_name((PLI_BYTE8*)"TOP.am_tx_tb.tb_marker_v_o", NULL);
-	vpiHandle h_head_o = vpi_handle_by_name((PLI_BYTE8*)"TOP.am_tx_tb.tb_head_o", NULL);
-	vpiHandle h_data_o = vpi_handle_by_name((PLI_BYTE8*)"TOP.am_tx_tb.tb_data_o", NULL);
+	vpiHandle h_ready_o = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".ready_o", NULL);
+	vpiHandle h_ctrl_v_i = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".ctrl_v_i", NULL);
+	vpiHandle h_idle_v_i = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".idle_v_i", NULL);
+	vpiHandle h_start_v_i = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".start_v_i", NULL);
+	vpiHandle h_term_v_i = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".term_v_i", NULL);
+	vpiHandle h_keep_i = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".keep_i", NULL);
+	vpiHandle h_err_v_i = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".err_v_i", NULL);
+	vpiHandle h_data_i = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".data_i", NULL);
+	vpiHandle h_debug_id = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".data_debug_id", NULL);
+	
+	vpiHandle h_pma = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".tb_pma", NULL);
+	vpiHandle h_pma_debug_id = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".pma_debug_id", NULL);
 
 	/* reset sequence
 	* Hold reset for 1 clk cycle -> 10 C cycles */
@@ -49,8 +55,21 @@ int main(int argc, char** argv) {
         top->eval();
         VerilatedVpi::callValueCbs();  // For signal callbacks
 		if ( main_time % 10 == 0 ){
-        	tb_marker(h_head_i,h_data_i,h_marker_v_o, 
-				h_head_o,h_data_o);
+			// pcs
+        	tb_pcs_tx(tv_s,	
+				h_ready_o,
+				h_ctrl_v_i,
+				h_idle_v_i,
+				h_start_v_i,
+				h_term_v_i,
+				h_keep_i,
+				h_err_v_i,
+				h_data_i,
+				h_debug_id);
+			// exp
+			tb_pcs_tx_exp(tv_s,
+				h_pma,
+				h_pma_debug_id);
 		}
 		#if VM_TRACE
 		if (tfp) tfp->dump (main_time);	// Create waveform trace for this timestamp
@@ -63,6 +82,9 @@ int main(int argc, char** argv) {
 	#if VM_TRACE
     if (tfp) tfp->close();
 	#endif
+	
+	// free
+	tv_free(tv_s);
 
     return 0;
 }

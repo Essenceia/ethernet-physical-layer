@@ -122,7 +122,7 @@ endef
 else
 define BUILD_VPI
 	@printf "\nVerilating vpi design and tb \n\n"
-	verilator -cc --exe --vpi --public-flat-rw $(LINT_FLAGS) $(BUILD_FLAGS) --top-module $2 -LDFLAGS "$(CWD)/$(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker_all.o Vam_tx_tb__ALL.a" -o $2 $1
+	verilator -cc --exe --vpi --public-flat-rw --threads 1 $(LINT_FLAGS) $(BUILD_FLAGS) --top-module $2 -LDFLAGS "$(CWD)/$(VPI_DIR)/$(BUILD_VPI_DIR)/$4_all.o V$2__ALL.a" -o $2 $1
 	
 	@printf "\nMaking vpi shared object \n\n"
 	@$(MAKE) -f Makefile $3
@@ -224,11 +224,11 @@ $(eval $(foreach x,$(tbs),$(call run_recipe,$x)))
 # WIP so didn't touch too much.
 
 pcs_tb : $(TB_DIR)/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
-	$(call BUILD_VPI,$^,$@,vpi,tb.vpi)
+	$(call BUILD_VPI,$^,$@,vpi,tb)
 
 # VPI Test bench 
 am_tx_tb :  am_tx.v am_lane_tx.v $(TB_DIR)/am_tx_tb.sv 
-	$(call BUILD_VPI,$^,$@,vpi_marker,tb_marker.vpi)
+	$(call BUILD_VPI,$^,$@,vpi_marker,tb_marker)
 
 # Run VPI
 run_pcs_cmd := vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR) -mtb $(BUILD_DIR)/pcs_tb

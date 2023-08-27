@@ -13,14 +13,14 @@
 void tb_pcs_get_tx_lane(
 	tv_t *tv_s,
 	int lane,
-	ctrl_lite_s *ctrl,
-	uint64_t *data,
+	ctrl_lite_s **ctrl,
+	uint64_t **data,
 	uint64_t *debug_id
 );
 /* write data to design */
 void tb_pcs_set_data(
-	ctrl_lite_s ctrl[LANE_N],
-	uint64_t data[LANE_N],
+	ctrl_lite_s *ctrl[LANE_N],
+	uint64_t *data[LANE_N],
 	uint64_t debug_id[LANE_N],
 	vpiHandle h_ready_o,
 	vpiHandle h_ctrl_v_i,
