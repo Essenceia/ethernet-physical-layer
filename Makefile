@@ -90,6 +90,7 @@ BUILD_FLAGS += $(if $(assert),--assert)
 BUILD_FLAGS += $(if $(wave), --trace --trace-underscore) 
 BUILD_FLAGS += $(if $(cov), --coverage --coverage-underscore) 
 BUILD_FLAGS += --timing
+BUILD_FLAGS += --x-initial-edge
 endif
 
 # Build commands.
@@ -255,10 +256,10 @@ wave: config
 #################
 
 valgrind: 
-	valgrind $(run_pcs_cmd)
+	valgrind $(call RUN_VPI,pcs_tb)
 
 valgrind2: pcs_tb vpi
-	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. $(run_pcs_cmd)
+	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. $(call RUN_VPI,pcs_tb) 
 
 profile: pcs_tb vpi
 	valgrind --tool=callgrind $(run_pcs_cmd)

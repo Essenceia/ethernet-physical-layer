@@ -28,13 +28,17 @@
 	} 
 
 
+/* If we add more lanes we may need to update the type
+ * used to store the keep array, add an assert to remind
+ * myself of this. */
 #define FLATTEN_8b(ctrl, elem) \
 	elem = 0;\
-	info("sizeof(elem) %ld\n",sizeof(elem));\
-	//assert(sizeof(elem) >= LANE_N*8);\
+	assert(sizeof(elem) >= LANE_N);\
 	for(int i=0; i<LANE_N; i++){\
+		info("lane %d 8b %02x\n",i,(*ctrl[i]).elem);\
 		elem |= ( (*ctrl[i]).elem << (i*8) ); \
-	} 
+	}\
+ 	info("flat %08x\n",elem);
 
 
 void tb_pcs_get_tx_lane(
@@ -85,13 +89,15 @@ void tb_pcs_set_data(
 	FLATTEN_1b(ctrl,term_v);
 	FLATTEN_8b(ctrl,term_keep);
 	FLATTEN_1b(ctrl,err_v);
+
+	info("term keep %08x\n",term_keep);
 	/* write */
-	tb_vpi_put_logic_uint32_t(h_ctrl_v_i, ctrl_v);
-	tb_vpi_put_logic_uint32_t(h_idle_v_i, idle_v);
-	tb_vpi_put_logic_uint32_t(h_start_v_i, start_v);
-	tb_vpi_put_logic_uint32_t(h_term_v_i, term_v);
+	tb_vpi_put_logic_uint8_t(h_ctrl_v_i, ctrl_v);
+	tb_vpi_put_logic_uint8_t(h_idle_v_i, idle_v);
+	tb_vpi_put_logic_uint8_t(h_start_v_i, start_v);
+	tb_vpi_put_logic_uint8_t(h_term_v_i, term_v);
 	tb_vpi_put_logic_uint32_t(h_term_keep_i, term_keep);
-	tb_vpi_put_logic_uint32_t(h_err_v_i, err_v);
+	tb_vpi_put_logic_uint8_t(h_err_v_i, err_v);
 
 	/* data */
 	uint64_t data_flat[LANE_N];
@@ -161,10 +167,18 @@ void tb_pcs_tx(
 				&ctrl[l], &data[l], &debug_id[l]);
 		}
 		// write data
-		tb_pcs_set_data(ctrl, data, debug_id,
-			h_ready_o, h_ctrl_v_i, h_idle_v_i,
-			h_start_v_i, h_term_v_i, h_term_keep_i,
-			h_err_v_i, h_data_i, h_debug_id_i);
+		tb_pcs_set_data(ctrl, 
+			data, 
+			debug_id,
+			h_ready_o, 
+			h_ctrl_v_i, 
+			h_idle_v_i,
+			h_start_v_i, 
+			h_term_v_i, 
+			h_term_keep_i,
+			h_err_v_i, 
+			h_data_i, 
+			h_debug_id_i);
 		for(int l=0; l<LANE_N; l++){
 			free(ctrl[l]);
 			free(data[l]);
@@ -188,7 +202,6 @@ void tb_pcs_exp_get_lane(
 		*pma = tb_pma_fifo_pop( tv_s->pma[lane], debug_id, &ctrl);
 		if(pma==NULL) tv_create_packet(tv_s, lane);
 	}while(pma == NULL);
-	assert(ctrl == NULL); // there is no crtl on pma
 	
 }
 

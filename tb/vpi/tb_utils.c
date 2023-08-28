@@ -39,6 +39,9 @@ void tb_vpi_put_logic_uint32_t(vpiHandle h, uint32_t var){
 	s_vpi_value v;
 	
 	assert(h);
+
+	info("tb_vpi_put_logic_uint32_t var %08x\n", var);
+
 	v.format = vpiVectorVal;
 	v.value.vector = calloc(1, sizeof(s_vpi_vecval));
 	v.value.vector[0].aval = (PLI_INT32)var;

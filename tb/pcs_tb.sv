@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 10
+`define TB_LOOP_CNT_N 1000
 `endif
 module pcs_tb;
 
@@ -44,13 +44,6 @@ logic [PMA_CNT_N*PMA_DATA_W-1:0] tb_pma_diff;
 // debug id
 logic [LANE_N*DEBUG_ID_W-1:0] data_debug_id;
 logic [LANE_N*DEBUG_ID_W-1:0] pma_debug_id;
-
-// lane
-//logic [KEEP_W-1:0] keep_lane[LANE_N-1:0];
-//logic [DATA_W-1:0] data_lane[LANE_N-1:0];
-//logic [DATA_W-1:0] tb_pma_lane[LANE_N-1:0];
-//logic [DEBUG_ID_W-1:0] data_debug_id_lane[LANE_N-1:0];
-//logic [DEBUG_ID_W-1:0] pma_debug_id_lane[LANE_N-1:0];
 
 // RX
 // transiver
