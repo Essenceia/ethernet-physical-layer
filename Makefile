@@ -128,7 +128,7 @@ define BUILD_VPI
 	@$(MAKE) -f Makefile $3
 	
 	@printf "\nInvoking generated makefile \n\n"
-	$(MAKE) -C $(BUILD_DIR) -f V$2.mk
+	$(MAKE) -C $(BUILD_DIR) -j 4 -f V$2.mk
 endef
 endif
 

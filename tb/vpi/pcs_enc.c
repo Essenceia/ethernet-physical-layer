@@ -3,7 +3,12 @@
 #include <assert.h>
 #include <stdio.h>
 uint8_t enc_block( ctrl_lite_s ctrl, uint64_t data, block_s *block_enc ){
-	info("ENC : ctrl_v %x start_v[0] %x idle_v %x\n", ctrl.ctrl_v, ctrl.start_v[0], ctrl.idle_v);
+	info("ENC : ctrl_v %x start_v[0] %x idle_v %x term_v %x term_keep %08x\n", 
+		ctrl.ctrl_v, 
+		ctrl.start_v[0], 
+		ctrl.idle_v,
+		ctrl.term_v,
+		ctrl.term_keep);
 	if ( ctrl.ctrl_v ) {
 		uint8_t type = 0;
 		if ( ctrl.idle_v ){

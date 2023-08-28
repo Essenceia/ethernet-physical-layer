@@ -48,12 +48,12 @@ void tb_pcs_tx(
 
 void tb_pcs_get_exp_lane(
 	tv_t *tv_s,
-	uint64_t *pma,
-	uint64_t* debug_id
+	uint64_t **pma,
+	uint64_t *debug_id
 );
 
 void tb_pcs_exp_set_data(
-	uint64_t pma[LANE_N],
+	uint64_t *pma[LANE_N],
 	uint64_t debug_id[LANE_N],
 	vpiHandle h_pma_o,
 	vpiHandle h_debug_id_o		

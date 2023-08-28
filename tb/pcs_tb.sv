@@ -83,6 +83,16 @@ assign tb_pma_diff = tb_pma ^ pma_o;
 always @(posedge clk) begin
 	if( nreset ) begin
 		assert(tb_pma == pma_o);
+		`ifdef VERILATOR
+		if( tb_pma != pma_o)begin
+			$display("ERROR : time %t pma data not matching, :\npma_o    %x\ntb_pma_o %x\ndebug id %x\ndiff     %x\n",$time, pma_o, tb_pma, pma_debug_id, tb_pma_diff);		
+		end
+		`ifdef DEBUG 
+		else begin
+			$display("PASS : time %t pma output matching tb\n",$time);
+		end
+		`endif
+		`endif
 	end
 end
 

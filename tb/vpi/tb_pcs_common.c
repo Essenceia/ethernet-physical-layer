@@ -104,7 +104,7 @@ void tb_pcs_set_data(
 	#ifdef DEBUG
 	info("Tx pcs data {");
 	for(int i=0; i<LANE_N; i++){
-		info(" %lx,",**data[i]);
+		info(" %lx,",data_flat[i]);
 	}
 	info("}\n");
 	#endif
@@ -177,7 +177,7 @@ void tb_pcs_tx(
 void tb_pcs_exp_get_lane(
 	tv_t *tv_s,
 	int lane,
-	uint64_t *pma,
+	uint64_t **pma,
 	uint64_t *debug_id
 ){
 	assert((lane < LANE_N) && ( lane > -1 )); 
@@ -185,7 +185,7 @@ void tb_pcs_exp_get_lane(
 	// if the end of the fifo collides with a cycle the pcs
 	// doesn't accept a new data we much call creat packet
 	do{
-		pma = tb_pma_fifo_pop( tv_s->pma[lane], debug_id, &ctrl);
+		*pma = tb_pma_fifo_pop( tv_s->pma[lane], debug_id, &ctrl);
 		if(pma==NULL) tv_create_packet(tv_s, lane);
 	}while(pma == NULL);
 	assert(ctrl == NULL); // there is no crtl on pma
@@ -193,13 +193,17 @@ void tb_pcs_exp_get_lane(
 }
 
 void tb_pcs_exp_set_data(
-	uint64_t pma[LANE_N],
+	uint64_t *pma[LANE_N],
 	uint64_t debug_id[LANE_N],
 	vpiHandle h_pma_o,
 	vpiHandle h_debug_id_o		
 ){
 	// pma
-	tb_vpi_put_logic_uint64_t_var_arr(h_pma_o, pma, LANE_N);
+	uint64_t pma_flat[LANE_N];
+	for(int l=0; l<LANE_N; l++){
+		pma_flat[l] = *pma[l];
+	}
+	tb_vpi_put_logic_uint64_t_var_arr(h_pma_o, pma_flat, LANE_N);
 	// debug id
 	tb_vpi_put_logic_uint64_t_var_arr(h_debug_id_o, debug_id, LANE_N);
 }
@@ -215,12 +219,15 @@ void tb_pcs_tx_exp(
 	assert(h_debug_id_o);
 	
 	// pop fifo
-	uint64_t pma[LANE_N];
+	uint64_t *pma[LANE_N];
 	uint64_t debug_id[LANE_N];
 
 	for(int l=0; l < LANE_N; l++){
 		tb_pcs_exp_get_lane(tv_s, l, &pma[l], &debug_id[l]);
 	}
 	tb_pcs_exp_set_data(pma, debug_id, h_pma_o, h_debug_id_o);
+	for(int l=0; l< LANE_N; l++){
+		free(pma[l]);
+	}
 }
 
