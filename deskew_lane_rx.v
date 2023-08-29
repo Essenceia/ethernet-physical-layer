@@ -71,9 +71,13 @@ endgenerate
 logic [BLOCK_W-1:0] buff_rd;
 always_comb begin
 	for(int j=0; j<MAX_SKEW_BLOCK_N; j++) begin
+		if ( j == 0 )begin
+		if( skew_q == 0) buff_rd = data_i;
+		end else begin
 		/* verilator lint_off WIDTHEXPAND */
-		if( skew_q == j ) buff_rd = buff_q[j];
+		if( skew_q == j ) buff_rd = buff_q[j-1];
 		/* verilator lint_on WIDTHEXPAND */
+		end
 	end
 end
 // output
