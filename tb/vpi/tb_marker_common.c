@@ -60,9 +60,13 @@ int tb_marker(
 	bool marker_v = false;
 	block_s out[LANE_N];
 	for(size_t i=0; i<LANE_N; i++){
-		info("\n%ld [%ld] data_i { %lx, %x }\n",state.gap, i, in[i].data, in[i].head);
+		info("\n%ld [%ld] data_i { %lx, %x }\n",
+			state.gap, i, 
+			in[i].data,	in[i].head);
 		marker_v |= alignement_marker( &state, i,in[i], &out[i]);
-		info("marker_v %x data_o { %lx, %x }\n",marker_v, out[i].data, out[i].head);
+		info("marker_v %x data_o { %lx, %x }\n",
+			marker_v, 
+			out[i].data, out[i].head);
 	}
 	//head
 	uint8_t head_i = format_head(in);
