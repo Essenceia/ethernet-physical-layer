@@ -19,8 +19,8 @@ tv_t  *tv_alloc(){
 	tv = (tv_t *) malloc( sizeof(tv_t));
 	// init fifo
 	for( size_t l = 0; l < LANE_N; l ++ ){
-		tv->pma[l]  = tb_pma_fifo_ctor();
-		tv->data[l] = tb_pma_fifo_ctor();
+		tv->block[l]  = tb_data_fifo_ctor();
+		tv->data[l] = tb_data_fifo_ctor();
 	}
 	// init values
 	tv->len = 0;
@@ -31,22 +31,29 @@ tv_t  *tv_alloc(){
 	tv->tx = pcs_tx_init();
 	return tv; 
 }
-size_t add_to_fifo(tv_t *t, const ready_s ready, size_t idx, uint64_t *data, ctrl_lite_s *ctrl, uint64_t *pma){
+size_t add_to_fifo(
+	tv_t *t, 
+	const bool accept, 
+	size_t idx, 
+	block_s *data, 
+	ctrl_lite_s *ctrl, 
+	block_s *block
+){
 	size_t lane_idx = IDX_TO_LANE(idx++);
 	t->debug_id ++;
 	info("\n\ndata ptr %016lx, lane %ld\n", (int64_t) data, lane_idx); 
-	if(!ready.gb_full)tb_pma_fifo_push(t->data[lane_idx], data, ctrl, t->debug_id);
-	tb_pma_fifo_push(t->pma[lane_idx], pma, NULL, t->debug_id);
+	if(accept) tb_data_fifo_push(t->data[lane_idx], data, ctrl, t->debug_id);
+	tb_data_fifo_push(t->block[lane_idx], block, NULL, t->debug_id);
 	return idx;
 }
 
 void tv_create_packet(tv_t *t, const int start_lane ){
 	long int idle;
-	ready_s ready;	
 	ctrl_lite_s *ctrl;
 	size_t idx;
 	uint8_t *tmp_data;
 	size_t  data_idx = 0;
+	bool accept;
 
 	info("create packet\n");
 
@@ -68,15 +75,15 @@ void tv_create_packet(tv_t *t, const int start_lane ){
 		memset(ctrl, 0, sizeof(ctrl_lite_s));
 		ctrl->ctrl_v = 1;
 		ctrl->idle_v = 1;
-		uint64_t *data = malloc(sizeof(uint64_t));
-		uint64_t *pma = malloc(sizeof(uint64_t));
-		data[0] = 0;	
+		block_s *data = malloc(sizeof(block_s));
+		block_s *exp = malloc(sizeof(block_s));
+		data->data = 0;	
 		
-		ready = get_next_pma(t->tx, *ctrl, *data, pma);
-		if ( is_accept(ready) ) idle--;
-		info("Idle %ld accept %d\n", idle, is_accept(ready));
+		accept = get_next_exp(t->tx, *ctrl, data, exp);
+		if (accept) idle--;
+		info("Idle %ld accept %d\n", idle,accept);
 		// add to fifo
-		idx = add_to_fifo(t, ready, idx, data, ctrl, pma ); 
+		idx = add_to_fifo(t, accept, idx, data, ctrl, exp ); 
 	}while(idle);
 	// start
 	{	
@@ -84,30 +91,30 @@ void tv_create_packet(tv_t *t, const int start_lane ){
 		memset(ctrl, 0, sizeof(ctrl_lite_s));
 		ctrl->ctrl_v = 1;
 		ctrl->start_v[0] = 1;
-		uint64_t *data = malloc(sizeof(uint64_t));
-		*data = 0;
+		block_s *data = malloc(sizeof(ctrl_lite_s));
+		data->data = 0;
 		for(size_t i=1; i< TXD_W; i++, data_idx++){
-			*data |=  (uint64_t) tmp_data[data_idx] << i*8 ;
+			data->data |=  (uint64_t) tmp_data[data_idx] << i*8 ;
 		}  
 		do {
-			uint64_t *pma = malloc(sizeof(uint64_t));
-			ready = get_next_pma(t->tx, *ctrl, *data, pma);
-			idx = add_to_fifo(t, ready, idx, data, ctrl, pma); 
-		} while (!is_accept(ready));
+			block_s *exp = malloc(sizeof(block_s));
+			accept = get_next_exp(t->tx, *ctrl, data, exp);
+			idx = add_to_fifo(t, accept, idx, data, ctrl, exp); 
+		} while (!accept);
 	}
 
 	while(  t->len - data_idx > (TXD_W-1)){
 		ctrl = malloc(sizeof(ctrl_lite_s));
 		memset(ctrl, 0, sizeof(ctrl_lite_s));
-		uint64_t *data = malloc(sizeof(uint64_t));
-		*data = 0;
+		block_s *data = malloc(sizeof(block_s));
+		data->data = 0;
 		for(size_t i=0; i< TXD_W; i++){
-			*data =  *data  |  (((uint64_t) tmp_data[data_idx+i])<< i*8 );  
+			data->data =  data->data  |  (((uint64_t) tmp_data[data_idx+i])<< i*8 );  
 		}
-		uint64_t *pma = malloc(sizeof(uint64_t));
-		ready = get_next_pma(t->tx, *ctrl, *data, pma);
-		idx = add_to_fifo(t, ready, idx, data, ctrl, pma);
-		if ( is_accept(ready)){ 
+		block_s *exp = malloc(sizeof(block_s));
+		accept = get_next_exp(t->tx, *ctrl, data, exp);
+		idx = add_to_fifo(t, accept, idx, data, ctrl, exp);
+		if (accept){ 
 			data_idx += TXD_W;
 			info("idx %ld\n", idx);
 		}else{
@@ -121,25 +128,25 @@ void tv_create_packet(tv_t *t, const int start_lane ){
 		ctrl->ctrl_v = 1;
 		ctrl->term_v = 1;
 		LEN_TO_KEEP((t->len-data_idx), ctrl->term_keep);
-		uint64_t *data = malloc(sizeof(uint64_t));
-		*data = 0;
+		block_s *data = malloc(sizeof(block_s));
+		data->data = 0;
 		for(size_t i=1; i< TXD_W && data_idx < t->len; i++, data_idx++){
-			*data =  *data  |  (((uint64_t) tmp_data[data_idx])<< i*8 );  
+			data->data =  data->data  |  (((uint64_t) tmp_data[data_idx])<< i*8 );  
 		}
 	
 		do {
-			uint64_t *pma = malloc(sizeof(uint64_t));
-			ready = get_next_pma(t->tx,  *ctrl,*data, pma);
-			idx = add_to_fifo(t, ready, idx, data, ctrl, pma);
-		} while (!is_accept(ready));
+			block_s *exp = malloc(sizeof(block_s));
+			accept = get_next_exp(t->tx,  *ctrl, data, exp);
+			idx = add_to_fifo(t, accept, idx, data, ctrl, exp);
+		} while (!accept);
 	}
 	#ifdef DEBUG
 	info("FIFO\ndata \n");
 	for(size_t l=0; l<LANE_N; l++)
-		tb_pma_print_fifo(t->data[l]);
-	info("pma \n");
+		tb_data_print_fifo(t->data[l]);
+	info("exp \n");
 	for(size_t l=0; l<LANE_N; l++)
-		tb_pma_print_fifo(t->pma[l]);
+		tb_data_print_fifo(t->block[l]);
 	#endif
 	free(tmp_data);	
 }
@@ -147,15 +154,15 @@ void tv_create_packet(tv_t *t, const int start_lane ){
 bool tv_get_next_txd(
 	tv_t *t,
 	ctrl_lite_s **ctrlp, 
-	uint64_t **datap,
+	block_s **datap,
 	uint64_t *debug_idp,
 	const int lane
 )
 {
 	assert(TXD_W < 9 );// not supported yet
-	uint64_t *data = *datap = tb_pma_fifo_pop(t->data[lane], debug_idp, ctrlp);	
+	block_s *data = *datap = tb_data_fifo_pop(t->data[lane], debug_idp, ctrlp);	
 	if (data != NULL){
-		info("data : %016lx debug_id %016lx\n", *data, *debug_idp);
+		info("data : %016lx debug_id %016lx\n", data->data, *debug_idp);
 		return true;
 	} else{
 		return false;	
@@ -171,8 +178,8 @@ bool tv_get_next_txd(
 void tv_free(tv_t  *t)
 {
 	for(int i=0; i< LANE_N; i++){
-		tb_pma_fifo_dtor(t->data[i]);
-		tb_pma_fifo_dtor(t->pma[i]);
+		tb_data_fifo_dtor(t->data[i]);
+		tb_data_fifo_dtor(t->block[i]);
 	}
 	free(t->tx);
 	//free(t->packet);

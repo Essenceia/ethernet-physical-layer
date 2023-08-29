@@ -22,28 +22,26 @@ pcs_tx_s  *pcs_tx_init(){
 	return s; 
 }
 
-ready_s get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uint64_t *pma)
+bool get_next_exp(pcs_tx_s *state, const ctrl_lite_s ctrl, block_s* b_data, block_s *block)
 {
 	uint8_t err = 0;
 	bool gb_full_next = true;
 	bool accept;
-	ready_s ready;
 	#ifdef _40GBASE
 	const size_t l = state->lane_idx;
 	#else
 	const size_t l = 0;
 	#endif	
-	ready.gb_full = gearbox_full(state->gearbox_state[l]);
+	uint64_t data = b_data->data;
 
 	#ifdef _40GBASE
-	ready.marker_v = is_alignement_marker(state->marker_state);
+	accept = !is_alignement_marker(state->marker_state);
 	#else
-	ready.marker_v = false;
+	accept = true;
 	#endif
 	
-	accept = is_accept(ready);
 	
-	info("[%ld] accpet %d full %d marker %d\n",l, accept, ready.gb_full, ready.marker_v);
+	info("[%ld] accept %d marker %d\n",l, accept, !accept);
 	info("raw data %016lx\n", data);	
 	// if gearbox is full next block will not be accpted anyways
 	// so there is no need to compute the expected result	
@@ -65,24 +63,22 @@ ready_s get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uin
 	// alignment marker
 	alignement_marker(&state->marker_state, state->lane_idx, state->block_scram, &state->block_mark[l] ); 
 	info("Marker in x%016lx out x%016lx\n", state->block_scram.data,state->block_mark[l].data);
-	#endif
-	
-	// gearbox 
-	#ifdef _40GBASE
-	//if(!gb_full) 
-	state->lane_idx = (state->lane_idx+1) % LANE_N;
-	gb_full_next &= gearbox(&state->gearbox_state[l], state->block_mark[l], pma);
-	info("Gearbox in x%016lx out x%016lx  state %d\n", state->block_mark[l].data, *pma, state->gearbox_state[l].len);
-	#else
-	gb_full_next = gearbox(&state->gearbox_state[l], state->block_scram, pma);
-	#endif
-	if ( ready.gb_full && ( gb_full_next == ready.gb_full )){
-		fprintf(stderr, "Error, full state next should not match current state q %d next %d\n",
-			ready.gb_full, gb_full_next);
-		assert(0);
-		
-	}
 
-	return ready;	
+	// set output block data
+	block->data = state->block_mark[l].data;
+	block->head = state->block_mark[l].head;
+	info("exp, mark { %016lx, %01x }\n", block->data, 0x3 & block->head );
+	state->lane_idx = (state->lane_idx+1) % LANE_N;
+	
+	#else
+	
+	block->data = state->block_scram.data;
+	block->head = state->block_scram.head;
+	info("exp, scram { %016lx, %01x }\n", block->data, 0x3 & block->head );
+	
+	#endif // _40GBASE
+	
+	
+	return accept;	
 }
 

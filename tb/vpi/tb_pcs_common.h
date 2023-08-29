@@ -14,13 +14,13 @@ void tb_pcs_get_tx_lane(
 	tv_t *tv_s,
 	int lane,
 	ctrl_lite_s **ctrl,
-	uint64_t **data,
+	block_s **data,
 	uint64_t *debug_id
 );
 /* write data to design */
 void tb_pcs_set_data(
 	ctrl_lite_s *ctrl[LANE_N],
-	uint64_t *data[LANE_N],
+	block_s *data[LANE_N],
 	uint64_t debug_id[LANE_N],
 	vpiHandle h_ready_o,
 	vpiHandle h_ctrl_v_i,
@@ -48,14 +48,15 @@ void tb_pcs_tx(
 
 void tb_pcs_get_exp_lane(
 	tv_t *tv_s,
-	uint64_t **pma,
+	int lane,
+	block_s **block,
 	uint64_t *debug_id
 );
 
-void tb_pcs_exp_set_data(
-	uint64_t *pma[LANE_N],
+void tb_pcs_set_exp_data(
+	block_s *block[LANE_N],
 	uint64_t debug_id[LANE_N],
-	vpiHandle h_pma_o,
+	vpiHandle h_block_o,
 	vpiHandle h_debug_id_o		
 );
 

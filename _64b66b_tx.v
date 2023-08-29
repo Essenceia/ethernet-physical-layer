@@ -6,7 +6,6 @@ module _64b66b_tx #(
 	input clk,
 	input nreset,
 
-	input            valid_i,
 	input  [LEN-1:0] data_i,
 	output [LEN-1:0] scram_o
 );
@@ -58,7 +57,7 @@ always @(posedge clk) begin
 	if ( ~nreset ) begin
 		// scrambler's initial start is set to all 1's
 		s_q <= {S_W{1'b1}};
-	end else if(valid_i) begin
+	end else begin
 		s_q <= s_next;
 	end
 end

@@ -41,8 +41,8 @@ int main(int argc, char** argv) {
 	vpiHandle h_data_i = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".data_i", NULL);
 	vpiHandle h_debug_id = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".data_debug_id", NULL);
 	
-	vpiHandle h_pma = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".tb_pma", NULL);
-	vpiHandle h_pma_debug_id = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".pma_debug_id", NULL);
+	vpiHandle h_tb_gb = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".tb_gb_data", NULL);
+	vpiHandle h_tb_gb_debug_id = vpi_handle_by_name((PLI_BYTE8*)"TOP."STR(MODULE)".tb_data_debug_id", NULL);
 
 	/* reset sequence
 	* Hold reset for 1 clk cycle -> 10 C cycles */
@@ -69,8 +69,8 @@ int main(int argc, char** argv) {
 				h_debug_id);
 			// exp
 			tb_pcs_tx_exp(tv_s,
-				h_pma,
-				h_pma_debug_id);
+				h_tb_gb,
+				h_tb_gb_debug_id);
 		}
 
 		// TODO remove bellow

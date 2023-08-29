@@ -12,16 +12,11 @@ module pcs_tx#(
 	parameter LANE_N = IS_10G ? 1 : 4,
 	parameter DATA_W = 64,
 	parameter HEAD_W = 2,
+	parameter BLOCK_W = DATA_W+HEAD_W,
 	parameter KEEP_W = DATA_W/8,
 	parameter LANE0_CNT_N = IS_10G ? 2 : 1,
 	parameter XGMII_DATA_W = LANE_N*DATA_W,
-	parameter XGMII_KEEP_W = LANE_N*KEEP_W,
-	//parameter CNT_N = DATA_W/XGMII_DATA_W,
-	//parameter CNT_W = $clog2( CNT_N ),
-	//parameter BLOCK_TYPE_W = 8,
-	
-	parameter PMA_DATA_W = 16, 
-	parameter PMA_CNT_N  = XGMII_DATA_W/PMA_DATA_W
+	parameter XGMII_KEEP_W = LANE_N*KEEP_W
 )(
 	input clk,
 	input nreset,
@@ -36,9 +31,9 @@ module pcs_tx#(
 	input [XGMII_KEEP_W-1:0]       keep_i,
 
 
-	output                           ready_o,	
-	// PMA
-	output [PMA_CNT_N*PMA_DATA_W-1:0] data_o
+	output                        ready_o,// am_v not used in 10GBASE_R mode	
+	// gearbox
+	output [LANE_N*BLOCK_W-1:0]   data_o
 );
 localparam SEQ_W  = $clog2(DATA_W/HEAD_W+1);
 // encoder
@@ -46,7 +41,6 @@ logic [LANE_N-1:0]       unused_enc_head_v;
 logic [XGMII_DATA_W-1:0] data_enc; // encoded
 
 // scrambler
-logic                    scram_v; 
 logic [XGMII_DATA_W-1:0] data_scram; // scrambled
 
 if ( IS_10G==0 ) begin
@@ -67,8 +61,6 @@ logic [LANE_N*HEAD_W-1:0] sync_head_mark;
 logic [LANE_N-1:0] gearbox_full;
 /* verilator lint_on UNUSEDSIGNAL*/
 
-logic [DATA_W-1:0] gb_data[LANE_N-1:0];
-logic [HEAD_W-1:0] gb_head[LANE_N-1:0];
 
 // pcs fsm
 logic             seq_rst;
@@ -115,7 +107,6 @@ _64b66b_tx #(.LEN(XGMII_DATA_W))
 m_64b66b_tx(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(scram_v),
 	.data_i (data_enc  ),
 	.scram_o(data_scram)
 );
@@ -137,42 +128,24 @@ if ( !IS_10G ) begin
 		.data_o(data_mark )
 	);
 
-	// de-activate scrambler when adding alignement marker, should
-	// be transparent
-	assign scram_v = ~gearbox_full[0] & ~marker_v; 
-
-	// connect marked data to gearbox input
+	// output data : marked data
 	for(l=0; l<LANE_N; l++) begin
-		assign gb_data[l] = data_mark[l*DATA_W+DATA_W-1:l*DATA_W];
+		assign data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = { data_mark[l*DATA_W+DATA_W-1:l*DATA_W], sync_head_mark[l*HEAD_W+HEAD_W-1:l*HEAD_W] };
 	end
+	assign ready_o = ~marker_v;
 
 end else begin
-	assign scram_v = ~gearbox_full[0]; 
-	// plug output of scrambled into gearbox
+	// output data : scrambled data
 	for(l=0; l<LANE_N; l++) begin
-		assign gb_data[l] = data_scram[l*DATA_W+DATA_W-1:l*DATA_W];
+		assign data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = { data_scram[l*DATA_W+DATA_W-1:l*DATA_W], sync_head[l*HEAD_W+HEAD_W-1:l*HEAD_W] };
 	end
+	/* PCS is non blocking in 10G mode
+	* The only case where the PCS becomes blocking is when we
+	* are adding the alignement marker.
+	* And, as there is no alignement marker for 10GBASE and this
+	* signal is not expected to be used in this configuration */
+	assign ready_o = 1'bX;
 end //!IS_10G
-
-
-generate
-for(l=0; l <LANE_N; l++) begin : gb_lane_loop
-	// gearbox
-	assign gb_head[l] = sync_head_mark[l*HEAD_W+HEAD_W-1:l*HEAD_W];
-	
-	gearbox_tx #( .DATA_W(DATA_W), .BLOCK_DATA_W(DATA_W))
-	m_gearbox_tx (
-		.clk(clk),
-		.seq_i(seq_q),
-		.head_i(gb_head[l]),
-		.data_i(gb_data[l]),
-		.full_v_o(gearbox_full[l]),
-		.data_o(data_o[l*DATA_W+DATA_W-1:l*DATA_W])
-	);
-end
-endgenerate
-
-assign ready_o = scram_v;
 
 `ifdef FORMAL
 

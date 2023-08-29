@@ -218,39 +218,39 @@ typedef struct {
 	/* Debug id. */
 	uint64_t debug_id;
 
-	/* pma data. */
-	uint64_t *data;
+	/* expected output data. */
+	block_s *data;
 
 	/* Control field. */
 	ctrl_lite_s *ctrl;
 
 
-} tv_pma_fifo_elem_t;
+} tv_data_fifo_elem_t;
 
 typedef struct{
 	slisth elems;
-} tv_pma_fifo_t;
+} tv_data_fifo_t;
 
 /*
  * Construct and return an itch fifo.
  */
-tv_pma_fifo_t * tb_pma_fifo_ctor(
+tv_data_fifo_t * tb_data_fifo_ctor(
 	void
 );
 
 /*
  * Delete @fifo.
  */
-void tb_pma_fifo_dtor(
-	tv_pma_fifo_t *fifo
+void tb_data_fifo_dtor(
+	tv_data_fifo_t *fifo
 );
 
 /*
  * Construct and push an element in @fifo.
  */
-void tb_pma_fifo_push(
-	tv_pma_fifo_t *fifo,
-	uint64_t *nv,
+void tb_data_fifo_push(
+	tv_data_fifo_t *fifo,
+	block_s *nv,
 	ctrl_lite_s *ctrl,
 	uint64_t debug_id
 );
@@ -259,8 +259,8 @@ void tb_pma_fifo_push(
  * If @fifo is not empty, pop an element and return it.
  * Otherwise, return 0.
  */
-uint64_t *tb_pma_fifo_pop(
-	tv_pma_fifo_t *fifo,
+block_s *tb_data_fifo_pop(
+	tv_data_fifo_t *fifo,
 	uint64_t *debug_id,
 	ctrl_lite_s **ctrl
 );
@@ -268,16 +268,16 @@ uint64_t *tb_pma_fifo_pop(
 /*
  * Print a descriptor for all elements of @fifo.
  */
-void tb_pma_print_fifo(
-	tv_pma_fifo_t *fifo
+void tb_data_print_fifo(
+	tv_data_fifo_t *fifo
 );
 
 
 /*
  * Print the content of a fifo element @elem
  */
-void tb_pma_print_elem(
-	tv_pma_fifo_elem_t *elem
+void tb_data_print_elem(
+	tv_data_fifo_elem_t *elem
 );
 
 

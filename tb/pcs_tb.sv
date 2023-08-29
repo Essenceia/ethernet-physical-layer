@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 64
+`define TB_LOOP_CNT_N 17000
 `endif
 module pcs_tb;
 
@@ -15,12 +15,9 @@ localparam LANE_N = 1;
 
 localparam HEAD_W = 2;
 localparam DATA_W = 64;
+localparam BLOCK_W = DATA_W + HEAD_W;
 localparam KEEP_W = DATA_W/8;
-localparam BLOCK_W = HEAD_W+DATA_W;
 localparam LANE0_CNT_N = !IS_10G ? 1 : 2;	
-
-localparam PMA_DATA_W = 16; 
-localparam PMA_CNT_N  = (LANE_N*DATA_W)/PMA_DATA_W;
 
 localparam MAX_SKEW_BIT_N = 1856;
 
@@ -36,14 +33,14 @@ logic [LANE_N-1:0] err_v_i;
 logic [LANE_N*DATA_W-1:0] data_i; // tx data
 logic [LANE_N*KEEP_W-1:0] keep_i;
 logic              ready_o;	
-// PMA
-logic [PMA_CNT_N*PMA_DATA_W-1:0] pma_o;
-logic [PMA_CNT_N*PMA_DATA_W-1:0] tb_pma;
-logic [PMA_CNT_N*PMA_DATA_W-1:0] tb_pma_diff;
+// GEARBOX
+logic [LANE_N*BLOCK_W-1:0] gb_data_o;
+logic [LANE_N*BLOCK_W-1:0] tb_gb_data;
+logic [LANE_N*BLOCK_W-1:0] tb_gb_data_diff;
 
 // debug id
 logic [LANE_N*DEBUG_ID_W-1:0] data_debug_id;
-logic [LANE_N*DEBUG_ID_W-1:0] pma_debug_id;
+logic [LANE_N*DEBUG_ID_W-1:0] tb_data_debug_id;
 
 // RX
 // transiver
@@ -71,14 +68,14 @@ logic tb_nreset;
 always clk = #5 ~clk;
 /*verilator lint_on BLKSEQ */ 
 
-assign tb_pma_diff = tb_pma ^ pma_o;
+assign tb_gb_data_diff = tb_gb_data ^ gb_data_o;
 
 always @(posedge clk) begin
 	if( nreset ) begin
-		assert(tb_pma == pma_o);
+		assert(tb_gb_data == gb_data_o);
 		`ifdef VERILATOR
-		if( tb_pma != pma_o)begin
-			$display("ERROR : time %t pma data not matching, :\npma_o    %x\ntb_pma_o %x\ndebug id %x\ndiff     %x\n",$time, pma_o, tb_pma, pma_debug_id, tb_pma_diff);		
+		if( tb_gb_data != gb_data_o)begin
+			$display("ERROR : time %t pma data not matching, :\ngb_data_o    %x\ntb_gb_data_o %x\ndebug id %x\ndiff     %x\n",$time, gb_data_o, tb_gb_data, tb_data_debug_id, tb_gb_data_diff);		
 		end
 		`ifdef DEBUG 
 		else begin
@@ -125,7 +122,7 @@ initial begin
 			err_v_i , data_i,
 			data_debug_id);	
 			// expected result
-		$tb_exp( tb_pma, pma_debug_id);
+		$tb_exp( tb_gb_data, tb_data_debug_id);
 		`endif
 		tb_rx();
 		#10
@@ -146,16 +143,16 @@ generate
 		// TX 
 		//assign data_i[x*DATA_W+DATA_W-1:x*DATA_W] = data_lane[x];
 		//assassign keep_i[x*KEEP_W+KEEP_W-1:x*KEEP_W] = keep_lane[x];
-		//assassign tb_pma[x*DATA_W+DATA_W-1:x*DATA_W] = tb_pma_lane[x];
+		//assassign tb_gb_data[x*DATA_W+DATA_W-1:x*DATA_W] = tb_gb_data_lane[x];
 
 		//assign data_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W] = data_debug_id_lane[x];
-		//assign pma_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W]  = pma_debug_id_lane[x];
+		//assign tb_data_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W]  = tb_data_debug_id_lane[x];
 
 		// RX
 		// hardwire tx gearbox input to serdes output, 
 		// temporary steping stone
-		assign serdes_data_i[x*DATA_W+DATA_W-1:x*DATA_W] = m_pcs_tx.gb_data[x];
-		assign serdes_head_i[x*HEAD_W+HEAD_W-1:x*HEAD_W] = m_pcs_tx.gb_head[x];
+		assign serdes_data_i[x*DATA_W+DATA_W-1:x*DATA_W] = gb_data_o[x*BLOCK_W+BLOCK_W-1:x*BLOCK_W+HEAD_W];
+		assign serdes_head_i[x*HEAD_W+HEAD_W-1:x*HEAD_W] = gb_data_o[x*BLOCK_W+HEAD_W-1:x*BLOCK_W];
 	end
 endgenerate
 
@@ -174,7 +171,7 @@ m_pcs_tx(
 	.data_i(data_i),
 	.keep_i(keep_i),
 	.ready_o(ready_o),	
-	.data_o(pma_o)
+	.data_o(gb_data_o)
 );
 
 // PCS RX
