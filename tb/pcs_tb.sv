@@ -1,5 +1,5 @@
 `ifndef TB_LOOP_CNT_N
-`define TB_LOOP_CNT_N 17000
+`define TB_LOOP_CNT_N 40000
 `endif
 module pcs_tb;
 

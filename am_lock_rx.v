@@ -89,7 +89,7 @@ genvar i;
 generate
 	for( i=0 ; i < LANE_N; i++ ) begin
 		assign lane_match[i] = (marker_lane[i][3*8+2-1:0]  == block_i[3*8+2-1:0] )
-							 & (marker_lane[i][7*8+2-1:32] == block_i[7*8+2-1:32]);
+							 & (marker_lane[i][7*8+2-1:34] == block_i[7*8+2-1:34]);
 	end
 endgenerate
 
