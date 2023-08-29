@@ -37,6 +37,7 @@ module pcs_tx#(
 );
 localparam SEQ_W  = $clog2(DATA_W/HEAD_W+1);
 // encoder
+logic                    scram_v;
 logic [LANE_N-1:0]       unused_enc_head_v;
 logic [XGMII_DATA_W-1:0] data_enc; // encoded
 
@@ -107,6 +108,7 @@ _64b66b_tx #(.LEN(XGMII_DATA_W))
 m_64b66b_tx(
 	.clk(clk),
 	.nreset(nreset),
+	.valid_i(scram_v),
 	.data_i (data_enc  ),
 	.scram_o(data_scram)
 );
@@ -127,6 +129,8 @@ if ( !IS_10G ) begin
 		.head_o(sync_head_mark ),
 		.data_o(data_mark )
 	);
+	// scrambler
+	assign scram_v = ~marker_v;
 
 	// output data : marked data
 	for(l=0; l<LANE_N; l++) begin
@@ -139,6 +143,9 @@ end else begin
 	for(l=0; l<LANE_N; l++) begin
 		assign data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = { data_scram[l*DATA_W+DATA_W-1:l*DATA_W], sync_head[l*HEAD_W+HEAD_W-1:l*HEAD_W] };
 	end
+	// scrambler
+	assign scram_v = 1'b1;
+
 	/* PCS is non blocking in 10G mode
 	* The only case where the PCS becomes blocking is when we
 	* are adding the alignement marker.
