@@ -53,7 +53,7 @@ void tb_data_fifo_push(
 	slisth_push(&fifo->elems, &elem->elems);
 	#if 0
 	//#ifdef DEBUG
-	printf("pma fifo push :\n");
+	printf("fifo push :\n");
 	tb_data_print_fifo(fifo);
 	#endif
 }
@@ -83,9 +83,9 @@ block_s *tb_data_fifo_pop(
 	block_s *ret = pop->data;
 	free(pop);
 	#ifdef DEBUG
-	printf("pma pop, debug id : 0x");
+	printf("fifo pop, debug id : 0x");
 	printf("id %016lx\n",*debug_id);
-	printf("pma poped structure :\n");
+	printf("fifo poped structure :\n");
 	//tb_data_print_elem(ret);	
 	// print fifo
 	tb_data_print_fifo(fifo);

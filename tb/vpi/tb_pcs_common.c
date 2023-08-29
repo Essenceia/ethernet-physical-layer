@@ -152,11 +152,8 @@ void tb_pcs_tx(
 	ready = ready_val.value.integer;		
 	info("$tb ready %d\n", ready);
 
-	// create a new packet if none exist
-	info("Getting next txd");
-
-
 	if(ready){
+		info("tb tx getting next data\n");
 		ctrl_lite_s *ctrl[LANE_N];
 		block_s *data[LANE_N];
 		uint64_t debug_id[LANE_N];

@@ -41,9 +41,20 @@ size_t add_to_fifo(
 ){
 	size_t lane_idx = IDX_TO_LANE(idx++);
 	t->debug_id ++;
-	info("\n\ndata ptr %016lx, lane %ld\n", (int64_t) data, lane_idx); 
-	if(accept) tb_data_fifo_push(t->data[lane_idx], data, ctrl, t->debug_id);
-	tb_data_fifo_push(t->block[lane_idx], block, NULL, t->debug_id);
+	info("\n\ndata ptr %016lx, lane %ld\n",
+		 (int64_t) data, lane_idx); 
+	if(accept) {
+		tb_data_fifo_push(
+			t->data[lane_idx],
+			data, 
+			ctrl, 
+			t->debug_id);
+	}
+	tb_data_fifo_push(
+		t->block[lane_idx], 
+		block, 
+		NULL, 
+		t->debug_id);
 	return idx;
 }
 
