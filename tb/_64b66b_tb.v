@@ -37,12 +37,15 @@ logic [TV_W-1:0] tb_scram = 64'h7bfff0800000001e;
 task test_sramble_decramble(int loop_cnt);
 	logic [LEN-1:0] test;
 	test = $random;
+	
 	for( int i = 0; i < loop_cnt; i++) begin
 		data_i = test;
 		#1
 		assert(~|db_data_diff);
 		#9
 		test = $random;
+		/* randomly turn off valid */
+		valid_i = $random;
 	end
 endtask
 
