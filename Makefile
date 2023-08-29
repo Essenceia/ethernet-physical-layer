@@ -96,12 +96,15 @@ BUILD_FLAGS += -j $(MAKE_THREADS)
 endif
 
 # Build commands.
+ifeq ($(SIM),I)
 define BUILD
 	iverilog $(LINT_FLAGS) -s $2 -o $(BUILD_DIR)/$2 $1
 endef
+else
 define BUILD
 	verilator --binary $(LINT_FLAGS) $(BUILD_FLAGS) -o $2 $1  
 endef
+endif
 
 #############
 # VPI build #
@@ -188,7 +191,7 @@ lint_pcs_rx: $(pcs_rx_deps)
 #############
 
 # The list of testbenches.
-tbs := 64b66b gearbox_tx sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx run_deskew_rx
+tbs := _64b66b gearbox_tx sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx run_deskew_rx
 
 # Standard run recipe to build a given testbench
 define build_recipe
@@ -207,9 +210,6 @@ lane_reorder_rx_deps := lane_reorder_rx.v $(TB_DIR)/lane_reorder_rx_tb.sv
 xgmii_dec_rx_deps := dec_lite_rx.v xgmii_dec_intf_rx.v $(TB_DIR)/xgmii_dec_rx_tb.sv 
 deskew_rx_deps := deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv 
 
-# Generate build recipes for each testbench.
-$(eval $(foreach x,$(tbs),$(call run_recipe,$x)))
-
 # Standard run recipe to run a given testbench
 define run_recipe
 run_$1: $1_tb
@@ -219,6 +219,11 @@ endef
 
 # Generate run recipes for each testbench.
 $(eval $(foreach x,$(tbs),$(call run_recipe,$x)))
+
+
+# Generate build recipes for each testbench.
+$(eval $(foreach x,$(tbs),$(call build_recipe,$x)))
+
 
 #################
 # VPI testbench #
