@@ -114,7 +114,7 @@ bool alignement_marker(
 	block_s *out)
 {
 	bool need_marker;
-	info("bip3 %x\n", state->bip[lane]);
+	info("bip3 %x gap %d\n", state->bip[lane], state->gap);
 	// check if we need to add marker
 	need_marker = is_alignement_marker(*state);
 	if ( need_marker ){

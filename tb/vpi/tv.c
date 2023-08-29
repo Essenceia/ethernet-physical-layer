@@ -31,18 +31,18 @@ tv_t  *tv_alloc(){
 	tv->tx = pcs_tx_init();
 	return tv; 
 }
-size_t add_to_fifo(tv_t *t, bool accept, size_t idx, uint64_t *data, ctrl_lite_s *ctrl, uint64_t *pma){
+size_t add_to_fifo(tv_t *t, const ready_s ready, size_t idx, uint64_t *data, ctrl_lite_s *ctrl, uint64_t *pma){
 	size_t lane_idx = IDX_TO_LANE(idx++);
 	t->debug_id ++;
 	info("\n\ndata ptr %016lx, lane %ld\n", (int64_t) data, lane_idx); 
-	if(accept)tb_pma_fifo_push(t->data[lane_idx], data, ctrl, t->debug_id);
+	if(!ready.gb_full)tb_pma_fifo_push(t->data[lane_idx], data, ctrl, t->debug_id);
 	tb_pma_fifo_push(t->pma[lane_idx], pma, NULL, t->debug_id);
 	return idx;
 }
 
 void tv_create_packet(tv_t *t, const int start_lane ){
 	long int idle;
-	bool accept;	
+	ready_s ready;	
 	ctrl_lite_s *ctrl;
 	size_t idx;
 	uint8_t *tmp_data;
@@ -72,11 +72,11 @@ void tv_create_packet(tv_t *t, const int start_lane ){
 		uint64_t *pma = malloc(sizeof(uint64_t));
 		data[0] = 0;	
 		
-		accept = get_next_pma(t->tx, *ctrl, *data, pma);
-		if ( accept ) idle--;
-		info("Idle %ld accept %d\n", idle, accept);
+		ready = get_next_pma(t->tx, *ctrl, *data, pma);
+		if ( is_accept(ready) ) idle--;
+		info("Idle %ld accept %d\n", idle, is_accept(ready));
 		// add to fifo
-		idx = add_to_fifo(t, accept, idx, data, ctrl, pma ); 
+		idx = add_to_fifo(t, ready, idx, data, ctrl, pma ); 
 	}while(idle);
 	// start
 	{	
@@ -91,9 +91,9 @@ void tv_create_packet(tv_t *t, const int start_lane ){
 		}  
 		do {
 			uint64_t *pma = malloc(sizeof(uint64_t));
-			accept = get_next_pma(t->tx, *ctrl, *data, pma);
-			idx = add_to_fifo(t, accept, idx, data, ctrl, pma); 
-		} while (!accept);
+			ready = get_next_pma(t->tx, *ctrl, *data, pma);
+			idx = add_to_fifo(t, ready, idx, data, ctrl, pma); 
+		} while (!is_accept(ready));
 	}
 
 	while(  t->len - data_idx > (TXD_W-1)){
@@ -105,11 +105,13 @@ void tv_create_packet(tv_t *t, const int start_lane ){
 			*data =  *data  |  (((uint64_t) tmp_data[data_idx+i])<< i*8 );  
 		}
 		uint64_t *pma = malloc(sizeof(uint64_t));
-		accept = get_next_pma(t->tx, *ctrl, *data, pma);
-		idx = add_to_fifo(t, accept, idx, data, ctrl, pma);
-		if ( accept ){ 
+		ready = get_next_pma(t->tx, *ctrl, *data, pma);
+		idx = add_to_fifo(t, ready, idx, data, ctrl, pma);
+		if ( is_accept(ready)){ 
 			data_idx += TXD_W;
 			info("idx %ld\n", idx);
+		}else{
+			info("data rejected idx %ld\n", idx);
 		}
 	}
 	// terminate
@@ -127,9 +129,9 @@ void tv_create_packet(tv_t *t, const int start_lane ){
 	
 		do {
 			uint64_t *pma = malloc(sizeof(uint64_t));
-			accept = get_next_pma(t->tx,  *ctrl,*data, pma);
-			idx = add_to_fifo(t, accept, idx, data, ctrl, pma);
-		} while (!accept);
+			ready = get_next_pma(t->tx,  *ctrl,*data, pma);
+			idx = add_to_fifo(t, ready, idx, data, ctrl, pma);
+		} while (!is_accept(ready));
 	}
 	#ifdef DEBUG
 	info("FIFO\ndata \n");

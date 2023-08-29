@@ -110,4 +110,21 @@ typedef struct{
 		break; \
 	default : printf("undexpected length : %ld.\n", len); assert(0);\
 }
+
+
+/* Ready struct
+ * PCS can accept new data, can be rejected
+ * because of : 
+ * - gearbox full 
+ *  - adding am ( for 40GBASE and up 
+ */ 
+typedef struct{
+	bool marker_v;
+	bool gb_full;
+}ready_s;
+
+static inline bool is_accept(ready_s ready){
+	return !( ready.gb_full || ready.marker_v );
+}
+
 #endif // PCS_DEFS_H

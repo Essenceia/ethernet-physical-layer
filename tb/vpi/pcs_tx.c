@@ -22,28 +22,28 @@ pcs_tx_s  *pcs_tx_init(){
 	return s; 
 }
 
-bool get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uint64_t *pma)
+ready_s get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uint64_t *pma)
 {
 	uint8_t err = 0;
-	bool gb_full = true;
 	bool gb_full_next = true;
-	bool marker_v; 
 	bool accept;
+	ready_s ready;
 	#ifdef _40GBASE
 	const size_t l = state->lane_idx;
 	#else
 	const size_t l = 0;
 	#endif	
-	gb_full &= gearbox_full(state->gearbox_state[l]);
+	ready.gb_full = gearbox_full(state->gearbox_state[l]);
 
 	#ifdef _40GBASE
-	marker_v = is_alignement_marker(state->marker_state);
+	ready.marker_v = is_alignement_marker(state->marker_state);
 	#else
-	marker_v = false;
+	ready.marker_v = false;
 	#endif
 	
-	accept = !( gb_full || marker_v );
-	info("[%ld] accpet %d full %d marker %d\n",l, accept, gb_full, marker_v);
+	accept = is_accept(ready);
+	
+	info("[%ld] accpet %d full %d marker %d\n",l, accept, ready.gb_full, ready.marker_v);
 	info("raw data %016lx\n", data);	
 	// if gearbox is full next block will not be accpted anyways
 	// so there is no need to compute the expected result	
@@ -60,12 +60,13 @@ bool get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uint64
 			state->block_scram.data = scramble(&state->scrambler_state, state->block_enc.data, 64);
 			state->block_scram.head = state->block_enc.head;
 			info("Scramm in x%016lx out x%016lx\n", state->block_enc.data, state->block_scram.data);
-			#ifdef _40GBASE
-			// alignment marker
-			alignement_marker(&state->marker_state, state->lane_idx, state->block_scram, &state->block_mark[l] ); 
-			info("Marker in x%016lx out x%016lx\n", state->block_scram.data,state->block_mark[l].data);
-			#endif
 	}
+	#ifdef _40GBASE
+	// alignment marker
+	alignement_marker(&state->marker_state, state->lane_idx, state->block_scram, &state->block_mark[l] ); 
+	info("Marker in x%016lx out x%016lx\n", state->block_scram.data,state->block_mark[l].data);
+	#endif
+	
 	// gearbox 
 	#ifdef _40GBASE
 	//if(!gb_full) 
@@ -75,13 +76,13 @@ bool get_next_pma(pcs_tx_s *state, const ctrl_lite_s ctrl, uint64_t data, uint64
 	#else
 	gb_full_next = gearbox(&state->gearbox_state[l], state->block_scram, pma);
 	#endif
-	if ( gb_full && ( gb_full_next == gb_full )){
+	if ( ready.gb_full && ( gb_full_next == ready.gb_full )){
 		fprintf(stderr, "Error, full state next should not match current state q %d next %d\n",
-			gb_full, gb_full_next);
+			ready.gb_full, gb_full_next);
 		assert(0);
 		
 	}
 
-	return accept;	
+	return ready;	
 }
 

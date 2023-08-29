@@ -29,6 +29,7 @@ void tb_pma_fifo_dtor(
 		assert(nod);
 		tv_pma_fifo_elem_t *elem = cntof(nod, tv_pma_fifo_elem_t, elems);
 		free(elem->data);
+		free(elem->ctrl);
 		free(elem);
 	}
 	free(fifo);

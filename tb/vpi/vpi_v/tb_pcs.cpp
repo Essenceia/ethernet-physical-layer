@@ -7,6 +7,7 @@
 # include <verilated_vcd_c.h>	// Trace file format header
 #endif
 
+
 uint64_t main_time = 0;   // See comments in first example
 double sc_time_stamp() { return main_time; }
 
@@ -71,9 +72,14 @@ int main(int argc, char** argv) {
 				h_pma,
 				h_pma_debug_id);
 		}
+
+		// TODO remove bellow
+		//if( main_time >= 168800 ) abort();
+
 		#if VM_TRACE
 		if (tfp) tfp->dump (main_time);	// Create waveform trace for this timestamp
-		#endif
+		//if ( main_time >= 163800 )if (tfp) tfp->dump (main_time);	// Create waveform trace for this timestamp
+		#endif	
 
 		main_time++;
     }
@@ -84,7 +90,19 @@ int main(int argc, char** argv) {
 	#endif
 	
 	// free
+	vpi_release_handle(h_ready_o);
+	vpi_release_handle(h_ctrl_v_i );
+	vpi_release_handle(h_idle_v_i );
+	vpi_release_handle(h_start_v_i);
+	vpi_release_handle(h_term_v_i );
+	vpi_release_handle(h_keep_i );
+	vpi_release_handle(h_err_v_i);
+	vpi_release_handle(h_data_i );
+	vpi_release_handle(h_debug_id );
+
 	tv_free(tv_s);
+
+	top->final();
 
     return 0;
 }

@@ -91,6 +91,8 @@ BUILD_FLAGS += $(if $(wave), --trace --trace-underscore)
 BUILD_FLAGS += $(if $(cov), --coverage --coverage-underscore) 
 BUILD_FLAGS += --timing
 BUILD_FLAGS += --x-initial-edge
+MAKE_THREADS = 4 
+BUILD_FLAGS += -j $(MAKE_THREADS)
 endif
 
 # Build commands.
@@ -98,7 +100,7 @@ define BUILD
 	iverilog $(LINT_FLAGS) -s $2 -o $(BUILD_DIR)/$2 $1
 endef
 define BUILD
-	verilator --binary -j 4 $(LINT_FLAGS) $(BUILD_FLAGS) -o $2 $1  
+	verilator --binary $(LINT_FLAGS) $(BUILD_FLAGS) -o $2 $1  
 endef
 
 #############
@@ -129,7 +131,7 @@ define BUILD_VPI
 	@$(MAKE) -f Makefile $3
 	
 	@printf "\nInvoking generated makefile \n\n"
-	$(MAKE) -C $(BUILD_DIR) -j 4 -f V$2.mk
+	$(MAKE) -C $(BUILD_DIR) -j $(MAKE_THREADS) -f V$2.mk
 endef
 endif
 
@@ -235,11 +237,9 @@ am_tx_tb :  am_tx.v am_lane_tx.v $(TB_DIR)/am_tx_tb.sv
 run_pcs_cmd := vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR) -mtb $(BUILD_DIR)/pcs_tb
 run_pcs: pcs_tb
 	$(call RUN_VPI,$^)
-	#$(run_pcs_cmd)
 
 run_am_tx: am_tx_tb 
 	cp $(VPI_DIR)/$(BUILD_VPI_DIR)/tb_marker.vpi $(VPI_DIR)/$(BUILD_VPI_DIR)/tb.vpi
-	#vvp -M $(VPI_DIR)/$(BUILD_VPI_DIR) -mtb $(BUILD_DIR)/am_tx_tb
 	$(call RUN_VPI,$^)
 
 vpi:
@@ -255,17 +255,19 @@ wave: config
 # Debug targets #
 #################
 
+debug_run:= $(call RUN_VPI,pcs_tb)
+
 valgrind: 
-	valgrind $(call RUN_VPI,pcs_tb)
+	valgrind $(debug_run)
 
 valgrind2: pcs_tb vpi
-	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. $(call RUN_VPI,pcs_tb) 
+	valgrind --leak-check=full --show-leak-kinds=all --fullpath-after=. $(debug_run) 
 
 profile: pcs_tb vpi
-	valgrind --tool=callgrind $(run_pcs_cmd)
+	valgrind --tool=callgrind $(debug_run)
 
 gdb: pcs_tb vpi
-	gdb -x $(CONF)/$(GDB_CONF) --args vvp -M $(VPI_DIR)/$(BUILD_DIR) -mtb $(BUILD_DIR)/pcs_tb
+	gdb -x $(CONF)/$(GDB_CONF) --args $(debug_run)
 
 ####################
 # Standard targets #

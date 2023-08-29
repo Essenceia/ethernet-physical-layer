@@ -76,12 +76,12 @@ void tb_pcs_set_data(
 	vpiHandle h_debug_id_i
 ){
 	/* write ctrl */
-	uint32_t ctrl_v;
-	uint32_t idle_v;
-	uint32_t start_v;
-	uint32_t term_v;
+	uint8_t ctrl_v;
+	uint8_t idle_v;
+	uint8_t start_v;
+	uint8_t term_v;
 	uint32_t term_keep;
-	uint32_t err_v;
+	uint8_t err_v;
 	/* flatten data */
 	FLATTEN_1b(ctrl,ctrl_v);
 	FLATTEN_1b(ctrl,idle_v);
@@ -200,8 +200,9 @@ void tb_pcs_exp_get_lane(
 	// doesn't accept a new data we much call creat packet
 	do{
 		*pma = tb_pma_fifo_pop( tv_s->pma[lane], debug_id, &ctrl);
-		if(pma==NULL) tv_create_packet(tv_s, lane);
-	}while(pma == NULL);
+		if(*pma==NULL) tv_create_packet(tv_s, lane);
+	}while(*pma == NULL);
+	assert(ctrl==NULL);
 	
 }
 
@@ -214,6 +215,7 @@ void tb_pcs_exp_set_data(
 	// pma
 	uint64_t pma_flat[LANE_N];
 	for(int l=0; l<LANE_N; l++){
+		assert(pma[l]);
 		pma_flat[l] = *pma[l];
 	}
 	tb_vpi_put_logic_uint64_t_var_arr(h_pma_o, pma_flat, LANE_N);
@@ -237,6 +239,7 @@ void tb_pcs_tx_exp(
 
 	for(int l=0; l < LANE_N; l++){
 		tb_pcs_exp_get_lane(tv_s, l, &pma[l], &debug_id[l]);
+		assert(pma[l]);
 	}
 	tb_pcs_exp_set_data(pma, debug_id, h_pma_o, h_debug_id_o);
 	for(int l=0; l< LANE_N; l++){
