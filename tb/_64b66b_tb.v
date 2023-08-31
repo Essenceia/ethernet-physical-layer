@@ -3,7 +3,9 @@
 `endif
 
 module _64b66b_tb;
-localparam LEN = 32;
+localparam LEN = 40;
+
+/* known test vector, used in test 1 */
 localparam TV_W = 64;
 
 reg clk = 1'b0;
@@ -36,18 +38,29 @@ logic [TV_W-1:0] tb_scram = 64'h7bfff0800000001e;
 // match the original data
 task test_sramble_decramble(int loop_cnt);
 	logic [LEN-1:0] test;
-	test = $random;
 	
 	for( int i = 0; i < loop_cnt; i++) begin
+		test = set_test();
 		data_i = test;
 		#1
 		assert(~|db_data_diff);
 		#9
-		test = $random;
 		/* randomly turn off valid */
 		valid_i = $random;
 	end
 endtask
+
+function logic [LEN-1:0] set_test();
+	logic [LEN-1:0] tmp;
+	if ( LEN <= 32 ) begin
+		tmp = $random;
+	end else begin
+		for( int i=0; i < (LEN + LEN-1)/32; i++) begin
+			tmp = ( tmp << 32 | $random );
+		end
+	end
+	return tmp;
+endfunction
 
 assign db_data_diff = data_i ^ data_o; 
 
@@ -59,17 +72,21 @@ initial begin
 	nreset = 1'b1;
 	// begin testing
 	// test 1 : simple know correct test vector
-	$display("test 1 %t", $time);
-	valid_i = 1'b1;
-	data_i = tb_data[31:0];
-	#1
-	assert(tb_scram[31:0] == scram_o[31:0]);
-	#9
-	data_i = tb_data[63:32];
-	#1
-	assert(tb_scram[63:32] == scram_o[31:0]);
-	#9
-
+	if ( LEN == 32 ) begin
+		$display("test 1 %t", $time);
+		valid_i = 1'b1;
+		data_i = tb_data[31:0];
+		#1
+		assert(tb_scram[31:0] == scram_o[31:0]);
+		#9
+		data_i = tb_data[63:32];
+		#1
+		assert(tb_scram[63:32] == scram_o[31:0]);
+		#9
+		$display("test 1 : PASS");
+	end else begin
+	$display("test 1 : SKIP, LEN parameter not 32"); 
+	end
 	// test 2 : verify the output of the descambler
 	// matches initial data
 	$display("test 2 %t", $time);
