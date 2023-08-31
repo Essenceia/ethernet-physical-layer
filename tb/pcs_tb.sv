@@ -70,6 +70,8 @@ always clk = #5 ~clk;
 
 assign tb_gb_data_diff = tb_gb_data ^ gb_data_o;
 
+
+/* Check TX data against tb produced expected output */
 always @(posedge clk) begin
 	if( nreset ) begin
 		assert(tb_gb_data == gb_data_o);
@@ -85,6 +87,45 @@ always @(posedge clk) begin
 		`endif
 	end
 end
+
+
+/* Check RX output against TX input
+* This is only checking once lock has been
+* exstablished, this takes at least 2 alignement
+* markers in 40GBASE.
+* Doesn't account for skew delay : only works when
+* there is no skew */
+genvar x;
+generate
+for(x=0; x<LANE_N; x++) begin
+	always @(posedge clk) begin
+		if (nreset) begin
+			if( valid_o[x] ) begin /* RX lock */
+				/* lite decoder output check */
+				assert(  ctrl_v_o[x] == ctrl_v_i[x] );
+
+				assert( ~ctrl_v_o[x] | ( ctrl_v_o[x] & ( idle_v_o[x] == idle_v_i[x] ))); 
+				assert( ~ctrl_v_o[x] | ( ctrl_v_o[x] 
+					& ( start_v_o[x*LANE0_CNT_N+:LANE0_CNT_N] 
+					 == start_v_i[x*LANE0_CNT_N+:LANE0_CNT_N] )));
+ 
+				assert( ~ctrl_v_o[x] | ( ctrl_v_o[x] & ( err_v_o[x] == err_v_i[x] ))); 
+				assert( ~ctrl_v_o[x] | ( ctrl_v_o[x] & ( term_v_o[x] == term_v_i[x] )));
+
+				if ( ctrl_v_o[x] & term_v_o[x] ) begin 
+					assert( keep_o[x*KEEP_W+:KEEP_W] 
+						 == keep_i[x*KEEP_W+:KEEP_W] ); 
+				end
+				/* data match check */
+				if( ~ctrl_v_o[x] ) begin
+					assert( data_o[x*DATA_W+:DATA_W]
+						 == data_i[x*DATA_W+:DATA_W] );
+				end
+			end // valid
+		end // nreset
+	end // allways
+end // for
+endgenerate
 
 task tb_rx();
 	// Temporary rx
@@ -137,17 +178,8 @@ initial begin
 	$finish;
 end
 
-genvar x;
 generate 
 	for( x=0 ; x < LANE_N ; x++ ) begin
-		// TX 
-		//assign data_i[x*DATA_W+DATA_W-1:x*DATA_W] = data_lane[x];
-		//assassign keep_i[x*KEEP_W+KEEP_W-1:x*KEEP_W] = keep_lane[x];
-		//assassign tb_gb_data[x*DATA_W+DATA_W-1:x*DATA_W] = tb_gb_data_lane[x];
-
-		//assign data_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W] = data_debug_id_lane[x];
-		//assign tb_data_debug_id[x*DEBUG_ID_W+DEBUG_ID_W-1:x*DEBUG_ID_W]  = tb_data_debug_id_lane[x];
-
 		// RX
 		// hardwire tx gearbox input to serdes output, 
 		// temporary steping stone
