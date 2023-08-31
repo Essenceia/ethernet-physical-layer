@@ -27,9 +27,9 @@ generate
 		if ( i <= I0 ) begin
 			assign data_o[i] = scram_i[i] ^ (s_q[I0-i] ^ s_q[I1-i]);	
 		end else if ( i <= I1 ) begin
-			assign data_o[i] = scram_i[i] ^ (scram_i[i-I0] ^ s_q[I1-i]);	
+			assign data_o[i] = scram_i[i] ^ (scram_i[i-(I0+1)] ^ s_q[I1-i]);	
 		end else begin
-			assign data_o[i] = scram_i[i] ^ (scram_i[i-I0] ^ scram_i[i-I1]);	
+			assign data_o[i] = scram_i[i] ^ (scram_i[i-(I0+1)] ^ scram_i[i-(I1+1)]);	
 		end
 	end
 
