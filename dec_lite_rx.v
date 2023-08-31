@@ -40,6 +40,10 @@ localparam [BLOCK_TYPE_W-1:0]
     BLOCK_TYPE_TERM_5   = 8'hd2, // C7 C6    D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_6   = 8'he1, // C7    D5 D4 D3 D2 D1 D0 BT
     BLOCK_TYPE_TERM_7   = 8'hff; //    D6 D5 D4 D3 D2 D1 D0 BT
+
+localparam SYNC_HEAD_CTRL = 2'b10;
+localparam SYNC_HEAD_DATA = 2'b01;
+
 /* verilator lint_on UNUSEDPARAM*/
 
 // recieved block data is invalid, it is malformed.
@@ -102,7 +106,7 @@ assign start_v = start_lite & {LANE0_CNT_N{~block_nv}};
 assign keep_o = term_lite - 'd1; 
 
 // check if block is valid
-assign block_nv = ~head_v | block_type_none;
+assign block_nv = ~head_v | ( head_v & head_i[1] & block_type_none);
 
 // output
 // check if we have ctrl, or reception error
