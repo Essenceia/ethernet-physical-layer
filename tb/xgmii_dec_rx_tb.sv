@@ -1,6 +1,11 @@
 /* Testbench for the decoding module
  * with the x(l)gmii interface
  */
+
+ /* loops on test 5, send random data when 
+ * no ctrl signals */
+`define TB_LOOP_CNT 100
+
 module xgmii_dec_rx_tb;
 localparam IS_40G = 1;
 localparam HEAD_W = 2;
@@ -124,10 +129,14 @@ endtask
 task check_data();
 	logic [DATA_W-1:0] db_data;
 	head_i = SYNC_HEAD_DATA;
-	db_data = DATA_W'({$random, $random});
-	data_i = db_data;
-	#10
-	assert(data_i == xgmii_txd_o);
+	for(int i=0; i < `TB_LOOP_CNT; i++) begin
+		db_data = DATA_W'({$random, $random});
+		data_i = db_data;
+		/* send random states on ctrl metadata signals */
+		#10
+		assert(ctrl_v_o == 1'b0);
+		assert(data_i == xgmii_txd_o);
+	end
 endtask
 
 genvar x;
