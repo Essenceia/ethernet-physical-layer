@@ -71,8 +71,7 @@ logic [LANE0_CNT_N-1:0]  start_v;
 
 assign block_type = data_i[BLOCK_TYPE_W-1:0];
 
-assign idle_lite = ~|block_type; // 0x0
-assign err_lite  = block_type == BLOCK_TYPE_CTRL;
+assign idle_lite = block_type == BLOCK_TYPE_CTRL;
 assign ord_lite  = 1'b0; // TODO : add support for order set codes 
 
 assign term_lite[0] = block_type == BLOCK_TYPE_TERM_0;  
@@ -89,10 +88,10 @@ if ( !IS_40G ) begin
 assign start_lite[1] = block_type == BLOCK_TYPE_START_4;
 end 
 // no valid control code was dound 
-assign block_type_none = ~( idle_lite | err_lite | ord_lite | |term_lite | |start_lite );  
+assign block_type_none = ~( idle_lite | ord_lite | |term_lite | |start_lite );  
 
 // mask control code if the block is invalid
-assign err_v  = err_lite | block_nv; 
+assign err_v  =  block_nv; 
 assign idle_v  = idle_lite & ~block_nv;
 assign ord_v   = ord_lite  & ~block_nv; 
 assign term_v  = term_lite  & {KEEP_W{~block_nv}};
