@@ -191,7 +191,7 @@ lint_pcs_rx: $(pcs_rx_deps)
 #############
 
 # The list of testbenches.
-tbs := _64b66b gearbox_tx sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx run_deskew_rx
+tbs := _64b66b gearbox_tx sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx deskew_rx
 
 # Standard run recipe to build a given testbench
 define build_recipe
@@ -228,8 +228,6 @@ $(eval $(foreach x,$(tbs),$(call build_recipe,$x)))
 #################
 # VPI testbench #
 #################
-
-# WIP so didn't touch too much.
 
 pcs_tb : $(TB_DIR)/pcs_tb.sv $(pcs_tx_deps) $(pcs_rx_deps) 
 	$(call BUILD_VPI,$^,$@,vpi,tb)

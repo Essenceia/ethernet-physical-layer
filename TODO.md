@@ -18,9 +18,4 @@
     - fake gearbox in tb
     - write 10G version
     - test 10G version
-
-- DOC 
-    - Update tb to add all test bench commands
-    - add copyright to vpi
-    - add copyright to rtl
-    - add copyright to tb
+    - deskew tb broken : fix

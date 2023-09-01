@@ -1,7 +1,23 @@
 # RTL Ethernet Physical Layer
 
 Parametrisable implementation of the ethernet physical layer's PCS for **10GBASE-R** and **40GBASE-R**.
- 
+
+## Quickstart
+
+Have a working version of `verilator` installed and follow the 
+[instructions set the path to your simulators vpi library](/tb/README.md#vpi).
+
+To build and run the top level testbench:
+```
+make clean
+make SIM=V run_pcs
+```
+
+Open the waves, here we are using `gtkwave` as our viewer :
+```
+gtkwave wave/pcs_tb.vcd
+```
+
 ## Roadmap
 
 10GBASE-R:
