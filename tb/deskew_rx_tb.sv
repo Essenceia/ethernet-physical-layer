@@ -1,8 +1,16 @@
+/* Copyright (c) 2023, Julia Desmazes. All rights reserved.
+ * 
+ * This work is licensed under the Creative Commons Attribution-NonCommercial
+ * 4.0 International License. 
+ * 
+ * This code is provided "as is" without any express or implied warranties. */
+
 `define TB_LOOP_CNT 3
 `define TB_MARKER {BLOCK_W{1'b1}}
 `define SYNC_CTRL 2'b10
 `define SYNC_DATA 2'b01
 `define TB_SKEW_RANGE 5
+
 module deskew_rx_tb;
 localparam LANE_N = 4;
 localparam BLOCK_W = 66;
