@@ -1,3 +1,10 @@
+/* Copyright (c) 2023, Julia Desmazes. All rights reserved.
+ * 
+ * This work is licensed under the Creative Commons Attribution-NonCommercial
+ * 4.0 International License. 
+ * 
+ * This code is provided "as is" without any express or implied warranties. */
+
 /* interface between the 64b data wide xgmii interface and the pcs */
 module xgmii_pcs_10g_enc_intf #(
 	parameter XGMII_DATA_W = 64,

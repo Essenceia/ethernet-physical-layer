@@ -1,7 +1,13 @@
+/* Copyright (c) 2023, Julia Desmazes. All rights reserved.
+ * 
+ * This work is licensed under the Creative Commons Attribution-NonCommercial
+ * 4.0 International License. 
+ * 
+ * This code is provided "as is" without any express or implied warranties. */
+
 /* PCS encode block
 *
-* Add control additional control blocks.
-*/
+* Add control additional control blocks.*/
 module pcs_enc_lite #(
 	parameter IS_10G = 0,
 	parameter DATA_W = 64,

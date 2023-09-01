@@ -1,3 +1,10 @@
+/* Copyright (c) 2023, Julia Desmazes. All rights reserved.
+ * 
+ * This work is licensed under the Creative Commons Attribution-NonCommercial
+ * 4.0 International License. 
+ * 
+ * This code is provided "as is" without any express or implied warranties. */
+
 /* PCS on the transmission path 
  * 
  * This module does not support a configurable data width,
@@ -5,8 +12,7 @@
  *
  * The meaning of "lane" is difference for 40g than 10g.
  * In 10g each block had 2x4 lanes, in 40g the xgmii data
- * is composed of 4 lanes of 1 block width.
- * */
+ * is composed of 4 lanes of 1 block width. */
 module pcs_tx#(
 	parameter IS_10G = 0,
 	parameter LANE_N = IS_10G ? 1 : 4,

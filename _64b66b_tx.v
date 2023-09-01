@@ -1,3 +1,10 @@
+/* Copyright (c) 2023, Julia Desmazes. All rights reserved.
+ * 
+ * This work is licensed under the Creative Commons Attribution-NonCommercial
+ * 4.0 International License. 
+ * 
+ * This code is provided "as is" without any express or implied warranties. */
+
 /* 64b/66b scrable, used for transmission path */
 module _64b66b_tx #(
 	parameter LEN    = 32 // size of each block in bits

@@ -1,7 +1,13 @@
+/* Copyright (c) 2023, Julia Desmazes. All rights reserved.
+ * 
+ * This work is licensed under the Creative Commons Attribution-NonCommercial
+ * 4.0 International License. 
+ * 
+ * This code is provided "as is" without any express or implied warranties. */
+
 /* 64b66b descrambler used for the rx path.
 *
-* data(x) = sdata(x) ^ sdata_lsr(38) ^ sdata_lsr(57)
- */
+* data(x) = sdata(x) ^ sdata_lsr(38) ^ sdata_lsr(57) */
 module _64b66b_rx #(
 	// descrabler input data
 	parameter LEN = 264

@@ -1,5 +1,11 @@
-/* XGMII and XLGMII decoder interface, used on rx*/
+/* Copyright (c) 2023, Julia Desmazes. All rights reserved.
+ * 
+ * This work is licensed under the Creative Commons Attribution-NonCommercial
+ * 4.0 International License. 
+ * 
+ * This code is provided "as is" without any express or implied warranties. */
 
+/* XGMII and XLGMII decoder interface, used on rx*/
 module xgmii_dec_intf_rx #(
 	parameter IS_40G = 1, // are comunicating with XLGMII 
 	parameter XGMII_DATA_W = 64,	
