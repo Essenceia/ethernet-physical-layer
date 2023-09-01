@@ -44,7 +44,10 @@ BUILD=build
 CC_CMD=cc
 LD_CMD=cc
 CC_FLAGS += -std=gnu99
+
+# set vpi lib path when using iverilog :
 VPI_INC := -I$(AUR)/iverilog
+
 VPI_DIR := vpi_i
 PP :=
 else
@@ -54,8 +57,11 @@ LD_CMD=g++
 CC_FLAGS += -fpermissive
 CC_DEFS += -DVERILATOR
 CC_DEFS += $(if $(wave),-DVM_TRACE)
+
+# set vpi lib path when using verilator :
 VPI_INC := -I/usr/local/share/verilator/include 
 VPI_INC += -I/usr/local/share/verilator/include/vltstd
+
 VPI_INC += -I../../obj_dir
 VPI_DIR := vpi_v
 PP := pp

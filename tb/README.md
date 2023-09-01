@@ -115,10 +115,8 @@ with our system verilog test bench.
 These golden models will be compiled into a dynamically relocatable library that will
 be loaded at run time by the simulator.
 
-Depending on the simulator used set the path to the simulator library 
-in the `tb/vpi/Makefile` :
-- `IVERILOG` 
-- `VERILATOR`
+Taking into account the simulator you will be using check the path to the simulator library 
+in the `tb/vpi/Makefile` through the `VPI_INC` variable. 
 
 
 ### Full 40Gbe PCS
