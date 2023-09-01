@@ -202,7 +202,7 @@ endef
 
 # Dependencies for each testbench
 # TODO the pattern $(TB_DIR)/$(TB_NAME)_tb.sv can be optimized, if _64b66b_tb.v -> _64b66b_tb.sv is ok.
-_64b66b_deps := _64b66b_tx.v _64b66b_rx.v $(TB_DIR)/_64b66b_tb.v
+_64b66b_deps := _64b66b_tx.v _64b66b_rx.v $(TB_DIR)/_64b66b_tb.sv
 gearbox_tx_deps := gearbox_tx.v $(TB_DIR)/gearbox_tx_tb.sv
 block_sync_rx_deps := block_sync_rx.v $(TB_DIR)/block_sync_rx_tb.sv 
 am_lock_rx_deps := am_lock_rx.v $(TB_DIR)/am_lock_rx_tb.sv 
