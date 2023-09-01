@@ -22,12 +22,13 @@ gtkwave wave/pcs_tb.vcd
 
 10GBASE-R:
 
-[ ] 16b wide data path, very low latency
-[x] 64b wide data path, no latency requirement
+- [ ] 16b wide data path, very low latency
+
+- [x] 64b wide data path, no latency requirement
 
 40GBASE-R:
 
-[x] 4 lanes, 256b wide data path, no latency requirement
+- [x] 4 lanes, 256b wide data path, no latency requirement
 
 ## Features not supported
 
