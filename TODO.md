@@ -12,14 +12,15 @@
 - 10BASE-R
     - add testbench for full pcs tx lite in 16b
 - TX
-    - enc : add support for control codes O
-    - enc : add error
-    - fix gearbox self check tb
+    - test 10G version
 
 . RX 
-    - dec : add support for control codes 0
-    - discard alignement markers in top
-    - modify top level to exclude alignement marker
-      related features for 10g
     - fake gearbox in tb
     - write 10G version
+    - test 10G version
+
+- DOC 
+    - Update tb to add all test bench commands
+    - add copyright to vpi
+    - add copyright to rtl
+    - add copyright to tb
