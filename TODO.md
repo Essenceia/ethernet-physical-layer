@@ -15,6 +15,7 @@
     - test 10G version
 
 . RX 
+    - rx gearbox 
     - fake gearbox in tb
     - write 10G version
     - test 10G version

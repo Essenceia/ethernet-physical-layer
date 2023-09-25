@@ -38,11 +38,15 @@ reg   [FIFO_W-1:0] fifo_q;
 // input sync header is valid
 logic head_v;
 
+generate
+
 if ( DATA_W == BLOCK_DATA_W ) begin
 	assign head_v = 1'b1;
 end else begin
 	assign head_v = ~|seq_i[CNT_W:0];
 end
+
+endgenerate
 
 // shift data
 localparam MASK_ARR_W = FIFO_W / HEAD_W;
@@ -60,7 +64,7 @@ logic [FIFO_W-1:0]     wr_mask; // full version of the mask
 logic [FIFO_W-1:0]     rd_fifo_mask; // full version of the mask
 genvar i;
 generate
-	for( i = 0; i < SHIFT_N; i++ ) begin
+	for( i = 0; i < SHIFT_N; i++ ) begin : rd_data_shifted_loop
 		// data
 		//assign wr_data_shifted_arr[i] = { {DATA_W-HEAD_W-i{1'bx}} , data_i[DATA_W-1:DATA_W-HEAD_W-i] } ;
 		assign wr_data_shifted_arr[i] = { {DATA_W-(i+1)*HEAD_W{1'bx}} , data_i[DATA_W-1:DATA_W - (i+1)*HEAD_W] };
@@ -74,11 +78,18 @@ generate
 		assign rd_fifo_mask_lite_shifted_arr[i] = { {MASK_ARR_W-i{1'b0}} , {i{1'b1}} };
 		// sel
 	end
-	for( i = 0; i <=SHIFT_N; i++) 
+	for( i = 0; i <=SHIFT_N; i++) begin : shift_sel_loop
 		assign shift_sel[i] = ( seq_i == i );
+	end
 endgenerate
 always_comb begin
 	for( int x=0; x <= SHIFT_N; x++) begin
+		/* setting default state to prevent latch inference */
+		wr_data_shifted = 'x;
+		rd_data_shifted = 'x;
+		wr_mask_lite_shifted = 'x;
+		rd_fifo_mask_lite_shifted = 'x;
+
 		if ( x < SHIFT_N ) begin
 			if ( shift_sel[x] ) wr_data_shifted = wr_data_shifted_arr[x];
 			if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];
@@ -91,7 +102,7 @@ always_comb begin
 end
 // extend masks
 generate
-	for( i = 0; i < MASK_ARR_W; i++ ) begin
+	for( i = 0; i < MASK_ARR_W; i++ ) begin : mask_loop
 		assign wr_mask[i*HEAD_W+HEAD_W-1:i*HEAD_W] = {HEAD_W{wr_mask_lite_shifted[i] }};
 		assign rd_fifo_mask[i*HEAD_W+HEAD_W-1:i*HEAD_W] = {HEAD_W{rd_fifo_mask_lite_shifted[i] }};
 	end

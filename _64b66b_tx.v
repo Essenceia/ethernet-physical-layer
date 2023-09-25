@@ -46,8 +46,8 @@ generate
 	end
 /* verilator lint_off UNOPTFLAT */
 
-// flop prviously scrambled data
-for( i = 0; i < S_W; i++ ) begin
+// flop previously scrambled data
+for( i = 0; i < S_W; i++ ) begin : s_next_loop
 	if ( LEN < S_W ) begin
 		if( i < LEN ) begin 
 			assign s_next[i] = res[LEN-1-i];
