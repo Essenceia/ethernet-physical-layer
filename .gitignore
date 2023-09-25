@@ -7,7 +7,7 @@
 !.gitignore
 !.gitattribute
 !.gitmodules
-!Makefile
+!makefile
 !*.jpg
 !tcl
 !*.tcl
