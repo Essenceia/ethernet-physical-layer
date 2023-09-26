@@ -30,25 +30,25 @@ logic [S_W-1:0] s_next;
 genvar i;
 generate
 	for (  i = 0; i < LEN; i++ ) begin : xor_loop
-		if ( i <= I0 ) begin
+		if ( i <= I0 ) begin : gen_i_le_I0
 			assign data_o[i] = scram_i[i] ^ (s_q[I0-i] ^ s_q[I1-i]);	
-		end else if ( i <= I1 ) begin
+		end else if ( i <= I1 ) begin : gen_i_le_I1
 			assign data_o[i] = scram_i[i] ^ (scram_i[i-(I0+1)] ^ s_q[I1-i]);	
-		end else begin
+		end else begin : gen_i_default
 			assign data_o[i] = scram_i[i] ^ (scram_i[i-(I0+1)] ^ scram_i[i-(I1+1)]);	
 		end
 	end
 
-	for( i=0; i < S_W; i++) begin	
-	// flop input data to be used next cycle
-	if ( i < LEN ) begin
-		// input data is larger than internal state, rewite all bits
-		assign s_next[i] = scram_i[LEN-1-i];
-	end else begin
-		// input data is smaller than internal state, shift
-		// state and rewrite only lower order bits
-		assign s_next[i] = s_q[i-LEN];
-	end
+	for( i=0; i < S_W; i++) begin : gen_s_next_loop	
+		// flop input data to be used next cycle
+		if ( i < LEN ) begin : gen_i_lt_len
+			// input data is larger than internal state, rewite all bits
+			assign s_next[i] = scram_i[LEN-1-i];
+		end else begin : gen_i_ge_len
+			// input data is smaller than internal state, shift
+			// state and rewrite only lower order bits
+			assign s_next[i] = s_q[i-LEN];
+		end
 	end
 
 endgenerate

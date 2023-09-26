@@ -66,7 +66,6 @@ assign head_v = head_i[0] ^ head_i[1];
 logic [BLOCK_TYPE_W-1:0] block_type;
 logic                    block_type_none; 
 logic                    idle_lite; 
-logic                    err_lite; 
 logic                    ord_lite; // ordered set
 logic [KEEP_W-1:0]       term_lite; 
 logic [LANE0_CNT_N-1:0]  start_lite; 
@@ -91,9 +90,13 @@ assign term_lite[6] = block_type == BLOCK_TYPE_TERM_6;
 assign term_lite[7] = block_type == BLOCK_TYPE_TERM_7;  
 
 assign start_lite[0] = block_type == BLOCK_TYPE_START_0;
-if ( !IS_40G ) begin
-assign start_lite[1] = block_type == BLOCK_TYPE_START_4;
-end 
+
+generate
+	if ( !IS_40G ) begin :  gen_is_10g
+		assign start_lite[1] = block_type == BLOCK_TYPE_START_4;
+	end 
+endgenerate
+
 // no valid control code was dound 
 assign block_type_none = ~( idle_lite | ord_lite | |term_lite | |start_lite );  
 

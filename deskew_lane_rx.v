@@ -76,13 +76,20 @@ endgenerate
 // skew is used as read pointer
 logic [BLOCK_W-1:0] buff_rd;
 always_comb begin
+	/* default */
+	buff_rd = {BLOCK_W{1'bx}};
+
 	for(int j=0; j<MAX_SKEW_BLOCK_N; j++) begin
 		if ( j == 0 )begin
-		if( skew_q == 0) buff_rd = data_i;
+			if( skew_q == 0) begin
+				buff_rd = data_i;
+			end
 		end else begin
-		/* verilator lint_off WIDTHEXPAND */
-		if( skew_q == j ) buff_rd = buff_q[j-1];
-		/* verilator lint_on WIDTHEXPAND */
+			/* verilator lint_off WIDTHEXPAND */
+			if( skew_q == j ) begin
+				 buff_rd = buff_q[j-1];
+			end
+			/* verilator lint_on WIDTHEXPAND */
 		end
 	end
 end

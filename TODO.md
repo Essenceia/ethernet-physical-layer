@@ -15,9 +15,13 @@
 - TX
     - test 10G version
 
-. RX 
+- RX 
     - rx gearbox 
     - fake gearbox in tb
     - write 10G version
     - test 10G version
     - deskew tb broken : fix
+
+- Code clean :
+    - rename `IS_40G` parameter to `IS_10G`
+
