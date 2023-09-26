@@ -121,7 +121,7 @@ endif
 ifeq ($(SIM),I)
 define BUILD_VPI
 	# Manually invoke vpi to not polute dependancy list
-	@$(MAKE) -f Makefile $3
+	@$(MAKE) -f makefile $3
 	# Same as normal build
 	iverilog $(LINT_FLAGS) -s $2 -o $(BUILD_DIR)/$2 $1
 endef
@@ -131,7 +131,7 @@ define BUILD_VPI
 	verilator -cc --exe --vpi --public-flat-rw --threads 1 $(LINT_FLAGS) $(BUILD_FLAGS) --top-module $2 -LDFLAGS "$(CWD)/$(VPI_DIR)/$(BUILD_VPI_DIR)/$4_all.o V$2__ALL.a" -o $2 $1
 	
 	@printf "\nMaking vpi shared object \n\n"
-	@$(MAKE) -f Makefile $3
+	@$(MAKE) -f makefile $3
 	
 	@printf "\nInvoking generated makefile \n\n"
 	$(MAKE) -C $(BUILD_DIR) -j $(MAKE_THREADS) -f V$2.mk
