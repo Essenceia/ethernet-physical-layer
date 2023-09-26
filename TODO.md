@@ -7,10 +7,11 @@
     - find a way to force re-evaliation of assignations in generate constructs for tb
 
 - LINT :
-    - remove `-Wno-LATCH` 
+    - fix lint for clean port to quartus
 
 - 10BASE-R
     - add testbench for full pcs tx lite in 16b
+
 - TX
     - test 10G version
 
