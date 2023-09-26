@@ -4,9 +4,9 @@ load_package ::quartus::project
 
 set project_name "PCS"
 
-set fpga_family "Cyclone 10"
+set fpga_family "Cyclone 10 GX"
 
-set fpga_device 10CX150YF780
+set fpga_device 10CX150YF780E5G
 
 set project_dir "quartus_test"
 
@@ -15,6 +15,7 @@ set project_dir "quartus_test"
 project_new $project_name -overwrite
 
 # set decide
+set_global_assignment -name FAMILY $fpga_family
 set_global_assignment -name DEVICE $fpga_device
 
 # project configuration
