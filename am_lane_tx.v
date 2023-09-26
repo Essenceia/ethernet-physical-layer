@@ -83,10 +83,14 @@ logic [HEAD_W-1:0] market_head;
 assign market_head = SYNC_HEAD_CTRL;
 genvar i;
 generate 
-	for( i = 0; i < 8; i++ ) begin
-		if ( i == 3 ) assign marker_data[i*8+7:i*8] = bip3;
-		else if ( i == 7 ) assign marker_data[i*8+7:i*8] = bip7;
-		else assign marker_data[i*8+7:i*8] = LANE_ENC[i*8+7:i*8];
+	for( i = 0; i < 8; i++ ) begin : gen_marker_data_loop
+		if ( i == 3 ) begin : gen_i_eq_3
+			assign marker_data[i*8+7:i*8] = bip3;
+		end else if ( i == 7 ) begin : gen_i_eq_7
+			assign marker_data[i*8+7:i*8] = bip7;
+		end else begin : gen_i_default
+			assign marker_data[i*8+7:i*8] = LANE_ENC[i*8+7:i*8];
+		end
 	end
 endgenerate 
 

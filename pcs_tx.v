@@ -50,9 +50,6 @@ logic [XGMII_DATA_W-1:0] data_enc; // encoded
 // scrambler
 logic [XGMII_DATA_W-1:0] data_scram; // scrambled
 
-if ( IS_10G==0 ) begin
-end
-
 // sync header is allways valid
 logic [LANE_N*HEAD_W-1:0] sync_head;
 logic [LANE_N*HEAD_W-1:0] sync_head_mark;
@@ -119,7 +116,7 @@ m_64b66b_tx(
 	.scram_o(data_scram)
 );
 
-if ( !IS_10G ) begin
+if ( !IS_10G ) begin : gen_not_10g
 	// alignement marker
 	logic                    marker_v;
 	logic [XGMII_DATA_W-1:0] data_mark; 
@@ -139,14 +136,14 @@ if ( !IS_10G ) begin
 	assign scram_v = ~marker_v;
 
 	// output data : marked data
-	for(l=0; l<LANE_N; l++) begin
+	for(l=0; l<LANE_N; l++) begin : gen_data_o
 		assign data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = { data_mark[l*DATA_W+DATA_W-1:l*DATA_W], sync_head_mark[l*HEAD_W+HEAD_W-1:l*HEAD_W] };
 	end
 	assign ready_o = ~marker_v;
 
-end else begin
+end else begin : gen_10g
 	// output data : scrambled data
-	for(l=0; l<LANE_N; l++) begin
+	for(l=0; l<LANE_N; l++) begin : gen_data_o
 		assign data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = { data_scram[l*DATA_W+DATA_W-1:l*DATA_W], sync_head[l*HEAD_W+HEAD_W-1:l*HEAD_W] };
 	end
 	// scrambler

@@ -34,11 +34,11 @@ logic [LEN-1:0] res;
 genvar i;
 generate
 	for (  i = 0; i < LEN; i++ ) begin : xor_loop
-		if ( i <= I0 ) begin
+		if ( i <= I0 ) begin : gen_i_le_I0
 			assign res[i] = data_i[i] ^ ( s_q[I0-i] ^ s_q[I1-i] ); 
-		end else if ( i <= I1 ) begin 
+		end else if ( i <= I1 ) begin  : gen_i_le_I1
 			assign res[i] = data_i[i] ^ ( res[i-(I0+1)] ^ s_q[I1-i] ); 
-		end else begin
+		end else begin : gen_i_gt_I1
 			assign res[i] = data_i[i] ^
 							 ( res[i-(I0+1)] 
 							^  res[i-(I1+1)]); 
@@ -48,13 +48,13 @@ generate
 
 // flop previously scrambled data
 for( i = 0; i < S_W; i++ ) begin : s_next_loop
-	if ( LEN < S_W ) begin
-		if( i < LEN ) begin 
+	if ( LEN < S_W ) begin : gen_len_lt_s_w
+		if( i < LEN ) begin: gen_i_lt_len
 			assign s_next[i] = res[LEN-1-i];
-		end else begin 
+		end else begin: gen_i_ge_len
 			assign s_next[i] = s_q[i-LEN];
 		end
-	end else begin
+	end else begin: gen_len_ge_s_w
 		// LEN >= S_W
 		assign s_next[i] = res[LEN-1-i];
 	end

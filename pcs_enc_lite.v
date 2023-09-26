@@ -81,24 +81,33 @@ logic [BLOCK_TYPE_W-1:0] term_block_type;
 logic                    block_type_v;
 logic [BLOCK_TYPE_W-1:0] block_type;
 assign block_type_v = ctrl_v_i;
-if ( IS_10G ) begin	
+
+generate
+
+if ( IS_10G ) begin : gen_is_10g_block_type	
+
 assign block_type   = {BLOCK_TYPE_W{start_v_i[0] }} & BLOCK_TYPE_START_0
 					| {BLOCK_TYPE_W{start_v_i[1] }} & BLOCK_TYPE_START_4
 					| {BLOCK_TYPE_W{term_v_i}} & term_block_type
 					| {BLOCK_TYPE_W{idle_v_i}} & BLOCK_TYPE_CTRL;
-end else begin
+
+end else begin : gen_10g_block_type
+
 // start signal can only be sent on lower order byte
 assign block_type   = {BLOCK_TYPE_W{start_v_i}} & BLOCK_TYPE_START_0
 					| {BLOCK_TYPE_W{term_v_i}} & term_block_type
 					| {BLOCK_TYPE_W{idle_v_i}} & BLOCK_TYPE_CTRL;
-end
+end /* !IS_10G */
 
 // terminate block type
-if ( CNT_N > 1 ) begin
+if ( CNT_N > 1 ) begin : gen_cnt_n_gt_1_block_keep
 	assign block_keep = { keep_next_i, keep_i };
-end else begin
+end else begin : gen_cnt_n_eq_1_block_keep
 	assign block_keep =  keep_i;
 end
+
+endgenerate
+
 assign { unused_term_mask_lite_of, term_mask_lite } = block_keep + {{FULL_KEEP_W-1{1'b0}}, 1'b1};
 always @(term_mask_lite) begin
 	case ( term_mask_lite ) 

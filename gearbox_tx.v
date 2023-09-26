@@ -40,9 +40,9 @@ logic head_v;
 
 generate
 
-if ( DATA_W == BLOCK_DATA_W ) begin
+if ( DATA_W == BLOCK_DATA_W ) begin : gen_data_w_eq_block_w_head_v
 	assign head_v = 1'b1;
-end else begin
+end else begin : gen_data_w_neq_block_w_head_v
 	assign head_v = ~|seq_i[CNT_W:0];
 end
 
@@ -68,9 +68,9 @@ generate
 		// data
 		//assign wr_data_shifted_arr[i] = { {DATA_W-HEAD_W-i{1'bx}} , data_i[DATA_W-1:DATA_W-HEAD_W-i] } ;
 		assign wr_data_shifted_arr[i] = { {DATA_W-(i+1)*HEAD_W{1'bx}} , data_i[DATA_W-1:DATA_W - (i+1)*HEAD_W] };
-		if ( i == SHIFT_N-1 ) begin
+		if ( i == SHIFT_N-1 ) begin : gen_last_idx_rd_data_shifted_arr
 			assign rd_data_shifted_arr[i] = { head_i , {i*HEAD_W{1'bx}}} ;
-		end else begin
+		end else begin : gen_idx_rd_data_shifted_arr
 			assign rd_data_shifted_arr[i] = { data_i[DATA_W-HEAD_W-i*HEAD_W-1:0], head_i , {i*HEAD_W{1'bx}}} ;
 		end
 		// mask
