@@ -37,6 +37,7 @@ set_global_assignment -name VERILOG_FILE $rtl_dir/_64b66b_tx.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/am_lane_tx.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/am_tx.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/gearbox_tx.v
+set_global_assignment -name VERILOG_FILE $rtl_dir/pcs_enc_lite.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/pcs_tx.v
 
 # set top
