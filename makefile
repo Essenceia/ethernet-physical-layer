@@ -22,6 +22,12 @@ ifndef assert
 assert:=1
 endif
 
+# Wip, bypass some lint flags, dissabled by default
+ifndef wip
+wip:=
+endif
+
+
 ############
 # Sim type #
 ############
@@ -61,6 +67,7 @@ LINT_FLAGS += -Wall -g2012 $(if $(assert),-gassertions) -gstrict-expr-width
 LINT_FLAGS += $(if $(debug),-DDEBUG) 
 else
 LINT_FLAGS += -Wall -Wpedantic
+LINT_FLAGS += $(if $(wip),-Wno-latch -Wno-unusedsignal)
 endif
 
 # Lint commands.
@@ -191,7 +198,7 @@ lint_pcs_rx: $(pcs_rx_deps)
 #############
 
 # The list of testbenches.
-tbs := _64b66b gearbox_tx sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx deskew_rx
+tbs := _64b66b gearbox_tx gearbox_rx sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx deskew_rx
 
 # Standard run recipe to build a given testbench
 define build_recipe
@@ -204,6 +211,7 @@ endef
 # TODO the pattern $(TB_DIR)/$(TB_NAME)_tb.sv can be optimized, if _64b66b_tb.v -> _64b66b_tb.sv is ok.
 _64b66b_deps := _64b66b_tx.v _64b66b_rx.v $(TB_DIR)/_64b66b_tb.sv
 gearbox_tx_deps := gearbox_tx.v $(TB_DIR)/gearbox_tx_tb.sv
+gearbox_rx_deps := gearbox_rx.v $(TB_DIR)/gearbox_rx_tb.sv
 block_sync_rx_deps := block_sync_rx.v $(TB_DIR)/block_sync_rx_tb.sv 
 am_lock_rx_deps := am_lock_rx.v $(TB_DIR)/am_lock_rx_tb.sv 
 lane_reorder_rx_deps := lane_reorder_rx.v $(TB_DIR)/lane_reorder_rx_tb.sv 

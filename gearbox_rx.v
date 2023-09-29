@@ -13,9 +13,13 @@ module gearbox_rx #(
 	input clk,
 	input nreset,
 
+	/* pma */
+	input              lock_v_i,
 	input [DATA_W-1:0] data_i,
+	/* block sync */
+	input              slip_v_i,
 
-	// gearbox output
+	/* to block sync */
 	output              valid_o, // backpressure, buffer is full, need a cycle to clear 
 	output [HEAD_W-1:0] head_o,
 	output [DATA_W-1:0] data_o
@@ -23,41 +27,21 @@ module gearbox_rx #(
 localparam BLOCK_DATA_W = DATA_W + HEAD_W;
 
 localparam FIFO_W = DATA_W;
-localparam SHIFT_N = DATA_W / HEAD_W;
+localparam SHIFT_N = FIFO_W;
 
-localparam CNT_W = $clog2(SHIFT_N+1);
+localparam CNT_W = $clog2(SHIFT_N);
 
-// current fifo depth is derrived from the sequence number
-logic [FIFO_W-1:0] fifo_next;
-reg   [FIFO_W-1:0] fifo_q;
-
-// input sync header is valid
-logic head_v;
-
-generate
-
-if ( DATA_W == BLOCK_DATA_W ) begin : gen_data_w_eq_block_w_head_v
-	assign head_v = 1'b1;
-end else begin : gen_data_w_neq_block_w_head_v
-	assign head_v = ~|seq_i[CNT_W:0];
-end
-
-endgenerate
-
-// shift data
-localparam MASK_ARR_W = FIFO_W / HEAD_W;
 
 logic [SHIFT_N:0] shift_sel;
 logic [FIFO_W-1:0] wr_fifo_shifted_arr[SHIFT_N-1:0];
-logic [FIFO_W-1:0] wr_data_shifted; // write data to write into fifo register
-logic [MASK_ARR_W-1:0] wr_mask_lite_shifted_arr[SHIFT_N-1:0];
+logic [FIFO_W-1:0] wr_fifo_shifted; // write data to write into fifo register
+//logic [FIFO_W-1:0] wr_mask_shifted_arr[SHIFT_N-1:0];
 
 logic [BLOCK_DATA_W-1:0] rd_data_shifted_arr[SHIFT_N-1:1];
 logic [BLOCK_DATA_W-1:0] rd_data_shifted;
 
-logic [MASK_ARR_W-1:0] rd_fifo_mask_lite_arr[SHIFT_N-1:0];
-logic [MASK_ARR_W-1:0] rd_fifo_mask_lite;
-logic [FIFO_W-1:0]     rd_fifo_mask; // full version of the mask
+logic [BLOCK_DATA_W-1:0] rd_data_mask_arr[SHIFT_N-1:0];
+logic [BLOCK_DATA_W-1:0] rd_data_mask; // full version of the mask
 
 genvar i;
 generate
@@ -66,18 +50,56 @@ generate
 		if ( i == 0 ) begin : i_eq_zero
 			assign wr_fifo_shifted_arr[i] = data_i;
 		end else begin : i_gt_zero
-			assign wr_fifo_shifted_arr[i] = { {i*HEAD_W{1'bx}}, data_i[DATA_W-1:DATA_W - i*HEAD_W] };
+			assign wr_fifo_shifted_arr[i] = { {i{1'bx}}, data_i[DATA_W-1:i] };
 		end	
 	end
 	
 	for( i = 1; i < SHIFT_N; i++ ) begin : rd_shifted_loop
 		// rd data and mask
-		assign rd_data_shifted_arr[i] = { data_i[0+:i*HEAD], {BLOCK_DATA_W-i*HEAD_W{1'bx}}}; 
-		assign rd_fifo_mask_lite_arr[i] = { {i{1'b0}}, {MASK_ARR_W - i{1'b1}}};
+		assign rd_data_shifted_arr[i] = { data_i[0+:i], {BLOCK_DATA_W-i{1'bx}}}; 
+		assign rd_data_mask_arr[i] = { {i{1'b1}}, {BLOCK_DATA_W- i{1'b0}}};
 	end
 	
-	for( i = 0; i <=SHIFT_N; i++) begin : shift_sel_loop
-		assign shift_sel[i] = ( seq_i == i );
+endgenerate
+
+// sequence
+localparam INC_W = $clog2( HEAD_W + 2);
+reg   [CNT_W-1:0] seq_q;
+logic [CNT_W-1:0] seq_next;
+logic             seq_rst;
+logic [CNT_W-1:0] seq_add;
+logic [INC_W-1:0] seq_inc;
+logic             unused_seq_add_of;
+logic             seq_last;
+
+/* increment by 2 or 3 sequence counter bepending on if we are
+ * slipping the lsb */
+assign seq_inc = { 1'b1, slip_v_i };
+
+assign {unused_seq_add_of, seq_add } = seq_q + { {CNT_W-INC_W{1'b0}}, seq_inc };
+/* reset sequence */
+
+/* verilator lint_off WIDTHEXPAND */
+assign seq_last = seq_q == 'd64; /* TODO account for slip */
+/* verilator lint_on WIDTHEXPAND */
+
+assign seq_rst = ~lock_v_i;
+/* reset to zero */
+assign seq_next = {CNT_W{~seq_rst}} & seq_add; 
+ 
+always @(posedge clk) begin
+	if ( ~nreset ) begin
+		seq_q <= {CNT_W{1'b0}};
+	end else begin
+		seq_q <= seq_next;
+	end
+end
+
+generate
+	for( i = 0; i <= SHIFT_N; i++) begin : shift_sel_loop
+		/* verilator lint_off WIDTHEXPAND */
+		assign shift_sel[i] = ( seq_q == i );
+		/* verilator lint_on WIDTHEXPAND */
 	end
 endgenerate
 
@@ -90,22 +112,30 @@ always_comb begin
 	for( int x=1; x < SHIFT_N; x++) begin
 		/* setting default state to prevent latch inference */
 		if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];
-		if ( shift_sel[x] ) rd_fifo_mask_lite = rd_fifo_mask_lite_arr[x];
+		if ( shift_sel[x] ) rd_data_mask = rd_data_mask_arr[x];
 	end
 end
-// extend masks
-generate
-	for( i = 0; i < MASK_ARR_W; i++ ) begin : mask_loop
-		assign rd_fifo_mask[i*HEAD_W+HEAD_W-1:i*HEAD_W] = {HEAD_W{rd_fifo_mask_lite_shifted[i] }};
-	end
-endgenerate
+
 // buf data
-assign fifo_next = wr_data_shifted;
+reg   [FIFO_W-1:0] fifo_q;
+logic [FIFO_W-1:0] fifo_next;
+
+assign fifo_next = wr_fifo_shifted;
 always @(posedge clk) begin
 	fifo_q <= fifo_next;
 end
 
-assign valid_o = ~|cnt_q; // cnt_q == 0
+// reassemble output data
+logic [DATA_W-1:0] data;
+logic [HEAD_W-1:0] head;
 
-assign data_o = rd_fifo_mask & fifo_q | ~rd_fifo_mask & rd_data_shifted;
+assign { data, head } = {BLOCK_DATA_W{1'bx}}; 
+
+assign valid_o = |seq_q; // cnt_q != 0
+
+assign { data_o, head_o} = rd_data_mask & rd_data_shifted
+						 |~rd_data_mask & {2'bx, fifo_q};
+
+// rd_fifo_mask & fifo_q 
+// | ~rd_fifo_mask & rd_data_shifted;
 endmodule
