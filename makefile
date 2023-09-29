@@ -171,7 +171,7 @@ build:
 
 # Dependencies for linter.
 pcs_tx_deps := pcs_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v am_tx.v am_lane_tx.v  
-pcs_rx_deps := pcs_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v _64b66b_rx.v dec_lite_rx.v 
+pcs_rx_deps := pcs_rx.v gearbox_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v _64b66b_rx.v dec_lite_rx.v 
 
 lint_64b66b_tx : _64b66b_tx.v build
 	$(call LINT, _64b66b_tx.v, $64b66b_tx)
