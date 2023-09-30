@@ -9,7 +9,7 @@
 * Expected parameters for data widths : 16,32, 64
 * Tested parameters : 16, 64 */
 module gearbox_tx #(
-	parameter BLOCK_DATA_W = 64,
+	parameter BLOCK_DATA_W = 66,
 	parameter DATA_W = 64,
 	parameter HEAD_W = 2,
 	parameter SEQ_FULL = DATA_W/HEAD_W,

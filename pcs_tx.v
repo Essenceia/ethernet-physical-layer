@@ -39,7 +39,7 @@ module pcs_tx#(
 
 	output                        ready_o,// am_v not used in 10GBASE_R mode	
 	// gearbox
-	output [LANE_N*BLOCK_W-1:0]   data_o
+	output [LANE_N*DATA_W-1:0]    data_o
 );
 localparam SEQ_W  = $clog2(DATA_W/HEAD_W+1);
 // encoder
@@ -61,10 +61,12 @@ logic [LANE_N*HEAD_W-1:0] sync_head_mark;
 * but 1 as long as we are sending all the data blocks
 * within the same cycle, this may be changed in future
 * versions */
-/* verilator lint_off UNUSEDSIGNAL*/
+/*verilator lint_off UNUSEDSIGNAL */
 logic [LANE_N-1:0] gearbox_full;
-/* verilator lint_on UNUSEDSIGNAL*/
-
+/*verilator lint_on UNUSEDSIGNAL */
+/* input to gearbox */
+logic [LANE_N*HEAD_W-1:0] gb_head;
+logic [LANE_N*DATA_W-1:0] gb_data;
 
 // pcs fsm
 logic             seq_rst;
@@ -135,17 +137,17 @@ if ( !IS_10G ) begin : gen_not_10g
 	// scrambler
 	assign scram_v = ~marker_v;
 
-	// output data : marked data
-	for(l=0; l<LANE_N; l++) begin : gen_data_o
-		assign data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = { data_mark[l*DATA_W+DATA_W-1:l*DATA_W], sync_head_mark[l*HEAD_W+HEAD_W-1:l*HEAD_W] };
-	end
+	// gearbox data : marked data
+	assign gb_data = data_mark;
+	assign gb_head = sync_head_mark;
+	
 	assign ready_o = ~marker_v;
 
 end else begin : gen_10g
-	// output data : scrambled data
-	for(l=0; l<LANE_N; l++) begin : gen_data_o
-		assign data_o[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = { data_scram[l*DATA_W+DATA_W-1:l*DATA_W], sync_head[l*HEAD_W+HEAD_W-1:l*HEAD_W] };
-	end
+	// gearbox data : scrambled data
+	assign gb_data = data_scram;
+	assign gb_head = sync_head;
+	
 	// scrambler
 	assign scram_v = 1'b1;
 
@@ -156,6 +158,26 @@ end else begin : gen_10g
 	* signal is not expected to be used in this configuration */
 	assign ready_o = 1'bX;
 end //!IS_10G
+
+
+/* gearbox */
+generate
+for(l=0; l<LANE_N; l++) begin : gen_gearbox_lane
+	gearbox_tx #(
+		.BLOCK_DATA_W(BLOCK_W),
+		.DATA_W(DATA_W),
+		.HEAD_W(HEAD_W),
+		.SEQ_W(SEQ_W)
+	)m_gearbox_tx(
+		.clk(clk),
+		.seq_i(seq_q),
+		.head_i(gb_head[l*HEAD_W+HEAD_W-1:l*HEAD_W]),
+		.data_i(gb_data[l*DATA_W+DATA_W-1:l*DATA_W]),
+		.full_v_o(gearbox_full[l]),  
+		.data_o(data_o[l*DATA_W+DATA_W-1:l*DATA_W])
+	);
+end
+endgenerate
 
 `ifdef FORMAL
 
