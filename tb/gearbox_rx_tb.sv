@@ -7,7 +7,10 @@
 
 /* RX gearbox tb, test basis 64 -> 66 buffering functionality and bit slip */
 
+`define TB_LOOP_CNT 10
+
 module gearbox_rx_tb;
+
 localparam DATA_W = 64;
 localparam HEAD_W = 2;
 localparam SEQ_N = 32;
@@ -40,9 +43,11 @@ logic [DATA_W-1:0]  tb_buff_next;
 
 logic [BLOCK_W-1:0] tb_gb_data;
 
-// generate a random array of 66b of data for a given sequence and
-// check it is correctly outputed aligned on 64b
-task new_seq();
+/* Simple gearbox test
+ * There is no slipage during this sequence.
+ * This test generate a random array of 66b of data for a given
+ * sequence and check it is correctly outputed aligned on 64b */
+task simple_test();
 	// 64 bit pma data
 	logic [DATA_W-1:0] pma;
 	// output 
@@ -94,6 +99,27 @@ always @(posedge clk) begin
 	tb_buff_q <= tb_buff_next;
 end
 
+/* Bit Slip test */
+task slip();
+	lock_v_i = 1'b1;
+	for(int x=0; x < `TB_LOOP_CNT; x++) begin
+		#10
+		slip_v_i = $random;
+	end	
+	slip_v_i = 1'b0;
+endtask
+
+/* Lock lost test
+ * Check to see if gearbox output is correctly invalid */
+task lock_lost();
+	lock_v_i = 1'b0;
+	for(int x=0; x < `TB_LOOP_CNT; x++) begin
+		#10
+		assert( valid_o == 1'b0 );
+	end
+	lock_v_i = 1'b1;
+endtask
+
 initial begin
 	$dumpfile("wave/gearbox_rx_tb.vcd");
 	$dumpvars(0, gearbox_rx_tb);
@@ -101,9 +127,21 @@ initial begin
 	lock_v_i = 1'b0;
 	#10
 	nreset = 1'b1;
+	
+	/* Test 1 */
 	$display("test 1 %t", $time);
-	new_seq();
-	#10
+	simple_test();
+
+	/* Test 2 */
+	$display("test 2 %t", $time);
+	/* test slipage */
+	slip();
+	#10	
+
+	/* Test 3 */
+	$display("test 2 %t", $time);
+	/* test lock lost */
+
 	// self check
 	// no difference between got and expected
 	#10
