@@ -57,20 +57,15 @@ task simple_test();
 	for( int seq = 0; seq< SEQ_N; seq++ ) begin
 		lock_v_i = 1'b1;
 		slip_v_i = 1'b0;
-		h = 2'b11;
 		//d = {$random, $random};
-		d = {8{8'hAA}};
-		tb_pma_data = { d,h };
+		d = {8{8'h11}};
+		tb_pma_data = d;
 		tb_buff_next = tb_buff_next_arr[seq];
 		tb_pcs_data = tb_pcs_data_arr[seq];
 
 		data_i = tb_pma_data; 
 		#1
-		assert( ~$isunknown(valid_o));
-		if ( valid_o ) begin
-			assert( ~$isunknown(data_o));
-			assert( ~$isunknown(head_o));
-		end
+		
 		/* check pcs data matches */
 		tb_gb_data = { data_o, head_o };
 		if ( seq > 0 ) begin
@@ -102,10 +97,11 @@ end
 /* Bit Slip test */
 task slip();
 	lock_v_i = 1'b1;
-	for(int x=0; x < `TB_LOOP_CNT; x++) begin
+	data_i = {8{8'h01}};
+	for(int x=0; x < 64; x++) begin
 		#10
 		slip_v_i = $random;
-	end	
+	end
 	slip_v_i = 1'b0;
 endtask
 
@@ -116,9 +112,22 @@ task lock_lost();
 	for(int x=0; x < `TB_LOOP_CNT; x++) begin
 		#10
 		assert( valid_o == 1'b0 );
+		/* check sequence cnt is re-set to 0 */
+		assert( m_gearbox_rx.seq_q == 'd0 );
 	end
 	lock_v_i = 1'b1;
 endtask
+
+/* data check */
+always @(posedge clk) begin
+	if ( nreset ) begin
+		assert( ~$isunknown(valid_o));
+		if ( valid_o ) begin
+			assert( ~$isunknown(data_o));
+			assert( ~$isunknown(head_o));
+		end
+	end
+end
 
 initial begin
 	$dumpfile("wave/gearbox_rx_tb.vcd");
@@ -139,8 +148,9 @@ initial begin
 	#10	
 
 	/* Test 3 */
-	$display("test 2 %t", $time);
+	$display("test 3 %t", $time);
 	/* test lock lost */
+	lock_lost();
 
 	// self check
 	// no difference between got and expected

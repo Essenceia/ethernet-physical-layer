@@ -126,16 +126,14 @@ always @(posedge clk) begin
 end
 
 // reassemble output data
-logic [DATA_W-1:0] data;
-logic [HEAD_W-1:0] head;
+logic [BLOCK_DATA_W-1:0] block;
 
-assign { data, head } = {BLOCK_DATA_W{1'bx}}; 
+
+assign block = rd_data_mask & rd_data_shifted
+			 |~rd_data_mask & {2'bx, fifo_q};
 
 assign valid_o = |seq_q[CNT_W-1:1]; // cnt_q > 1
 
-assign { data_o, head_o} = rd_data_mask & rd_data_shifted
-						 |~rd_data_mask & {2'bx, fifo_q};
+assign { data_o, head_o } = block; 
 
-// rd_fifo_mask & fifo_q 
-// | ~rd_fifo_mask & rd_data_shifted;
 endmodule
