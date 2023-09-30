@@ -2,6 +2,8 @@
 
 Parametrisable implementation of the ethernet physical layer's PCS for **10GBASE-R** and **40GBASE-R**.
 
+RTL is platform agnostic but current synthesis flow target's the Intel **Cyclone 10 GX** FPGA series.
+
 ## Quickstart
 
 Have a working version of `verilator` installed and follow the 
