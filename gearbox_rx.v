@@ -40,7 +40,7 @@ logic [FIFO_W-1:0] wr_fifo_shifted; // write data to write into fifo register
 logic [BLOCK_DATA_W-1:0] rd_data_shifted_arr[SHIFT_N-1:1];
 logic [BLOCK_DATA_W-1:0] rd_data_shifted;
 
-logic [BLOCK_DATA_W-1:0] rd_data_mask_arr[SHIFT_N-1:0];
+logic [BLOCK_DATA_W-1:0] rd_data_mask_arr[SHIFT_N-1:1];
 logic [BLOCK_DATA_W-1:0] rd_data_mask; // full version of the mask
 
 genvar i;
@@ -70,7 +70,6 @@ logic             seq_rst;
 logic [CNT_W-1:0] seq_add;
 logic [INC_W-1:0] seq_inc;
 logic             unused_seq_add_of;
-logic             seq_last;
 
 /* increment by 2 or 3 sequence counter bepending on if we are
  * slipping the lsb */
@@ -78,10 +77,6 @@ assign seq_inc = { 1'b1, slip_v_i };
 
 assign {unused_seq_add_of, seq_add } = seq_q + { {CNT_W-INC_W{1'b0}}, seq_inc };
 /* reset sequence */
-
-/* verilator lint_off WIDTHEXPAND */
-assign seq_last = seq_q == 'd64; /* TODO account for slip */
-/* verilator lint_on WIDTHEXPAND */
 
 assign seq_rst = ~lock_v_i;
 /* reset to zero */
@@ -103,12 +98,15 @@ generate
 	end
 endgenerate
 
-always_comb begin
+always_comb begin : rd_wr_shift_sel
 	// wr fifo
+	wr_fifo_shifted = {FIFO_W{1'bx}};
 	for( int x=0; x < SHIFT_N; x++) begin
 		if ( shift_sel[x] ) wr_fifo_shifted = wr_fifo_shifted_arr[x];
 	end
-	// rd mask 
+	// rd mask and data
+	rd_data_shifted = {BLOCK_DATA_W{1'bx}};
+	rd_data_mask = {BLOCK_DATA_W{1'bx}}; 
 	for( int x=1; x < SHIFT_N; x++) begin
 		/* setting default state to prevent latch inference */
 		if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];

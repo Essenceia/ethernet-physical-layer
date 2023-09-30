@@ -35,7 +35,12 @@ logic [DATA_W-1:0]   tb_pma_data;
 
 logic [BLOCK_W-1:0]  tb_pcs_data;
 logic [BLOCK_W-1:0]  tb_pcs_data_arr[SEQ_N-1:0];
+
+/* verilator lint_off UNUSEDSIGNAL */
+/* debug signal to view the difference between gotten
+ * and expected */
 logic [BLOCK_W-1:0] tb_pcs_data_diff;
+/* verilator lint_on UNUSEDSIGNAL */
 
 reg   [DATA_W-1:0]  tb_buff_q;
 logic [DATA_W-1:0]  tb_buff_next_arr[SEQ_N-1:0];
@@ -50,21 +55,19 @@ logic [BLOCK_W-1:0] tb_gb_data;
 task simple_test();
 	// 64 bit pma data
 	logic [DATA_W-1:0] pma;
-	// output 
-	logic [HEAD_W-1:0] h;
-	logic [DATA_W-1:0] d;
 
 	for( int seq = 0; seq< SEQ_N; seq++ ) begin
 		lock_v_i = 1'b1;
 		slip_v_i = 1'b0;
-		//d = {$random, $random};
-		d = {8{8'h11}};
-		tb_pma_data = d;
-		tb_buff_next = tb_buff_next_arr[seq];
-		tb_pcs_data = tb_pcs_data_arr[seq];
+		//pma = {8{8'h01}};
+		pma = {$random, $random};
+		tb_pma_data = pma;
 
 		data_i = tb_pma_data; 
 		#1
+		
+		tb_buff_next = tb_buff_next_arr[seq];
+		tb_pcs_data = tb_pcs_data_arr[seq];
 		
 		/* check pcs data matches */
 		tb_gb_data = { data_o, head_o };
@@ -80,13 +83,20 @@ endtask
 genvar i;
 generate 
 	for( i = 0; i < SEQ_N; i++) begin : tb_buff_next_loop
-		if ( i == 0 ) begin
-			assign tb_buff_next_arr[i] = tb_pma_data[DATA_W-1:2*i];
+		if ( i == 0 ) begin : i_eq_zero
+			assign tb_buff_next_arr[i] = tb_pma_data[DATA_W-1:0];
 			assign tb_pcs_data_arr[i] = {BLOCK_W{1'bx}}; 
-		end else begin
+		end else begin : i_gt_zero
 			assign tb_buff_next_arr[i] ={ {2*i{1'bx}}, tb_pma_data[DATA_W-1:2*i]};
-			assign tb_pcs_data_arr[i] = { tb_pma_data[2*i:0], tb_buff_q[DATA_W-1-2*(i-1):0]}; 
+			assign tb_pcs_data_arr[i] = { tb_pma_data[2*i-1:0], tb_buff_q[DATA_W-1-2*(i-1):0]}; 
 		end
+		`ifdef DEBUG
+		logic [BLOCK_W-1:0] db_pcs_data;
+		logic [DATA_W-1:0] db_buff_next;
+		assign db_pcs_data = tb_pcs_data_arr[i];
+		assign db_buff_next = tb_buff_next_arr[i];
+		`endif
+
 	end
 endgenerate
 /* buffer tb data */
@@ -100,7 +110,9 @@ task slip();
 	data_i = {8{8'h01}};
 	for(int x=0; x < 64; x++) begin
 		#10
+		/* verilator lint_off WIDTHTRUNC*/
 		slip_v_i = $random;
+		/* verilator lint_on WIDTHTRUNC*/
 	end
 	slip_v_i = 1'b0;
 endtask
