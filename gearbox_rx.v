@@ -131,7 +131,7 @@ logic [HEAD_W-1:0] head;
 
 assign { data, head } = {BLOCK_DATA_W{1'bx}}; 
 
-assign valid_o = |seq_q; // cnt_q != 0
+assign valid_o = |seq_q[CNT_W-1:1]; // cnt_q > 1
 
 assign { data_o, head_o} = rd_data_mask & rd_data_shifted
 						 |~rd_data_mask & {2'bx, fifo_q};
