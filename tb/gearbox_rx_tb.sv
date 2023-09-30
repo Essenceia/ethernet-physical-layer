@@ -29,10 +29,14 @@ logic [DATA_W-1:0] data_o;
 /* tb 
  * full data to be received after gearbox */
 logic [DATA_W-1:0]   tb_pma_data;
+
 logic [BLOCK_W-1:0]  tb_pcs_data;
-reg   [2*DATA_W-1:0] tb_buff_q;
-logic [2*DATA_W-1:0] tb_buff_next;
-logic [BLOCK_W-1:0]  tb_pcs_data_diff;
+logic [BLOCK_W-1:0]  tb_pcs_data_arr[SEQ_N-1:0];
+logic [BLOCK_W-1:0] tb_pcs_data_diff;
+
+reg   [DATA_W-1:0]  tb_buff_q;
+logic [DATA_W-1:0]  tb_buff_next_arr[SEQ_N-1:0];
+logic [DATA_W-1:0]  tb_buff_next;
 
 logic [BLOCK_W-1:0] tb_gb_data;
 
@@ -49,10 +53,11 @@ task new_seq();
 		lock_v_i = 1'b1;
 		slip_v_i = 1'b0;
 		h = 2'b11;
-		d = {$random, $random};
-		//d = {8{8'hAA}};
+		//d = {$random, $random};
+		d = {8{8'hAA}};
 		tb_pma_data = { d,h };
-		tb_buff_next = { tb_pma_data, tb_buff_q[2*DATA_W-1:DATA_W]};
+		tb_buff_next = tb_buff_next_arr[seq];
+		tb_pcs_data = tb_pcs_data_arr[seq];
 
 		data_i = tb_pma_data; 
 		#1
@@ -62,7 +67,6 @@ task new_seq();
 			assert( ~$isunknown(head_o));
 		end
 		/* check pcs data matches */
-		tb_pcs_data = tb_buff_next[BLOCK_W-1:0];
 		tb_gb_data = { data_o, head_o };
 		if ( seq > 0 ) begin
 			tb_pcs_data_diff = tb_gb_data ^ tb_pcs_data; 
@@ -73,6 +77,18 @@ task new_seq();
 	end	
 endtask
 
+genvar i;
+generate 
+	for( i = 0; i < SEQ_N; i++) begin : tb_buff_next_loop
+		if ( i == 0 ) begin
+			assign tb_buff_next_arr[i] = tb_pma_data[DATA_W-1:2*i];
+			assign tb_pcs_data_arr[i] = {BLOCK_W{1'bx}}; 
+		end else begin
+			assign tb_buff_next_arr[i] ={ {2*i{1'bx}}, tb_pma_data[DATA_W-1:2*i]};
+			assign tb_pcs_data_arr[i] = { tb_pma_data[2*i:0], tb_buff_q[DATA_W-1-2*(i-1):0]}; 
+		end
+	end
+endgenerate
 /* buffer tb data */
 always @(posedge clk) begin
 	tb_buff_q <= tb_buff_next;
