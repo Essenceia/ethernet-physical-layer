@@ -20,10 +20,8 @@ module pcs_rx #(
 	input nreset,
 
 	// transiver
-    input  [LANE_N-1:0]        serdes_v_i,
+    input  [LANE_N-1:0]        serdes_lock_v_i,
     input  [LANE_N*DATA_W-1:0] serdes_data_i,
-    input  [LANE_N*HEAD_W-1:0] serdes_head_i,
-    output [LANE_N-1:0]        gearbox_slip_o,
 	
 	// lite MAC interface
 	// need to add wrapper to interface with x(l)gmii
@@ -39,6 +37,12 @@ module pcs_rx #(
 
 );
 localparam SCRAM_W = LANE_N*DATA_W; 
+
+/* gearbox */
+logic [LANE_N-1:0] gb_data_v;
+logic [HEAD_W-1:0] gb_head[LANE_N-1:0];
+logic [DATA_W-1:0] gb_data[LANE_N-1:0];
+logic [LANE_N-1:0] gb_slip_v;/* bit slip */
 
 // block sync
 logic [HEAD_W-1:0] bs_head[LANE_N-1:0];
@@ -80,30 +84,44 @@ genvar l;
 generate
 for(l=0; l<LANE_N; l++)begin : lane_loop
 
-assign bs_head[l] = serdes_head_i[l*HEAD_W+HEAD_W-1:l*HEAD_W];
+/* gearbox */
+gearbox_rx #(
+	.HEAD_W = 2,
+	.DATA_W = 64
+)m_gearbox_rx(
+	.clk(clk),
+	.nreset(nreset),
+	.lock_v_i(serdes_lock_v_i[l],
+	.data_i(serdes_data_i[l*DATA_W+DATA_W-1:l*DATA_W]),
+	.slip_v_i(gb_slip_v[l]),
+	.valid_o(gb_data_v[l]), // backpressure, buffer is full, need a cycle to clear 
+	.head_o(gb_head[l]),
+	.data_o(gb_data[l])
+);
+
+
 
 // block sync
 block_sync_rx #(.HEAD_W(HEAD_W))
 m_bs_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(serdes_v_i[l]),
-	.head_i(bs_head[l]),
-	.slip_v_o(gearbox_slip_o[l]),
+	.valid_i(gb_data_v[l]),
+	.head_i(gb_head[l]),
+	.slip_v_o(gb_slip_v[l]),
 	.lock_v_o(bs_lock_v[l])
 );
 // alignement marker lock
-assign am_block[l] = { serdes_data_i[l*DATA_W+DATA_W-1:l*DATA_W], 
-				       serdes_head_i[l*HEAD_W+HEAD_W-1:l*HEAD_W] };
+assign am_block[l] = { gb_data[l], 
+				       gb_head[l] };
 am_lock_rx #(
 	.BLOCK_W(BLOCK_W),
 	.LANE_N(LANE_N))
 m_am_lock_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(serdes_v_i[l]),
+	.valid_i(serdes_lock_v_i[l]),
 	.block_i(am_block[l]),
-//	.slip_v_o(am_slip_v[l]),
 	.lock_v_o(am_lock_v[l]),
 	.lite_am_v_o(am_lite_v[l]),
 	.lite_lock_v_o(am_lite_lock_v[l]),
