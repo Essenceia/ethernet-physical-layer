@@ -25,8 +25,9 @@ module block_sync_rx#(
 	input nreset, 
 
 
-	// SERDES 
-	input              valid_i, // signal_ok
+	// Gearbox
+	input              valid_i, // data valid 
+	input              signal_v_i, // signal_ok
 	input [HEAD_W-1:0] head_i,
 	output             slip_v_o, // slip_done
 
@@ -76,8 +77,10 @@ assign cnt_64    = cnt_add == 'd64;
 assign cnt_1024  = cnt_add_overflow;
  
 always @(posedge clk) begin
-	cnt_q <= cnt_next;
-	nv_cnt_q <= nv_cnt_next; 
+	if ( valid_i ) begin
+		cnt_q <= cnt_next;
+		nv_cnt_q <= nv_cnt_next; 
+	end
 end
 
 // lock and slip
@@ -93,12 +96,12 @@ logic sync_next;
 reg   lock_q; // have a valid lock
 logic lock_next;
 
-assign invalid_next = invalid_q & ~valid_i 
-					| ~valid_i;
-assign sync_next = valid_i & ( invalid_q // signal ok, start testing
+assign invalid_next = invalid_q & ~signal_v_i 
+					| ~signal_v_i;
+assign sync_next = signal_v_i & ( invalid_q // signal ok, start testing
 				 | sync_q & ~lock_v // continue testesing, not locked yet
 				 | lock_q & slip_v) ;// lost lock startup new sync process
-assign lock_next = valid_i 
+assign lock_next = signal_v_i 
 				 & ( lock_q & ~slip_v // lock not lost 
 				   | sync_q & lock_v); // locked
 				  
@@ -107,7 +110,7 @@ always @(posedge clk) begin
 		invalid_q <= 1'b1;
 		sync_q <= 1'b0;
 		lock_q <= 1'b0;
-	end else begin
+	end else if ( valid_i ) begin
 		invalid_q <= invalid_next;
 		sync_q <= sync_next;
 		lock_q <= lock_next;

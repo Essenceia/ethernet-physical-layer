@@ -19,7 +19,8 @@ localparam BLOCK_W = HEAD_W + DATA_W;
 
 reg   clk = 1'b0;
 logic nreset; 
-logic              valid_i; // signal_ok
+logic              valid_i; // data valid 
+logic              signal_v_i; // signal_ok
 logic [HEAD_W-1:0] head_i;
 logic              slip_v_o; // slip_done
 logic              lock_v_o; // rx_block_lock
@@ -31,12 +32,12 @@ int nv_sh_sent;
 int sh_v; 
 
 task aquire_lock( input int loop_lock );
-	// need at least 64 blocks to aquire lock
+	// need at least 64 valid blocks to aquire lock
 	assert( loop_lock >= 64 );
 	for(int t=0; t < loop_lock; t++ ) begin
 		#9
 		head_i = ( $random % 2 )? `SYNC_CTRL : `SYNC_DATA;
-		valid_i = 1'b1;
+		signal_v_i = 1'b1;
 		// only sending valid lock's should never slip
 		#1
 		assert( ~slip_v_o );
@@ -49,7 +50,7 @@ initial begin
 	nreset = 1'b0;
 	#10;
 	nreset = 1'b1;
-	valid_i = 1'b0;
+	signal_v_i = 1'b0;
 	// test 1 : TEST_SH -> 64_GOOD -> TEST_SH2	
 	// simple test, see if we can detect lock
 	// we need at least 64 blocks to trigger a lock
@@ -104,7 +105,7 @@ initial begin
 	aquire_lock(loop_lock);
 	assert(lock_v_o);
 	#10;
-	valid_i = 1'b0;
+	signal_v_i = 1'b0;
 	// continue sending valid headers but should have lost lock and there
 	// should be no slip
 	for(int t = 0; t < loop_lock; t++) begin
@@ -117,12 +118,12 @@ initial begin
 	// test 5
 	// Re-establish signal, re-aquire lock
 	$display("test 5 %t", $time);
-	valid_i = 1'b1;
+	signal_v_i = 1'b1;
 	aquire_lock( loop_lock );
 	assert( lock_v_o );
 
 	$display("Test finished %t", $time);	
-	valid_i = 1'b0;
+	signal_v_i = 1'b0;
 	#20
 	$finish;
 end
@@ -131,7 +132,7 @@ block_sync_rx #(.HEAD_W(HEAD_W))
 m_uut(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(valid_i),
+	.signal_v_i(signal_v_i),
 	.head_i(head_i),
 	.slip_v_o(slip_v_o),
 	.lock_v_o(lock_v_o)
