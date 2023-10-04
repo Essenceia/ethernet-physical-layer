@@ -198,7 +198,7 @@ lint_pcs_rx: $(pcs_rx_deps)
 #############
 
 # The list of testbenches.
-tbs := _64b66b gearbox_tx gearbox_rx sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx deskew_rx
+tbs := _64b66b gearbox_tx gearbox_rx block_sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx deskew_rx
 
 # Standard run recipe to build a given testbench
 define build_recipe

@@ -9,6 +9,7 @@
 `define SYNC_DATA 2'b01
 
 `define TB_TEST3_LOOP 150
+`define TB_TEST6_LOOP 10
 
 /* Testbench for RX frame sync */
 module block_sync_rx_tb;
@@ -37,6 +38,13 @@ task aquire_lock( input int loop_lock );
 	for(int t=0; t < loop_lock; t++ ) begin
 		#9
 		head_i = ( $random % 2 )? `SYNC_CTRL : `SYNC_DATA;
+
+		/* send invalid signal, do no count these cycles */
+		valid_i = (( $random % 6 ) == 0 )? 1'b0: 1'b1;
+		if ( valid_i == 1'b0 ) begin
+			t--;
+		end
+
 		signal_v_i = 1'b1;
 		// only sending valid lock's should never slip
 		#1
@@ -45,11 +53,12 @@ task aquire_lock( input int loop_lock );
 endtask
 
 initial begin
-	$dumpfile("build/wave.vcd");
+	$dumpfile("wave/block_sync_rx.vcd");
 	$dumpvars(0, block_sync_rx_tb);
 	nreset = 1'b0;
 	#10;
 	nreset = 1'b1;
+	valid_i = 1'b1;
 	signal_v_i = 1'b0;
 	// test 1 : TEST_SH -> 64_GOOD -> TEST_SH2	
 	// simple test, see if we can detect lock
@@ -105,6 +114,7 @@ initial begin
 	aquire_lock(loop_lock);
 	assert(lock_v_o);
 	#10;
+	valid_i = 1'b1;
 	signal_v_i = 1'b0;
 	// continue sending valid headers but should have lost lock and there
 	// should be no slip
@@ -122,6 +132,21 @@ initial begin
 	aquire_lock( loop_lock );
 	assert( lock_v_o );
 
+	/* test 6 
+	 * Sending invalid data, with random data,
+	 * block lock state should not change */
+	$display("test 6 %t", $time);
+	valid_i = 1'b0; 
+	for(int t=0; t< `TB_TEST6_LOOP; t++) begin
+		#9
+		head_i = $random;
+		#1
+		/* by default we have lock, we should still
+ 	 	* have the lock */		
+		assert(lock_v_o);	
+	end
+	valid_i = 1'b1;	
+ 	
 	$display("Test finished %t", $time);	
 	signal_v_i = 1'b0;
 	#20
@@ -133,6 +158,7 @@ m_uut(
 	.clk(clk),
 	.nreset(nreset),
 	.signal_v_i(signal_v_i),
+	.valid_i(valid_i),
 	.head_i(head_i),
 	.slip_v_o(slip_v_o),
 	.lock_v_o(lock_v_o)

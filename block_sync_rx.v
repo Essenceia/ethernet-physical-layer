@@ -24,10 +24,11 @@ module block_sync_rx#(
 	input clk,
 	input nreset, 
 
+	// SerDes
+	input              signal_v_i, // signal_ok
 
 	// Gearbox
 	input              valid_i, // data valid 
-	input              signal_v_i, // signal_ok
 	input [HEAD_W-1:0] head_i,
 	output             slip_v_o, // slip_done
 
@@ -119,7 +120,7 @@ end
 
 // output
 assign lock_v_o = lock_q; 
-assign slip_v_o = slip_v;
+assign slip_v_o = valid_i & slip_v;
 
 `ifdef FORMAL
 logic f_fsm;
