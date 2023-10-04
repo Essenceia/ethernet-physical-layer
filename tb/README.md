@@ -80,7 +80,7 @@ make run_gearbox_tx
 
 #### RX block sync
 ```
-make run_sync_rx
+make run_block_sync_rx
 ```
 
 #### RX Alignment marker lock
