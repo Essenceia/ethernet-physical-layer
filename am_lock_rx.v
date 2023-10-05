@@ -5,6 +5,7 @@
  * 
  * This code is provided "as is" without any express or implied warranties. */
 
+/* Alignement marker lock */
 module am_lock_rx #(
 	parameter BLOCK_W = 66,
 	parameter LANE_N = 4
@@ -84,8 +85,10 @@ assign gap_next = gap_rst_v ? {GAP_W{1'b0}}: gap_add;
 assign gap_zero = ~|gap_q;
 
 always @(posedge clk) begin
-	nv_cnt_q <= nv_cnt_next;
-	gap_q <= gap_next;
+	if ( valid_i ) begin
+		nv_cnt_q <= nv_cnt_next;
+		gap_q <= gap_next;
+	end
 end
 
 // alignement marker detection
@@ -106,9 +109,7 @@ endgenerate
 
 assign lane_next = gap_zero ? lane_match : lane_q; 
 always @(posedge clk) begin
-	if ( valid_i ) begin
-		lane_q <= lane_next;
-	end
+	lane_q <= lane_next;
 end
 
 assign am_first_v = |lane_match; 
@@ -128,8 +129,7 @@ logic lock_next;
 reg   invalid_q;
 logic invalid_next;
 
-assign invalid_next = ~signal_v_i
-					| invalid_q & signal_v_i;  
+assign invalid_next = ~signal_v_i;  
 assign sync_next  = signal_v_i 
 				  & ( invalid_q
 				    | sync_q & ~am_first_v

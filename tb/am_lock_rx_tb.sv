@@ -55,6 +55,10 @@ task send_rand_block(int cycles);
 	logic [DATA_W-1:0] data;
 	for(int t=0; t<cycles; t++) begin
 		#10	
+		valid_i = ( $random % 6 == 0 )? 1'b0 : 1'b1;
+		if ( valid_i == 1'b0 ) begin
+			t--;
+		end
 		head = ( $random % 2 == 1 )? `SYNC_CTRL : `SYNC_DATA;
 		data = { $random, $random };
 		block_i = {data, head};
@@ -72,6 +76,10 @@ task aquire_lock( input int extra_cycles, logic [LANE_W-1:0] lane );
 	block_i = marker_lane[lane];
 	for(int t=0; t < GAP_N ; t++ ) begin
 		#10
+		valid_i = ( $random % 6 == 0 )? 1'b0 : 1'b1;
+		if ( valid_i == 1'b0 ) begin
+			t--;
+		end
 		head = ( $random % 2 == 1)? `SYNC_CTRL : `SYNC_DATA;
 		data = { $random, $random };
 		block_i = {data, head};
@@ -84,9 +92,15 @@ task aquire_lock( input int extra_cycles, logic [LANE_W-1:0] lane );
 	block_i = marker_lane[lane];
 	for(int t=0; t<extra_cycles; t++) begin
 		#10	
+		valid_i = ( $random % 6 == 0 )? 1'b0 : 1'b1;
+		if ( valid_i == 1'b0 ) begin
+			t--;
+		end
 		head = ( $random % 2 == 1)? `SYNC_CTRL : `SYNC_DATA;
 		data = { $random, $random };
 		block_i = {data, head};
+		// no slip
+		assert( ~slip_v_o ); 
 		// lane has locked
 		assert( lock_v_o);
 		// correct lane 
