@@ -12,6 +12,10 @@ module am_lock_rx #(
 	input clk,
 	input nreset,
 
+	/* SerDes */
+	input               signal_v_i,
+
+	/* gearbox */
 	input               valid_i,
 
 	/* verilator lint_off UNUSEDSIGNAL*/
@@ -102,7 +106,9 @@ endgenerate
 
 assign lane_next = gap_zero ? lane_match : lane_q; 
 always @(posedge clk) begin
-	lane_q <= lane_next;
+	if ( valid_i ) begin
+		lane_q <= lane_next;
+	end
 end
 
 assign am_first_v = |lane_match; 
@@ -122,15 +128,16 @@ logic lock_next;
 reg   invalid_q;
 logic invalid_next;
 
-assign invalid_next = ~valid_i; 
-assign sync_next  = valid_i 
+assign invalid_next = ~signal_v_i
+					| invalid_q & signal_v_i;  
+assign sync_next  = signal_v_i 
 				  & ( invalid_q
 				    | sync_q & ~am_first_v
 				    | slip_v);
-assign first_next = valid_i 
+assign first_next = signal_v_i 
 				   & ( sync_q & am_first_v
 				     | first_q & ~gap_zero);
-assign lock_next = valid_i
+assign lock_next = signal_v_i
 				 & (first_q & am_v
 				   |lock_q & ~nv_cnt_4);
  
@@ -140,7 +147,7 @@ always @(posedge clk) begin
 		sync_q <= 1'b0;
 		lock_q <= 1'b0;
 		first_q <= 1'b0;	
-	end else begin
+	end else if ( valid_i ) begin
 		invalid_q <= invalid_next;
 		sync_q <= sync_next;
 		lock_q <= lock_next;
@@ -164,7 +171,8 @@ always @(posedge clk) begin
 	if ( nreset ) begin
 		// xcheck
 		xcheck_valid_i : assert( ~$isunknown(valid_i));
-		xcheck_block_i : assert( ~valid_i | valid_i & ~$isunknown(block_i));
+		xcheck_signal_v_i : assert( ~$isunknown(signal_v_i));
+		xcheck_block_i : assert( ~(valid_i & signal_v_i) | valid_i & signal_v_i & ~$isunknown(block_i));
 		xcheck_lock_v_o : assert( ~$isunknown(lock_v_o));
 		xcheck_lane_o : assert( ~lock_v_o | lock_v_o & ~$isunknown(lane_o));
 	//	xcheck_slip_v_o : assert( ~$isunknown(slip_v_o));

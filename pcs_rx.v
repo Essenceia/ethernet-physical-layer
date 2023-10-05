@@ -38,6 +38,9 @@ module pcs_rx #(
 );
 localparam SCRAM_W = LANE_N*DATA_W; 
 
+/* serdes */
+logic [LANE_N-1:0] serdes_signal_v;
+
 /* gearbox */
 logic [LANE_N-1:0] gb_data_v;
 logic [HEAD_W-1:0] gb_head[LANE_N-1:0];
@@ -84,6 +87,10 @@ genvar l;
 generate
 for(l=0; l<LANE_N; l++)begin : lane_loop
 
+/* SerDes
+ * signal valid when locked */
+assign serdes_signal_v[l] = ~serdes_lock_v_i[l];
+
 /* gearbox */
 gearbox_rx #(
 	.HEAD_W = 2,
@@ -99,18 +106,20 @@ gearbox_rx #(
 	.data_o(gb_data[l])
 );
 
-
-
-// block sync
+/* block sync */
 block_sync_rx #(.HEAD_W(HEAD_W))
 m_bs_rx(
 	.clk(clk),
 	.nreset(nreset),
+	.signal_v_i(serdes_signal_v[l]),
 	.valid_i(gb_data_v[l]),
 	.head_i(gb_head[l]),
 	.slip_v_o(gb_slip_v[l]),
 	.lock_v_o(bs_lock_v[l])
 );
+
+if ( !IS_10G ) begin: gen_not_10g
+
 // alignement marker lock
 assign am_block[l] = { gb_data[l], 
 				       gb_head[l] };
@@ -120,7 +129,8 @@ am_lock_rx #(
 m_am_lock_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(serdes_lock_v_i[l]),
+	.signal_v_i(serdes_signal_v[l]),
+	.valid_i(gb_data_v[l]),
 	.block_i(am_block[l]),
 	.lock_v_o(am_lock_v[l]),
 	.lite_am_v_o(am_lite_v[l]),
@@ -159,6 +169,8 @@ m_deskew_rx(
 	.am_v_o(deskew_am_v),
 	.data_o(deskew_block)
 );
+end // !IS_10G
+
 // full lock includes both sync and, if present am lock
 assign full_lock_v = &am_lock_v & &bs_lock_v;
 // alignement marker removal

@@ -27,7 +27,8 @@ localparam GAP_N = 16383;
 
 reg   clk = 1'b0;
 logic nreset; 
-logic               valid_i; // signal_ok
+logic               valid_i;
+logic               signal_v_i; // signal_ok
 logic [BLOCK_W-1:0] block_i;
 logic               slip_v_o; // slip_done
 logic               lock_v_o; // rx_block_lock
@@ -67,7 +68,7 @@ task aquire_lock( input int extra_cycles, logic [LANE_W-1:0] lane );
 	assert( extra_cycles < GAP_N );
 	// write first am 
 	#10
-	valid_i = 1'b1;
+	signal_v_i = 1'b1;
 	block_i = marker_lane[lane];
 	for(int t=0; t < GAP_N ; t++ ) begin
 		#10
@@ -115,6 +116,7 @@ initial begin
 	#10;
 	nreset = 1'b1;
 	valid_i = 1'b1;
+	signal_v_i = 1'b1;
 	block_i = {BLOCK_W{1'b0}};
 	$display("Starting test");
 	// test 1 
@@ -155,7 +157,7 @@ initial begin
 	// Lose signal on SLIP/RST
 	$display("test 4 %t", $time);
 	#10
-	valid_i = 1'b0;	
+	signal_v_i = 1'b0;	
 	#1
 	assert(~slip_v_o);
 	#9
@@ -165,12 +167,12 @@ initial begin
 	// Find 1 and then lose signal	
 	$display("test 5 %t", $time);
 	#10
-	valid_i = 1'b1;
+	signal_v_i = 1'b1;
 	block_i = marker_lane[tb_lane];
 	#1
 	assert(~slip_v_o);
 	#9
-	valid_i = 1'b0;
+	signal_v_i = 1'b0;
 	#1
 	assert(~slip_v_o);
 	#9
@@ -178,13 +180,13 @@ initial begin
 	// test 6
 	// Lock on lane then lose signal 
 	$display("test 6 %t", $time);
-	valid_i = 1'b1;	
+	signal_v_i = 1'b1;	
 	aquire_lock(1, tb_lane);
 	assert(~slip_v_o);
 	assert(lock_v_o);
 	assert(lane_o[tb_lane]);
 	#10
-	valid_i = 1'b0;
+	signal_v_i = 1'b0;
 	#1
 	assert(~slip_v_o);
 	#9
@@ -199,6 +201,7 @@ m_uut(
 	.clk(clk),
 	.nreset(nreset),
 	.valid_i(valid_i),
+	.signal_v_i(signal_v_i),
 	.block_i(block_i),
 	.lock_v_o(lock_v_o),
 	
