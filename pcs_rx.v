@@ -129,8 +129,8 @@ am_lock_rx #(
 m_am_lock_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.signal_v_i(serdes_signal_v[l]),
 	.valid_i(gb_data_v[l]),
+	.signal_v_i(serdes_signal_v[l]),
 	.block_i(am_block[l]),
 	.lock_v_o(am_lock_v[l]),
 	.lite_am_v_o(am_lite_v[l]),

@@ -26,8 +26,10 @@ module am_lock_rx #(
 
 	output              lock_v_o,
 
-	// lite interface used by deskew
+	/* Deskew */
+	/* found an match with an alignement marker */
 	output              lite_am_v_o,
+	/* early lock interface, we have seen an alignement marker */
 	output              lite_lock_v_o,
 
 	output [LANE_N-1:0] lane_o	
