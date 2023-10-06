@@ -62,9 +62,9 @@ CWD := $(shell pwd)
 
 # Lint variables.
 LINT_FLAGS :=
+LINT_FLAGS += $(if $(debug),-DDEBUG) 
 ifeq ($(SIM),I)
 LINT_FLAGS += -Wall -g2012 $(if $(assert),-gassertions) -gstrict-expr-width
-LINT_FLAGS += $(if $(debug),-DDEBUG) 
 else
 LINT_FLAGS += -Wall -Wpedantic
 LINT_FLAGS += $(if $(wip),-Wno-latch -Wno-unusedsignal)
