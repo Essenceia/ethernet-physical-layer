@@ -32,7 +32,6 @@ assign marker_lane[3] = MARKER_LANE3;
 reg clk = 1'b0; 
 logic nreset;
 
-logic [LANE_N-1:0] valid_i;
 logic [LANE_N-1:0] lock_v_i;
 logic [LANE_N-1:0] am_lite_v_i; 
 logic [LANE_N-1:0] am_lite_lock_v_i;
@@ -90,13 +89,16 @@ task test_deskew();
 			end
 		end
 	end
-	// complete lock
+	/* complete lock */
 	#10
 	am_lite_v_i = '0;
 	am_lite_lock_v_i = '1;	
 	#1
+	/* first cycle where lanes are aligned, we expect
+ 	 * to see the alignement marker on all lanes.
+ 	 * Checking the match between a lane and the correct
+ 	 * alignement marker */
 	for(int i=0; i<LANE_N; i++) begin
-		// alignement marker on all lanes
 		if ( tb_data_o[i] != marker_lane[i])begin
 			$display("Error on lane %d %t", i, $time);
 			assert(tb_data_o[i] == marker_lane[i]);
@@ -142,7 +144,6 @@ initial begin
 	nreset = 1'b0;
 	#10;
 	nreset = 1'b1;
-	valid_i = '1;
 	lock_v_i = '0;
 	am_lite_v_i = '0;
 	am_lite_lock_v_i = '0;
@@ -199,7 +200,6 @@ deskew_rx #(
 )m_deskew_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(valid_i),
 	.lock_v_i(lock_v_i),
 	.am_lite_v_i(am_lite_v_i),
 	.am_lite_lock_v_i(am_lite_lock_v_i),

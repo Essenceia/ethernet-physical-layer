@@ -19,10 +19,6 @@ module deskew_lane_rx #(
 	input clk,
 	input nreset,
 
-	/* Gearbox */
-	/* data valid */
-	input valid_i, 
-
 	/* Alignement marker lock */
 	input am_lite_v_i, // alignement marker block valid this cycle
 	//input am_lite_lock_lost_v_i, // am lock lost 
@@ -46,7 +42,7 @@ assign skew_rst = am_lite_v_i;
 
 assign { unused_skew_add_of, skew_add } = skew_q + { {SKEW_CNT_W-1{1'b0}}, 1'b1};
 assign skew_next = skew_rst ? {SKEW_CNT_W{1'b0}} : skew_add;
-assign skew_en = ~am_lite_lock_full_v_i & valid_i;
+assign skew_en = ~am_lite_lock_full_v_i;
 always @(posedge clk) begin
 	if ( ~nreset ) begin
 		skew_q <= '0;
@@ -75,9 +71,7 @@ generate
 		/* verilator lint_on UNUSEDSIGNAL */
 		`endif	
 		always @(posedge clk) begin
-			if ( valid_i ) begin
-				buff_q[i] <= buff_next[i];
-			end
+			buff_q[i] <= buff_next[i];
 		end
 	end
 endgenerate

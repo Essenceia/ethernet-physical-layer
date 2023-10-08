@@ -22,9 +22,6 @@ module deskew_rx #(
 	/* Block sync */
 	input [LANE_N-1:0] lock_v_i, // block lock and signal_ok
 	
-	/* Gearbox  */
-	input [LANE_N-1:0] valid_i, // data valid
-	
 	/* Alignement marker lock */
 	/* we are seeing an alignement marker on lane */	
 	input [LANE_N-1:0] am_lite_v_i,
@@ -45,7 +42,7 @@ logic [LANE_N-1:0] slow_lane;
 assign am_v_o = |(am_lite_v_i & slow_lane);
 
 logic am_lite_lock_full_v;
-assign am_lite_lock_full_v = &( am_lite_lock_v_i & valid_i & lock_v_i );
+assign am_lite_lock_full_v = &( am_lite_lock_v_i & lock_v_i );
 genvar l;
 generate
 	for(l=0; l<LANE_N; l++) begin : gen_deskew_lane
@@ -57,7 +54,6 @@ generate
 		)m_deskew_lane(
 			.clk(clk),
 			.nreset(nreset),
-			.valid_i(valid_i[l]),
 			.am_lite_v_i(am_lite_v_i[l]),
 			//.am_lite_lock_lost_v_i(am_lite_lock_lost_v_i[l]),
 			.am_lite_lock_full_v_i(am_lite_lock_full_v),
