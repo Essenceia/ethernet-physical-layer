@@ -7,7 +7,7 @@
 
 /* PCS RX top level module */
 module pcs_rx #(
-	parameter IS_10G = 1,
+	parameter IS_10G = 0,
 	parameter HEAD_W = 2,
 	parameter DATA_W = 64,
 	parameter KEEP_W = DATA_W/8,
@@ -22,8 +22,13 @@ module pcs_rx #(
 	/* SerDes */
     input  [LANE_N-1:0]        serdes_lock_v_i,
     input  [LANE_N*DATA_W-1:0] serdes_data_i,
-	
-	/* lite MAC interface 
+
+	/* signal ok, used only in 10G */
+	/* verilator lint_off UNDRIVEN */
+	output                           signal_v_o, 
+	/* verilator lint_on UNDRIVEN */
+
+	/* lite MAC interface  
 	 * need to add wrapper to interface with x(l)gmii*/
 	output [LANE_N-1:0]              valid_o,
 	output [LANE_N-1:0]              ctrl_v_o,
@@ -47,27 +52,8 @@ logic [HEAD_W-1:0] gb_head[LANE_N-1:0];
 logic [DATA_W-1:0] gb_data[LANE_N-1:0];
 logic [LANE_N-1:0] gb_slip_v;/* bit slip */
 
-// block sync
+/* block sync */
 logic [LANE_N-1:0] bs_lock_v;
-
-// alignement marker lock
-logic [LANE_N-1:0]  am_lane_id[LANE_N-1:0]; // lane onehot identified
-// logic [LANE_N-1:0]  am_slip_v;
-logic [LANE_N-1:0]  am_lock_v;
-logic [LANE_N-1:0]  am_lite_v;
-logic [LANE_N-1:0]  am_lite_lock_v;
-
-// lane reorder, `nord` = not ordered
-logic [LANE_N*LANE_N-1:0]  nord_lane_id;
-logic [LANE_N*BLOCK_W-1:0] nord_block;
-logic [LANE_N*BLOCK_W-1:0] ord_block;
-
-// deskew
-logic                      deskew_am_v;
-logic [LANE_N*BLOCK_W-1:0] deskew_block;
-
-// alignement marker removal
-logic amr_block_v;
 
 // descrambler
 logic               descram_v;
@@ -81,9 +67,6 @@ logic dec_v;// TODO
 
 logic [HEAD_W-1:0] dec_head[LANE_N-1:0];
 logic [DATA_W-1:0] dec_data[LANE_N-1:0];
-
-// full lane lock
-logic full_lock_v;
 
 genvar l;
 generate
@@ -124,11 +107,35 @@ end // gen_lane_common_loop
 
 if ( !IS_10G ) begin: gen_40g
 
+// alignement marker lock
+logic [LANE_N-1:0]  am_lane_id[LANE_N-1:0]; // lane onehot identified
+// logic [LANE_N-1:0]  am_slip_v;
+logic [LANE_N-1:0]  am_lock_v;
+logic [LANE_N-1:0]  am_lite_v;
+logic [LANE_N-1:0]  am_lite_lock_v;
+
+// lane reorder, `nord` = not ordered
+logic [LANE_N*LANE_N-1:0]  nord_lane_id;
+logic [LANE_N*BLOCK_W-1:0] nord_block;
+logic [LANE_N*BLOCK_W-1:0] ord_block;
+
+// deskew
+logic                      deskew_am_v;
+logic [LANE_N*BLOCK_W-1:0] deskew_block;
+
+// alignement marker removal
+logic amr_block_v;
+
+// full lane lock
+logic full_lock_v;
+
 /* Phase aligner */
 /* verilator lint_off UNUSEDSIGNAL */
+logic [LANE_N-1:0]  pa_valid;/* data valid */
 /* verilator lint_off UNDRIVEN */
-logic pa_valid;/* data valid */
-logic [LANE_N*BLOCK_W-1:0] pa_block;
+logic [BLOCK_W-1:0] pa_block[LANE_N-1:0];
+
+assign pa_valid = gb_data_v & bs_lock_v;
 // TODO
 
 /* CDC */
@@ -142,8 +149,8 @@ logic [LANE_N*BLOCK_W-1:0] cdc_block;
 for(l=0; l<LANE_N; l++)begin : gen_40g_lane_loop
 
 /* gearbox -> phase align marker */
-assign pa_block[l*BLOCK_W+:BLOCK_W] = { gb_data[l], 
-				                        gb_head[l] };
+assign pa_block[l] = { gb_data[l], 
+				       gb_head[l] };
 /* alignement marker lock */
 am_lock_rx #(
 	.BLOCK_W(BLOCK_W),
@@ -210,6 +217,8 @@ for(l=0; l<LANE_N; l++) begin : gen_scram_data_loop
 	assign dec_data[l] = descram_data[l*DATA_W+DATA_W-1:l*DATA_W];
 end
 
+assign valid_o[l] = amr_block_v & full_lock_v;
+
 end else begin : gen_10g
 /* 10GBASE-R configuration */
 
@@ -224,8 +233,13 @@ for(l=0; l<LANE_N; l++) begin : gen_scram_data_loop
 	assign scram_data[l*DATA_W+DATA_W-1:l*DATA_W] = gb_data[l];
 	
 	assign dec_head[l] = gb_head[l];
-	assign dec_data[l] = gb_data[l];  
+	assign dec_data[l] = descram_data[l*DATA_W+DATA_W-1:l*DATA_W];
 end
+
+/* output
+ * signal ok, data valid */
+assign signal_v_o = bs_lock_v; 
+assign valid_o = gb_data_v;
 
 end // gen_40g
 
@@ -264,7 +278,6 @@ m_dec_lite_rx(
 	.keep_o(keep_o[l*KEEP_W+KEEP_W-1:l*KEEP_W])
 );
 
-assign valid_o[l] = amr_block_v & full_lock_v;
 end
 endgenerate
 
