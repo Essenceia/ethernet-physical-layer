@@ -19,12 +19,12 @@ module pcs_rx #(
 	input clk,
 	input nreset,
 
-	// transiver
+	/* SerDes */
     input  [LANE_N-1:0]        serdes_lock_v_i,
     input  [LANE_N*DATA_W-1:0] serdes_data_i,
 	
-	// lite MAC interface
-	// need to add wrapper to interface with x(l)gmii
+	/* lite MAC interface 
+	 * need to add wrapper to interface with x(l)gmii*/
 	output [LANE_N-1:0]              valid_o,
 	output [LANE_N-1:0]              ctrl_v_o,
 	output [LANE_N-1:0]              idle_v_o,
@@ -48,11 +48,9 @@ logic [DATA_W-1:0] gb_data[LANE_N-1:0];
 logic [LANE_N-1:0] gb_slip_v;/* bit slip */
 
 // block sync
-logic [HEAD_W-1:0] bs_head[LANE_N-1:0];
 logic [LANE_N-1:0] bs_lock_v;
 
 // alignement marker lock
-logic [BLOCK_W-1:0] am_block[LANE_N-1:0];
 logic [LANE_N-1:0]  am_lane_id[LANE_N-1:0]; // lane onehot identified
 // logic [LANE_N-1:0]  am_slip_v;
 logic [LANE_N-1:0]  am_lock_v;
@@ -85,7 +83,7 @@ logic full_lock_v;
 
 genvar l;
 generate
-for(l=0; l<LANE_N; l++)begin : lane_loop
+for(l=0; l<LANE_N; l++)begin : gen_lane_common_loop
 
 /* SerDes
  * signal valid when locked */
@@ -93,12 +91,12 @@ assign serdes_signal_v[l] = ~serdes_lock_v_i[l];
 
 /* gearbox */
 gearbox_rx #(
-	.HEAD_W = 2,
-	.DATA_W = 64
+	.HEAD_W(HEAD_W),
+	.DATA_W(DATA_W)
 )m_gearbox_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.lock_v_i(serdes_lock_v_i[l],
+	.lock_v_i(serdes_lock_v_i[l]),
 	.data_i(serdes_data_i[l*DATA_W+DATA_W-1:l*DATA_W]),
 	.slip_v_i(gb_slip_v[l]),
 	.valid_o(gb_data_v[l]), // backpressure, buffer is full, need a cycle to clear 
@@ -118,20 +116,39 @@ m_bs_rx(
 	.lock_v_o(bs_lock_v[l])
 );
 
-if ( !IS_10G ) begin: gen_not_10g
+end // gen_lane_common_loop
 
-// alignement marker lock
-assign am_block[l] = { gb_data[l], 
-				       gb_head[l] };
+if ( !IS_10G ) begin: gen_40g
+
+/* Phase aligner */
+/* verilator lint_off UNUSEDSIGNAL */
+/* verilator lint_off UNDRIVEN */
+logic pa_valid;/* data valid */
+logic [LANE_N*BLOCK_W-1:0] pa_block;
+// TODO
+
+/* CDC */
+logic cdc_valid;/* data valid */
+logic [LANE_N*BLOCK_W-1:0] cdc_block;
+// TODO
+
+/* verilator lint_on UNUSEDSIGNAL */
+/* verilator lint_on UNDRIVEN */
+
+for(l=0; l<LANE_N; l++)begin : gen_40g_lane_loop
+
+/* gearbox -> phase align marker */
+assign pa_block[l*BLOCK_W+:BLOCK_W] = { gb_data[l], 
+				                        gb_head[l] };
+/* alignement marker lock */
 am_lock_rx #(
 	.BLOCK_W(BLOCK_W),
 	.LANE_N(LANE_N))
 m_am_lock_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(gb_data_v[l]),
-	.signal_v_i(serdes_signal_v[l]),
-	.block_i(am_block[l]),
+	.valid_i(cdc_valid),
+	.block_i(cdc_block[l*BLOCK_W+:BLOCK_W]),
 	.lock_v_o(am_lock_v[l]),
 	.lite_am_v_o(am_lite_v[l]),
 	.lite_lock_v_o(am_lite_lock_v[l]),
@@ -140,9 +157,10 @@ m_am_lock_rx(
 
 // lane reordering
 assign nord_lane_id[l*LANE_N+LANE_N-1:l*LANE_N] = am_lane_id[l];
-assign nord_block[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W] = am_block[l];
-end
-endgenerate
+assign nord_block = cdc_block;
+
+end // gen_am_lock_loop
+
 lane_reorder_rx #(
 	.LANE_N(LANE_N),
 	.BLOCK_W(BLOCK_W)
@@ -161,7 +179,6 @@ deskew_rx #(
 m_deskew_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(bs_lock_v),
 	.am_lite_v_i(am_lite_v),
 	.am_lite_lock_v_i(am_lite_lock_v), 
 //	.am_lite_lock_lost_v_i(am_slip_v),
@@ -169,7 +186,9 @@ m_deskew_rx(
 	.am_v_o(deskew_am_v),
 	.data_o(deskew_block)
 );
-end // !IS_10G
+end // gen_40g
+
+endgenerate
 
 // full lock includes both sync and, if present am lock
 assign full_lock_v = &am_lock_v & &bs_lock_v;

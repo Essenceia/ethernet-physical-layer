@@ -19,9 +19,6 @@ module deskew_rx #(
 	input clk,
 	input nreset,
 
-	/* Block sync */
-	input [LANE_N-1:0] lock_v_i, // block lock and signal_ok
-	
 	/* Alignement marker lock */
 	/* we are seeing an alignement marker on lane */	
 	input [LANE_N-1:0] am_lite_v_i,
@@ -42,7 +39,7 @@ logic [LANE_N-1:0] slow_lane;
 assign am_v_o = |(am_lite_v_i & slow_lane);
 
 logic am_lite_lock_full_v;
-assign am_lite_lock_full_v = &( am_lite_lock_v_i & lock_v_i );
+assign am_lite_lock_full_v = &am_lite_lock_v_i;
 genvar l;
 generate
 	for(l=0; l<LANE_N; l++) begin : gen_deskew_lane
