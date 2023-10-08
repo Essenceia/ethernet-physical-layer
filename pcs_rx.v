@@ -7,11 +7,11 @@
 
 /* PCS RX top level module */
 module pcs_rx #(
-	parameter IS_10G = 0,
+	parameter IS_10G = 1,
 	parameter HEAD_W = 2,
 	parameter DATA_W = 64,
 	parameter KEEP_W = DATA_W/8,
-	parameter LANE_N = 4,
+	parameter LANE_N = IS_10G ? 1 : 4,
 	parameter BLOCK_W = HEAD_W+DATA_W,
 	parameter LANE0_CNT_N = !IS_10G ? 1 : 2,
 	parameter MAX_SKEW_BIT_N = 1856
@@ -70,11 +70,15 @@ logic [LANE_N*BLOCK_W-1:0] deskew_block;
 logic amr_block_v;
 
 // descrambler
-logic               scram_v;
+logic               descram_v;
 logic [SCRAM_W-1:0] scram_data;
 logic [SCRAM_W-1:0] descram_data;
 
 // decoder
+/* verilator lint_off UNUSEDSIGNAL */
+logic dec_v;// TODO 
+/* verilator lint_on UNUSEDSIGNAL */
+
 logic [HEAD_W-1:0] dec_head[LANE_N-1:0];
 logic [DATA_W-1:0] dec_data[LANE_N-1:0];
 
@@ -186,9 +190,6 @@ m_deskew_rx(
 	.am_v_o(deskew_am_v),
 	.data_o(deskew_block)
 );
-end // gen_40g
-
-endgenerate
 
 // full lock includes both sync and, if present am lock
 assign full_lock_v = &am_lock_v & &bs_lock_v;
@@ -196,20 +197,47 @@ assign full_lock_v = &am_lock_v & &bs_lock_v;
 // mask validity of block on alignement marker
 assign amr_block_v = ~deskew_am_v; 
 
-// descramble
-assign scram_v = amr_block_v;
-generate
-	for(l=0; l<LANE_N; l++) begin : scram_data_loop
-		// remove head, get only data
-		assign scram_data[l*DATA_W+DATA_W-1:l*DATA_W] = deskew_block[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W+HEAD_W];
-	end
+/* cdc, reorderer -> descrambler */
+assign descram_v = cdc_valid;
+/* deskew, descrambler -> decoder */
+assign dec_v = cdc_valid; 
+
+for(l=0; l<LANE_N; l++) begin : gen_scram_data_loop
+	// remove head, get only data
+	assign scram_data[l*DATA_W+DATA_W-1:l*DATA_W] = deskew_block[l*BLOCK_W+BLOCK_W-1:l*BLOCK_W+HEAD_W];
+	
+	assign dec_head[l] = deskew_block[l*BLOCK_W+HEAD_W-1:l*BLOCK_W];
+	assign dec_data[l] = descram_data[l*DATA_W+DATA_W-1:l*DATA_W];
+end
+
+end else begin : gen_10g
+/* 10GBASE-R configuration */
+
+/* gearbox -> descrambler */
+assign descram_v = gb_data_v; 
+
+/* gearbox, descrambler -> decoder */
+assign dec_v = gb_data_v;
+
+for(l=0; l<LANE_N; l++) begin : gen_scram_data_loop
+	// remove head, get only data
+	assign scram_data[l*DATA_W+DATA_W-1:l*DATA_W] = gb_data[l];
+	
+	assign dec_head[l] = gb_head[l];
+	assign dec_data[l] = gb_data[l];  
+end
+
+end // gen_40g
+
 endgenerate
+
+
 _64b66b_rx #(
 	.LEN(SCRAM_W))
 m_descrambler_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.valid_i(scram_v),
+	.valid_i(descram_v),
 	.scram_i(scram_data),
 	.data_o(descram_data)
 );
@@ -217,9 +245,6 @@ m_descrambler_rx(
 // decode
 generate
 for(l=0; l<LANE_N; l++) begin : dec_lane_loop
-
-assign dec_head[l] = deskew_block[l*BLOCK_W+HEAD_W-1:l*BLOCK_W];
-assign dec_data[l] = descram_data[l*DATA_W+DATA_W-1:l*DATA_W];
 
 dec_lite_rx #(
 	.IS_40G(!IS_10G),
