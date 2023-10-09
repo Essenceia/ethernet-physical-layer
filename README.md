@@ -6,6 +6,9 @@ RTL is platform agnostic but current synthesis flow target's the Intel **Cyclone
 
 ## Quickstart
 
+I would recommend checking out the latest stable tag.
+
+Pre-requisite : 
 Have a working version of `verilator` installed and follow the 
 [instructions set the path to your simulators vpi library](/tb/README.md#vpi).
 
@@ -26,7 +29,7 @@ gtkwave wave/pcs_tb.vcd
 
 - [ ] 16b wide data path, very low latency
 
-- [x] 64b wide data path, no latency requirement
+- [x] 64b wide data path, low latency requirement
 
 40GBASE-R:
 
@@ -36,7 +39,7 @@ gtkwave wave/pcs_tb.vcd
 
 - MDIO
 
-- RS - Reconsiliation Sublayer
+- RS - Reconciliation Sublayer
 
 - WIS - WAN Interface Sublayer
 
