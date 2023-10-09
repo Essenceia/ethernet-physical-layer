@@ -24,7 +24,7 @@ module pcs_tx#(
 	parameter XGMII_DATA_W = LANE_N*DATA_W,
 	parameter XGMII_KEEP_W = LANE_N*KEEP_W
 )(
-	input clk,
+	input clk, /* PCS clk */
 	input nreset,
 
 	// MAC
@@ -38,8 +38,9 @@ module pcs_tx#(
 
 
 	output                        ready_o,// am_v not used in 10GBASE_R mode	
-	// gearbox
-	output [LANE_N*DATA_W-1:0]    data_o
+	
+	/* SerDes */
+	output [LANE_N*DATA_W-1:0]    serdes_data_o
 );
 localparam SEQ_W  = $clog2(DATA_W/HEAD_W+1);
 // encoder
@@ -52,7 +53,6 @@ logic [XGMII_DATA_W-1:0] data_scram; // scrambled
 
 // sync header is allways valid
 logic [LANE_N*HEAD_W-1:0] sync_head;
-logic [LANE_N*HEAD_W-1:0] sync_head_mark;
 
 // gearbox 
 
@@ -64,6 +64,8 @@ logic [LANE_N*HEAD_W-1:0] sync_head_mark;
 /*verilator lint_off UNUSEDSIGNAL */
 logic [LANE_N-1:0] gearbox_full;
 /*verilator lint_on UNUSEDSIGNAL */
+logic gb_accept;
+
 /* input to gearbox */
 logic [LANE_N*HEAD_W-1:0] gb_head;
 logic [LANE_N*DATA_W-1:0] gb_data;
@@ -88,7 +90,7 @@ end
 
 genvar l;
 generate
-for( l = 0; l < LANE_N; l++ ) begin :enc_lane_loop
+for( l = 0; l < LANE_N; l++ ) begin : gen_enc_lane
 	// encode
 	pcs_enc_lite #(.DATA_W(DATA_W), .IS_10G(IS_10G))
 	m_pcs_enc(
@@ -119,15 +121,16 @@ m_64b66b_tx(
 );
 
 if ( !IS_10G ) begin : gen_not_10g
-	// alignement marker
-	logic                    marker_v;
-	logic [XGMII_DATA_W-1:0] data_mark; 
+	/* alignement marker insertion */
+	logic                     marker_v;
+	logic [XGMII_DATA_W-1:0]  data_mark; 
+	logic [LANE_N*HEAD_W-1:0] sync_head_mark;
 	
-	// add align marker
 	am_tx #(.LANE_N(LANE_N), .HEAD_W( HEAD_W ), .DATA_W(DATA_W))
 	m_align_market(
 		.clk(clk),
 		.nreset(nreset),
+		.valid_i(gb_accept),
 		.head_i(sync_head),
 		.data_i(data_scram ),
 		.marker_v_o(marker_v),
@@ -135,7 +138,7 @@ if ( !IS_10G ) begin : gen_not_10g
 		.data_o(data_mark )
 	);
 	// scrambler
-	assign scram_v = ~marker_v;
+	assign scram_v = ~marker_v & gb_accept;
 
 	// gearbox data : marked data
 	assign gb_data = data_mark;
@@ -149,7 +152,7 @@ end else begin : gen_10g
 	assign gb_head = sync_head;
 	
 	// scrambler
-	assign scram_v = 1'b1;
+	assign scram_v = gb_accept;
 
 	/* PCS is non blocking in 10G mode
 	* The only case where the PCS becomes blocking is when we
@@ -174,10 +177,11 @@ for(l=0; l<LANE_N; l++) begin : gen_gearbox_lane
 		.head_i(gb_head[l*HEAD_W+HEAD_W-1:l*HEAD_W]),
 		.data_i(gb_data[l*DATA_W+DATA_W-1:l*DATA_W]),
 		.full_v_o(gearbox_full[l]),  
-		.data_o(data_o[l*DATA_W+DATA_W-1:l*DATA_W])
+		.data_o(serdes_data_o[l*DATA_W+DATA_W-1:l*DATA_W])
 	);
 end
 endgenerate
+assign gb_accept = ~gearbox_full[0];
 
 `ifdef FORMAL
 

@@ -11,13 +11,16 @@
 
 - TX
     - test 10G version
-    - add back gearbox
+    - phase align
+    - CDC
 
 - RX 
     - add gearbox to pcs top
     - write 10G version
     - test 10G version
     - deskew tb broken : fix
+    - CDC
+    - move pcs fsm into gearbox
 
 - Code clean :
     - rename `IS_40G` parameter to `IS_10G`
