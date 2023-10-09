@@ -24,6 +24,8 @@ parameter DATA_W = 64;
 reg clk = 1'b0;
 reg 		nreset;
 
+logic                    valid_i;
+
 logic [LANE_N*HEAD_W-1:0] head_i; 
 logic [LANE_N*DATA_W-1:0] data_i; 
 
@@ -49,6 +51,7 @@ initial begin
 	`endif
 	nreset = 1'b0;
 	#10
+	valid_i = 1'b1;
 	`ifdef VERILATOR
 	#1
 	`endif
@@ -78,6 +81,7 @@ endtask
 am_tx #(.LANE_N(LANE_N)) m_uut(
 	.clk(clk),
 	.nreset(nreset),
+	.valid_i(valid_i),
 	.head_i(head_i),
 	.data_i(data_i),
 	.marker_v_o(marker_v_o),

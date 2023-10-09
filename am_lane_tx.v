@@ -17,9 +17,16 @@ module am_lane_tx #(
 	input nreset,
 	input clk,
 
-	input               marker_v,
+	/* AM marker */
+	input               marker_v,/* add alignement marker */
+
+	/* Gearbox */
+	input               valid_i,
+
+	/* Encoder, Scrambler */
 	input [BLOCK_W-1:0] data_i,
 
+	/* Gearbox */
 	output [BLOCK_W-1:0] data_o
 );
 localparam BIP_W = 8;
@@ -36,7 +43,7 @@ assign bip_pre = marker_v ? {BIP_W{1'b0}} : bip_q;
 always @(posedge clk) begin
 	if ( ~nreset ) begin
 		bip_q <= {BIP_W{1'b0}};
-	end else begin
+	end else if ( valid_i ) begin
 		bip_q <= bip_next;
 	end 
 end

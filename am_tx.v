@@ -4,7 +4,7 @@
  * 4.0 International License. 
  * 
  * This code is provided "as is" without any express or implied warranties. */
-
+/* Add alignement marker on tx pipe */
 module am_tx #(
 	parameter LANE_N = 4,
 	parameter HEAD_W = 2,
@@ -25,12 +25,17 @@ module am_tx #(
 	input clk,
 	input nreset,
 
-	input [LANE_N*HEAD_W-1:0] head_i,
-	input [LANE_N*DATA_W-1:0] data_i,
-
-	output                     marker_v_o,
+	/* Gearbox */
+	input                      valid_i, /* accept data this cycle */
 	output [LANE_N*HEAD_W-1:0] head_o,
-	output [LANE_N*DATA_W-1:0] data_o
+	output [LANE_N*DATA_W-1:0] data_o,
+
+	/* Encoder */ 
+	input [LANE_N*HEAD_W-1:0]  head_i,
+
+	/* Scrambler */
+	input [LANE_N*DATA_W-1:0]  data_i,
+	output                     marker_v_o
 );
 localparam GAP_W = 14;
 // number of cycles since last alignement marker
@@ -56,7 +61,7 @@ always @(posedge clk) begin
 		// insert the aligment marker
 		gap_q <= {{GAP_W-1{1'b0}}, 1'b1};
 		add_market_v_q <= 1'b0;// don't add alignement market on reset
-	end else begin
+	end else if ( valid_i ) begin
 		gap_q <= gap_next;
 		add_market_v_q <= add_market_v_next;
 	end
@@ -78,6 +83,7 @@ for( i = 0; i < LANE_N; i++) begin
 		.clk(clk),
 		.nreset(nreset),
 		.marker_v(add_market_v_q),
+		.valid_i(valid_i),
 		.data_i({ data , head }),	
 		.data_o({ data_m, head_m })	
 	);
