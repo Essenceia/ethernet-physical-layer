@@ -32,7 +32,6 @@ assign marker_lane[3] = MARKER_LANE3;
 reg clk = 1'b0; 
 logic nreset;
 
-logic [LANE_N-1:0] lock_v_i;
 logic [LANE_N-1:0] am_lite_v_i; 
 logic [LANE_N-1:0] am_lite_lock_v_i;
 logic [LANE_N*BLOCK_W-1:0] data_i;
@@ -54,8 +53,8 @@ task create_skew();
 	assert(`TB_SKEW_RANGE <= MAX_SKEW_BLOCK_N );
 	skew_max = 0;	
 	for(int i=0; i < LANE_N; i++ ) begin
-		//skew[i] = $random % `TB_SKEW_RANGE;
-		skew[i] = $random % 2;
+		skew[i] = $random % `TB_SKEW_RANGE;
+		//skew[i] = $random % 2;
 		skew[i] = ( skew[i] < 0 )? -skew[i] : skew[i];
 		skew_max = ( skew_max > skew[i])? skew_max : skew[i];
 	end
@@ -64,7 +63,6 @@ endtask
 task test_deskew();
 	assert( skew_max <= MAX_SKEW_BLOCK_N );
 
-	lock_v_i = {LANE_N{1'b1}};
 	for(int j=0; j <= skew_max; j++ ) begin
 		#10;
 		`ifdef DEBUG
@@ -144,7 +142,6 @@ initial begin
 	nreset = 1'b0;
 	#10;
 	nreset = 1'b1;
-	lock_v_i = '0;
 	am_lite_v_i = '0;
 	am_lite_lock_v_i = '0;
 
@@ -200,7 +197,6 @@ deskew_rx #(
 )m_deskew_rx(
 	.clk(clk),
 	.nreset(nreset),
-	.lock_v_i(lock_v_i),
 	.am_lite_v_i(am_lite_v_i),
 	.am_lite_lock_v_i(am_lite_lock_v_i),
 	.data_i(data_i),

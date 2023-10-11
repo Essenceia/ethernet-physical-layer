@@ -52,30 +52,27 @@ always @(posedge clk) begin
 end
 
 // shift buffer
-reg   [BLOCK_W-1:0] buff_q[MAX_SKEW_BLOCK_N-1:0];
+logic [BLOCK_W-1:0] buff_q[MAX_SKEW_BLOCK_N-1:0];
 logic [BLOCK_W-1:0] buff_next[MAX_SKEW_BLOCK_N-1:0]; 
-assign buff_next[0] = data_i;
-genvar i;
-generate
-	for(i=1; i < MAX_SKEW_BLOCK_N; i++ ) begin
-		assign buff_next[i] = buff_q[i-1];
-	end
 
-	for(i=0; i < MAX_SKEW_BLOCK_N; i++) begin : loop_buff
-		`ifdef DEBUG
-		/* verilator lint_off UNUSEDSIGNAL */
-		logic [BLOCK_W-1:0] db_buff_next;
-		logic [BLOCK_W-1:0] db_buff_q;
-		assign db_buff_next = buff_next[i];
-		assign db_buff_q = buff_q[i];
-		/* verilator lint_on UNUSEDSIGNAL */
-		`endif	
-		always @(posedge clk) begin
-			buff_q[i] <= buff_next[i];
+always_comb begin
+    for(int i = 0; i < MAX_SKEW_BLOCK_N; i++) begin
+        assign buff_next[i] = (i == 0) ? data_i : buff_q[i-1];
+    end
+end
+
+genvar x;
+generate
+	for(x=0; x < MAX_SKEW_BLOCK_N; x++) begin
+	always_ff @(posedge clk) begin
+		if ( ~nreset ) begin
+			buff_q[x] <= {BLOCK_W{1'bx}};
+		end else begin
+    		buff_q[x] <= buff_next[x];
 		end
 	end
+end
 endgenerate
-
 // skew is used as read pointer
 logic [BLOCK_W-1:0] buff_rd;
 always_comb begin
@@ -90,9 +87,9 @@ always_comb begin
 		end else begin
 			/* verilator lint_off WIDTHEXPAND */
 			if( skew_q == j ) begin
+			/* verilator lint_on WIDTHEXPAND */
 				 buff_rd = buff_q[j-1];
 			end
-			/* verilator lint_on WIDTHEXPAND */
 		end
 	end
 end
