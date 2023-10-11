@@ -75,11 +75,7 @@ generate
 endgenerate
 
 always_ff @(posedge clk) begin
-	if ( ~nreset ) begin
-		buff_q <= {BLOCK_W*MAX_SKEW_BLOCK_N{1'bx}};
-	end else begin
-		buff_q <= buff_next;
-	end
+	buff_q <= buff_next;
 end
 
 // skew is used as read pointer
