@@ -52,27 +52,36 @@ always @(posedge clk) begin
 end
 
 // shift buffer
-logic [BLOCK_W-1:0] buff_q[MAX_SKEW_BLOCK_N-1:0];
-logic [BLOCK_W-1:0] buff_next[MAX_SKEW_BLOCK_N-1:0]; 
+logic [MAX_SKEW_BLOCK_N*BLOCK_W-1:0] buff_q;
+logic [MAX_SKEW_BLOCK_N*BLOCK_W-1:0] buff_next; 
 
+/*
 always_comb begin
     for(int i = 0; i < MAX_SKEW_BLOCK_N; i++) begin
         assign buff_next[i] = (i == 0) ? data_i : buff_q[i-1];
     end
 end
+*/
+
+assign buff_next[BLOCK_W-1:0] = data_i;
 
 genvar x;
 generate
-	for(x=0; x < MAX_SKEW_BLOCK_N; x++) begin
-	always_ff @(posedge clk) begin
-		if ( ~nreset ) begin
-			buff_q[x] <= {BLOCK_W{1'bx}};
-		end else begin
-    		buff_q[x] <= buff_next[x];
-		end
+	for(x=1; x < MAX_SKEW_BLOCK_N; x++) begin
+        assign buff_next[x*BLOCK_W+:BLOCK_W] = buff_q[(x-1)*BLOCK_W+:BLOCK_W];
+	end
+
+	
+endgenerate
+
+always_ff @(posedge clk) begin
+	if ( ~nreset ) begin
+		buff_q <= {BLOCK_W*MAX_SKEW_BLOCK_N{1'bx}};
+	end else begin
+		buff_q <= buff_next;
 	end
 end
-endgenerate
+
 // skew is used as read pointer
 logic [BLOCK_W-1:0] buff_rd;
 always_comb begin
@@ -88,7 +97,7 @@ always_comb begin
 			/* verilator lint_off WIDTHEXPAND */
 			if( skew_q == j ) begin
 			/* verilator lint_on WIDTHEXPAND */
-				 buff_rd = buff_q[j-1];
+				 buff_rd = buff_q[j*BLOCK_W+:BLOCK_W];
 			end
 		end
 	end
