@@ -37,7 +37,8 @@ module pcs_tx#(
 	input [XGMII_KEEP_W-1:0]       keep_i,
 
 
-	output                        ready_o,// am_v not used in 10GBASE_R mode	
+	output                        marker_v_o,// alignement marker added this cycle,not used in 10GBASE-R	
+	output                        ready_o,// gearbox accept next data	
 	
 	/* SerDes */
 	output [LANE_N*DATA_W-1:0]    serdes_data_o
@@ -144,7 +145,8 @@ if ( !IS_10G ) begin : gen_not_10g
 	assign gb_data = data_mark;
 	assign gb_head = sync_head_mark;
 	
-	assign ready_o = ~marker_v;
+	assign marker_v_o = marker_v;
+	assign ready_o = marker_v;
 
 end else begin : gen_10g
 	// gearbox data : scrambled data
@@ -159,7 +161,7 @@ end else begin : gen_10g
 	* are adding the alignement marker.
 	* And, as there is no alignement marker for 10GBASE and this
 	* signal is not expected to be used in this configuration */
-	assign ready_o = 1'bX;
+	assign marker_v_o = 1'bX;
 end //!IS_10G
 
 
@@ -182,6 +184,7 @@ for(l=0; l<LANE_N; l++) begin : gen_gearbox_lane
 end
 endgenerate
 assign gb_accept = ~gearbox_full[0];
+assign ready_o   = gb_accept;
 
 `ifdef FORMAL
 

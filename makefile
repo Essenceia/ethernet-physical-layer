@@ -53,6 +53,8 @@ DEBUG_FLAG := $(if $(debug), debug=1)
 DEFINES := $(DEBUG_FLAG) $(if $(40GBASE), 40GBASE=1) $(if $(wave),wave=1)
 40GBASE_ARGS:= 40GBASE=1
 
+HW_DIR := cy10gx
+
 # Current working directory.
 CWD := $(shell pwd)
 
@@ -262,6 +264,15 @@ vpi_marker:
 wave: config
 	$(VIEW) $(WAVE_DIR)/$(WAVE_FILE) $(CONF)/$(WAVE_CONF)
 
+#################
+# HW testbench  #
+#################
+
+top_deps := $(HW_DIR)/top.v $(pcs_rx_deps) $(pcs_tx_deps)
+
+lint_top : $(pcs_10g_deps)
+	$(call LINT, $(top_deps),top)
+	
 #################
 # Debug targets #
 #################

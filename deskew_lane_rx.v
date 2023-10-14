@@ -55,14 +55,6 @@ end
 logic [MAX_SKEW_BLOCK_N*BLOCK_W-1:0] buff_q;
 logic [MAX_SKEW_BLOCK_N*BLOCK_W-1:0] buff_next; 
 
-/*
-always_comb begin
-    for(int i = 0; i < MAX_SKEW_BLOCK_N; i++) begin
-        assign buff_next[i] = (i == 0) ? data_i : buff_q[i-1];
-    end
-end
-*/
-
 assign buff_next[BLOCK_W-1:0] = data_i;
 
 genvar x;
@@ -70,8 +62,6 @@ generate
 	for(x=1; x < MAX_SKEW_BLOCK_N; x++) begin
         assign buff_next[x*BLOCK_W+:BLOCK_W] = buff_q[(x-1)*BLOCK_W+:BLOCK_W];
 	end
-
-	
 endgenerate
 
 always_ff @(posedge clk) begin
