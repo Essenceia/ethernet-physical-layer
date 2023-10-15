@@ -5,7 +5,7 @@ module top #(
 	localparam BLOCK_W = HEAD_W+DATA_W
 )
 (
-    input  wire        OSC_50m,     //3.0V
+    input  wire        OSC_50m,     // 50MHz
     input  wire        FPGA_RSTn,   //3.0V async reset in from BMC/RESET button
  
 	/* transivers quad 1D 
@@ -13,19 +13,49 @@ module top #(
  	* ch5 : SFP2 */
     output wire [5:0]  GXB1D_TXD,
     input  wire [5:0]  GXB1D_RXD,
-    input  wire        GXB1D_644M,
-    input  wire        GXB1D_125M,
+    input  wire        GXB1D_644M, // 644,5312MHz
+    input  wire        GXB1D_125M, // 123MHz
 );
 localparam LANE0_CNT_N = !IS_10G ? 1 : 2;
 localparam KEEP_W = DATA_W/8;
 
 /* clk network
  * generate master clock at 161.MHz */
-logic refclk;    // ioPLL 644.52 -> 161,13 MHz 
+logic refclk;    // ioPLL 644.5312 -> 161,13 MHz 
 logic logic_clk; // fPLL phase aligned -> 161.13 
 logic slow_clk;  // 50Mhz integer clock
+logic gx_rx_clkout;// parallel clk
 
 assign slow_clk = OSC_50m;
+
+/* iopll */
+iopll m_iopll_refclk (
+  .refclk   (GXB1D_644M),   //   input,  width = 1,  refclk.clk
+  .locked   (),   //  output,  width = 1,  locked.export
+  .rst      (io_nreset),      //   input,  width = 1,   reset.reset
+  .outclk_0 (refclk)  //  output,  width = 1, outclk0.clk
+);
+
+/* phase aligner */
+phase_align_fpll m_phase_align(
+	.pll_cal_busy  (),
+	.pll_locked    (),
+	.pll_powerdown (),
+	.pll_refclk0   (refclk),
+	.pll_refclk1   (gx_rx_clkout),
+	.outclk0       (logiclk)
+);
+
+/* tx gx fpll */
+phyfpll m_sfp1_tx_fpll (
+	.pll_refclk0   (_connected_to_pll_refclk0_),   //   input,  width = 1,   pll_refclk0.clk
+	.pll_refclk1   (_connected_to_pll_refclk1_),   //   input,  width = 1,   pll_refclk1.clk
+	.pll_powerdown (_connected_to_pll_powerdown_), //   input,  width = 1, pll_powerdown.pll_powerdown
+	.pll_locked    (_connected_to_pll_locked_),    //  output,  width = 1,    pll_locked.pll_locked
+	.outclk0       (_connected_to_outclk0_),       //  output,  width = 1,       outclk0.clk
+	.pll_cal_busy  (_connected_to_pll_cal_busy_)   //  output,  width = 1,  pll_cal_busy.pll_cal_busy
+);
+
 
 /* reset from IO, go through 2ff sync before use */
 logic io_nreset_raw;
@@ -43,7 +73,6 @@ localparam SFP1_CH = 4;
 localparam SFP2_CH = 5;
 /* SFP1 */
 /* RX */
-logic gx_rx_clkout;// parallel clk
 logic gx_rx_is_lockedtodata;
 logic gx_rx_is_lockedtoref;
 logic gx_rx_set_locktodata;   
