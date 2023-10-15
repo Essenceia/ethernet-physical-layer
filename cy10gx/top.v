@@ -5,7 +5,9 @@ module top #(
 	localparam BLOCK_W = HEAD_W+DATA_W
 )
 (
-
+    input  wire        OSC_50m,     //3.0V
+    input  wire        FPGA_RSTn,   //3.0V async reset in from BMC/RESET button
+ 
 	/* transivers quad 1D 
  	* ch4 : SFP1
  	* ch5 : SFP2 */
@@ -16,52 +18,50 @@ module top #(
 );
 localparam LANE0_CNT_N = !IS_10G ? 1 : 2;
 localparam KEEP_W = DATA_W/8;
-/* Number of channels in GX transiver */
-localparam GX_W = 6;
 
-/* nreset
- * derrived from rx lock */
-logic nlock;
-reg   nlock_q;
-logic nreset;
+/* clk network
+ * generate master clock at 161.MHz */
+logic refclk;    // ioPLL 644.52 -> 161,13 MHz 
+logic logic_clk; // fPLL phase aligned -> 161.13 
+logic slow_clk;  // 50Mhz integer clock
 
-assign nlock = ~serdes_rx_lock_i;
+assign slow_clk = OSC_50m;
 
-/* clk network */
-/* generate master clock at 161.MHz */
-logic clk;
+/* reset from IO, go through 2ff sync before use */
+logic io_nreset_raw;
+reg   io_nreset_meta_q;
+reg   io_nreset;
+
+assign io_nreset_raw = FPGA_RSTn;
+always @(posedge slow_clk) begin
+	io_nreset_meta_q <= io_nreset_raw;
+	io_nreset <= io_nreset_meta_q;
+end
 
 /* GX transiver */
 localparam SFP1_CH = 4;
 localparam SFP2_CH = 5;
+/* SFP1 */
 /* RX */
-logic [5:4] gx_rx_serial_data;
-logic       gx_rx_cdr_refclk0;
-logic       gx_rx_clkout;// parallel clk
-logic [5:4] gx_rx_is_lockedtodata;
-logic [5:4] gx_rx_is_lockedtoref;
-logic [5:4] gx_rx_set_locktodata;   
-logic [5:4] gx_rx_set_locktoref;      
-logic [DATA_W-1:0] gx_rx_parallel_data[5:4];
+logic gx_rx_clkout;// parallel clk
+logic gx_rx_is_lockedtodata;
+logic gx_rx_is_lockedtoref;
+logic gx_rx_set_locktodata;   
+logic gx_rx_set_locktoref;      
+logic [DATA_W-1:0] gx_rx_parallel_data;
    
 logic gx_rx_analogreset;       
 logic gx_rx_digitalreset;        
-logic gx_tx_cal_busy;       
+logic gx_rx_cal_busy;
 
 /* TX */
-logic [5:4] gx_tx_serial_data;
 logic       gx_tx_serial_clk0;// from core -> transiver fPLL
-logic [DATA_W-1:0] gx_tx_parallel_data[5:4];
+logic [DATA_W-1:0] gx_tx_parallel_data;
 
 logic      gx_tx_analogreset;  
 logic      gx_tx_digitalreset;     
-logic      gx_rx_cal_busy;
-          
-/* binding input signals to gx */
-assign gx_rx_cdr_refclk0 = 1'bx; /* TODO : output of GXBID644 -> IOPLL ration 1/4 -> 166.13MHz */
-assign gx_rx_serial_data = GXB1D_RXD[5:4];
-assign GXB1D_TXD[5:4] = gx_tx_serial_data;
-/* SFP1 */
+logic gx_tx_cal_busy;       
+
 trans m_sfp1 (
         .tx_analogreset          (gx_tx_analogreset),          //   input,   width = 1,          tx_analogreset.tx_analogreset
         .tx_digitalreset         (gx_tx_digitalreset),         //   input,   width = 1,         tx_digitalreset.tx_digitalreset
@@ -70,115 +70,135 @@ trans m_sfp1 (
         .tx_cal_busy             (gx_tx_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
         .rx_cal_busy             (gx_rx_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
         .tx_serial_clk0          (gx_tx_serial_clk0),          //   input,   width = 1,          tx_serial_clk0.clk
-        .rx_cdr_refclk0          (gx_rx_cdr_refclk0),          //   input,   width = 1,          rx_cdr_refclk0.clk
-        .tx_serial_data          (gx_tx_serial_data),          //  output,   width = 1,          tx_serial_data.tx_serial_data
-        .rx_serial_data          (data_),          //   input,   width = 1,          rx_serial_data.rx_serial_data
-        .rx_set_locktodata       (ktodata_),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
-        .rx_set_locktoref        (ktoref_),        //   input,   width = 1,        rx_set_locktoref.rx_set_locktoref
-        .rx_is_lockedtoref       (edtoref_),       //  output,   width = 1,       rx_is_lockedtoref.rx_is_lockedtoref
-        .rx_is_lockedtodata      (edtodata_),      //  output,   width = 1,      rx_is_lockedtodata.rx_is_lockedtodata
+        .rx_cdr_refclk0          (refclk),          //   input,   width = 1,          rx_cdr_refclk0.clk
+        .tx_serial_data          (GXB1D_TXD[SFP1_CH]),          //  output,   width = 1,          tx_serial_data.tx_serial_data
+        .rx_serial_data          (GXB1D_RXD[SFP1_CH]),          //   input,   width = 1,          rx_serial_data.rx_serial_data
+        .rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
+        .rx_set_locktoref        (),        //   input,   width = 1,        rx_set_locktoref.rx_set_locktoref
+        .rx_is_lockedtoref       (gx_rx_is_lockedtoref),       //  output,   width = 1,       rx_is_lockedtoref.rx_is_lockedtoref
+        .rx_is_lockedtodata      (gx_rx_is_lockedtodata),      //  output,   width = 1,      rx_is_lockedtodata.rx_is_lockedtodata
         .tx_clkout               (),               //  output,   width = 1,               tx_clkout.clk
-        .rx_clkout               (),               //  output,   width = 1,               rx_clkout.clk
-        .tx_parallel_data        (l_data_),        //   input,  width = 64,        tx_parallel_data.tx_parallel_data
-        .unused_tx_parallel_data (parallel_data_), //   input,  width = 64, unused_tx_parallel_data.unused_tx_parallel_data
-        .rx_parallel_data        (l_data_),        //  output,  width = 64,        rx_parallel_data.rx_parallel_data
-        .unused_rx_parallel_data (parallel_data_)  //  output,  width = 64, unused_rx_parallel_data.unused_rx_parallel_data
+        .rx_clkout               (gx_rx_clkout),               //  output,   width = 1,               rx_clkout.clk
+        .tx_parallel_data        (gx_tx_parallel_data),        //   input,  width = 64,        tx_parallel_data.tx_parallel_data
+        .unused_tx_parallel_data (), //   input,  width = 64, unused_tx_parallel_data.unused_tx_parallel_data
+        .rx_parallel_data        (gx_rx_parallel_data),        //  output,  width = 64,        rx_parallel_data.rx_parallel_data
+        .unused_rx_parallel_data ()  //  output,  width = 64, unused_rx_parallel_data.unused_rx_parallel_data
 );
 
 /* GX reset controller */
+logic gx_rx_ready;
+logic gx_tx_ready;
+logic gx_nreset;
+reg   nreset_next;
+reg   nreset;
+
 phy_rst u0 (
-        .clock               (_connected_to_clock_),               //   input,  width = 1,               clock.clk
-        .reset               (_connected_to_reset_),               //   input,  width = 1,               reset.reset
-        .pll_powerdown0      (_connected_to_pll_powerdown0_),      //  output,  width = 1,      pll_powerdown0.pll_powerdown
-        .tx_analogreset0     (_connected_to_tx_analogreset0_),     //  output,  width = 1,     tx_analogreset0.tx_analogreset
-        .tx_digitalreset0    (_connected_to_tx_digitalreset0_),    //  output,  width = 1,    tx_digitalreset0.tx_digitalreset
-        .tx_ready0           (_connected_to_tx_ready0_),           //  output,  width = 1,           tx_ready0.tx_ready
-        .pll_locked0         (_connected_to_pll_locked0_),         //   input,  width = 1,         pll_locked0.pll_locked
-        .pll_select          (_connected_to_pll_select_),          //   input,  width = 1,          pll_select.pll_select
-        .tx_cal_busy0        (_connected_to_tx_cal_busy0_),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
-        .rx_analogreset0     (_connected_to_rx_analogreset0_),     //  output,  width = 1,     rx_analogreset0.rx_analogreset
-        .rx_digitalreset0    (_connected_to_rx_digitalreset0_),    //  output,  width = 1,    rx_digitalreset0.rx_digitalreset
-        .rx_ready0           (_connected_to_rx_ready0_),           //  output,  width = 1,           rx_ready0.rx_ready
-        .rx_is_lockedtodata0 (_connected_to_rx_is_lockedtodata0_), //   input,  width = 1, rx_is_lockedtodata0.rx_is_lockedtodata
-        .rx_cal_busy0        (_connected_to_rx_cal_busy0_)         //   input,  width = 1,        rx_cal_busy0.rx_cal_busy
+        .clock               (slow_clk),               //   input,  width = 1,               clock.clk
+        .reset               (~io_nreset),               //   input,  width = 1,               reset.reset
+        .pll_powerdown0      (),      //  output,  width = 1,      pll_powerdown0.pll_powerdown
+        .tx_analogreset0     (gx_tx_analogreset),     //  output,  width = 1,     tx_analogreset0.tx_analogreset
+        .tx_digitalreset0    (gx_tx_digitalreset),    //  output,  width = 1,    tx_digitalreset0.tx_digitalreset
+        .tx_ready0           (gx_tx_ready),           //  output,  width = 1,           tx_ready0.tx_ready
+        .pll_locked0         (),         //   input,  width = 1,         pll_locked0.pll_locked
+        .pll_select          (),          //   input,  width = 1,          pll_select.pll_select
+        .tx_cal_busy0        (gx_tx_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
+
+        .rx_analogreset0     (gx_rx_analogreset),     //  output,  width = 1,     rx_analogreset0.rx_analogreset
+        .rx_digitalreset0    (gx_rx_digitalreset),    //  output,  width = 1,    rx_digitalreset0.rx_digitalreset
+        .rx_ready0           (gx_rx_ready),           //  output,  width = 1,           rx_ready0.rx_ready
+        .rx_is_lockedtodata0 (gx_rx_is_lockedtodata), //   input,  width = 1, rx_is_lockedtodata0.rx_is_lockedtodata
+        .rx_cal_busy0        (gx_rx_cal_busy)         //   input,  width = 1,        rx_cal_busy0.rx_cal_busy
 );
+/* 2ff cdc for reset */
+assign gx_nreset = ~( gx_rx_ready & gx_tx_ready );
+
+always @(posedge logic_clk) begin
+	nreset_next <= gx_nreset;
+	nreset      <= nreset_next;
+end
 
 /* PCS RX */
-logic rx_signal_ok;
-logic rx_valid;
-logic rx_ctrl;
-logic rx_idle;
-logic rx_term;
-logic rx_err;
-logic [LANE0_CNT_N-1:0] rx_start;
-logic [DATA_W-1:0] rx_data;
-logic [KEEP_W-1:0] rx_keep;
+logic pcs_rx_nreset;
+logic pcs_rx_signal_ok;
+logic pcs_rx_valid;
+logic pcs_rx_ctrl;
+logic pcs_rx_idle;
+logic pcs_rx_term;
+logic pcs_rx_err;
+logic [LANE0_CNT_N-1:0] pcs_rx_start;
+logic [DATA_W-1:0] pcs_rx_data;
+logic [KEEP_W-1:0] pcs_rx_keep;
 
  pcs_rx #(
 	.IS_10G(IS_10G)
 )m_pcs_rx(
-.nreset(nreset),
-.clk(serdes_rx_clk),
-.serdes_lock_v_i(serdes_rx_lock_i),
-.serdes_data_i(serdes_rx_data_i),
-.signal_v_o(rx_signal_ok), 
-.valid_o(rx_valid),
-.ctrl_v_o(rx_ctrl),
-.idle_v_o(rx_idle),
-.start_v_o(rx_start),
-.term_v_o(rx_term),
-.err_v_o(rx_err),
-.ord_v_o(),
-.data_o(rx_data), 
-.keep_o(rx_keep)
+.nreset          (pcs_rx_nreset),
+.clk             (gx_pcs_rx_clkout),
+.serdes_lock_v_i (gx_pcs_rx_ready),
+.serdes_data_i   (gx_pcs_rx_parallel_data),
+.signal_v_o      (pcs_rx_signal_ok), 
+.valid_o         (pcs_rx_valid),
+.ctrl_v_o        (pcs_rx_ctrl),
+.idle_v_o        (pcs_rx_idle),
+.start_v_o       (pcs_rx_start),
+.term_v_o        (pcs_rx_term),
+.err_v_o         (pcs_rx_err),
+.ord_v_o         (),
+.data_o          (pcs_rx_data), 
+.keep_o          (pcs_rx_keep)
 );
 
 /* RCS TX */
-logic tx_clk;
+reg pcs_tx_nreset;
 
-reg tx_ctrl;
-reg tx_idle;
-reg tx_term;
-reg tx_err;
-reg [LANE0_CNT_N-1:0] tx_start;
-reg [DATA_W-1:0]      tx_data;
-reg [KEEP_W-1:0]      tx_keep;
+reg pcs_tx_ctrl;
+reg pcs_tx_idle;
+reg pcs_tx_term;
+reg pcs_tx_err;
+reg [LANE0_CNT_N-1:0] pcs_tx_start;
+reg [DATA_W-1:0]      pcs_tx_data;
+reg [KEEP_W-1:0]      pcs_tx_keep;
 
-logic tx_ready;
+logic pcs_tx_ready;
 
 pcs_tx#(
 .IS_10G(IS_10G)
 )m_pcs_tx(
-.clk(tx_clk),
-.nreset(nreset),
+.clk        (logic_clk),
+.nreset     (pcs_tx_nreset),
 
-.ctrl_v_i(tx_ctrl),
-.idle_v_i(tx_idle),
-.start_v_i(tx_start),
-.err_v_i(tx_err),
-.term_v_i(tx_term),
-.keep_i(tx_keep),
-.data_i(tx_data),
+.ctrl_v_i   (pcs_tx_ctrl),
+.idle_v_i   (pcs_tx_idle),
+.start_v_i  (pcs_tx_start),
+.err_v_i    (pcs_tx_err),
+.term_v_i   (pcs_tx_term),
+.keep_i     (pcs_tx_keep),
+.data_i     (pcs_tx_data),
 
-.marker_v_o(),
-.ready_o(tx_ready),
+.marker_v_o (),
+.ready_o    (pcs_tx_ready),
 
-.serdes_data_o(serdes_tx_data_o)
+.serdes_data_o(gx_tx_parallel_data)
 );
 
 /* RX -> TX loopback 
- *
- * Flop rx data before sending to tx */
-always @(posedge clk) begin
-	if ( rx_valid) begin
-		tx_ctrl <= rx_ctrl;
-		tx_idle <= rx_idle;
-		tx_term <= rx_term;
-		tx_err  <= rx_err;	
-		tx_start <= rx_start;
-		tx_data  <= rx_data;
-		tx_keep  <= rx_keep;
-	end
+ * flop nreset */
+reg   pcs_tx_nreset_next;
+
+always @(posedge logic_clk) begin
+	pcs_tx_nreset_next <= nreset;
+	pcs_tx_nreset      <= pcs_tx_nreset_next; 
+end 
+ 
+/* Flop rx data before sending to tx */
+always @(posedge logic_clk) begin
+	pcs_tx_ctrl  <= pcs_rx_ctrl;
+	pcs_tx_idle  <= pcs_rx_idle;
+	pcs_tx_term  <= pcs_rx_term;
+	pcs_tx_err   <= pcs_rx_err;	
+	pcs_tx_start <= pcs_rx_start;
+	pcs_tx_data  <= pcs_rx_data;
+	pcs_tx_keep  <= pcs_rx_keep;
 end
 
  
