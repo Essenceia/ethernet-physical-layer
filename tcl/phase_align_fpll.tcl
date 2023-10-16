@@ -26,7 +26,7 @@ proc do_create_phase_align_fpll {} {
 	set_instance_parameter_value xcvr_fpll_a10_0 {generate_add_hdl_instance_example} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {generate_docs} {1}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_actual_outclk0_frequency} {161.1328}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_actual_outclk1_frequency} {161.1328}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_actual_outclk1_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_actual_outclk2_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_actual_outclk3_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_actual_refclk_frequency} {161.1328}
@@ -34,7 +34,7 @@ proc do_create_phase_align_fpll {} {
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_cascade_outclk_index} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_hssi_cascade_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk0_frequency} {161.1328}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk1_frequency} {100.0}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk1_frequency} {161.1328}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk2_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk3_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_refclk_frequency} {161.1328}
@@ -56,7 +56,7 @@ proc do_create_phase_align_fpll {} {
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_hssi_prot_mode} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_iqtxrxclk_outclk_index} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_is_downstream_cascaded_pll} {0}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_number_of_output_clocks} {1}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_number_of_output_clocks} {2}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_operation_mode} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_outclk0_actual_phase_shift} {0.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_outclk0_actual_phase_shift_deg} {0.0}
@@ -85,10 +85,10 @@ proc do_create_phase_align_fpll {} {
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_pll_set_hssi_l_counter} {1}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_pll_set_hssi_m_counter} {8}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_pll_set_hssi_n_counter} {1}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk1_frequency} {100.0}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk1_frequency} {161.1328}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_cnt} {2}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_index} {0}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_switch} {0}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_index} {1}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_switch} {1}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_reference_clock_frequency} {161.1328}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_self_reset_enabled} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_switchover_delay} {0}
@@ -124,6 +124,7 @@ proc do_create_phase_align_fpll {} {
 	set_interface_property pll_powerdown EXPORT_OF xcvr_fpll_a10_0.pll_powerdown
 	set_interface_property pll_locked EXPORT_OF xcvr_fpll_a10_0.pll_locked
 	set_interface_property outclk0 EXPORT_OF xcvr_fpll_a10_0.outclk0
+	set_interface_property outclk1 EXPORT_OF xcvr_fpll_a10_0.outclk1
 	set_interface_property pll_cal_busy EXPORT_OF xcvr_fpll_a10_0.pll_cal_busy
 
 	# set values for exposed HDL parameters
