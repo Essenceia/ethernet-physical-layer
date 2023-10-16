@@ -270,7 +270,7 @@ wave: config
 
 top_deps := $(HW_DIR)/top.v $(pcs_rx_deps) $(pcs_tx_deps)
 
-lint_top : $(pcs_10g_deps)
+fpga_lint_top : $(pcs_10g_deps)
 	$(call LINT, $(top_deps),top)
 	
 #################

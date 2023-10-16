@@ -162,6 +162,8 @@ end else begin : gen_10g
 	* And, as there is no alignement marker for 10GBASE and this
 	* signal is not expected to be used in this configuration */
 	assign marker_v_o = 1'bX;
+
+	assign ready_o   = gb_accept;
 end //!IS_10G
 
 
@@ -184,7 +186,6 @@ for(l=0; l<LANE_N; l++) begin : gen_gearbox_lane
 end
 endgenerate
 assign gb_accept = ~gearbox_full[0];
-assign ready_o   = gb_accept;
 
 `ifdef FORMAL
 

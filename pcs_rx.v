@@ -168,7 +168,7 @@ m_am_lock_rx(
 
 // lane reordering
 assign nord_lane_id[l*LANE_N+LANE_N-1:l*LANE_N] = am_lane_id[l];
-assign nord_block = cdc_block;
+assign nord_block[l*BLOCK_W+:BLOCK_W] = cdc_block[l*BLOCK_W+:BLOCK_W];
 
 end // gen_am_lock_loop
 
@@ -215,9 +215,11 @@ for(l=0; l<LANE_N; l++) begin : gen_scram_data_loop
 	
 	assign dec_head[l] = deskew_block[l*BLOCK_W+HEAD_W-1:l*BLOCK_W];
 	assign dec_data[l] = descram_data[l*DATA_W+DATA_W-1:l*DATA_W];
+
+	/* duplicate same valid for all lanes */
+	assign valid_o[l] = amr_block_v & full_lock_v;
 end
 
-assign valid_o[l] = amr_block_v & full_lock_v;
 
 end else begin : gen_10g
 /* 10GBASE-R configuration */
