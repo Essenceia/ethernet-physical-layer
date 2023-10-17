@@ -1,4 +1,4 @@
-package require -exact qsys 21.3
+package require qsys
 
 # create the system "phyfpll"
 proc do_create_phyfpll {} {
