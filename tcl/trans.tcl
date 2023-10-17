@@ -1,10 +1,10 @@
-package require qsys
+package require -exact qsys 21.3
 
 # create the system "trans"
 proc do_create_trans {} {
 	# create the system
 	create_system trans
-	
+	set_project_property BOARD {default}
 	set_project_property DEVICE {10CX150YF780E5G}
 	set_project_property DEVICE_FAMILY {Cyclone 10 GX}
 	set_project_property HIDE_FROM_IP_CATALOG {true}
@@ -177,7 +177,7 @@ proc do_create_trans {} {
 	set_instance_parameter_value xcvr_native_a10_0 {enh_tx_polinv_enable} {0}
 	set_instance_parameter_value xcvr_native_a10_0 {enh_tx_randomdispbit_enable} {0}
 	set_instance_parameter_value xcvr_native_a10_0 {enh_tx_scram_enable} {0}
-	set_instance_parameter_value xcvr_native_a10_0 {enh_tx_scram_seed} {2.88230376152e+17}
+	set_instance_parameter_value xcvr_native_a10_0 {enh_tx_scram_seed} {2.0}
 	set_instance_parameter_value xcvr_native_a10_0 {enh_tx_sh_err} {0}
 	set_instance_parameter_value xcvr_native_a10_0 {enh_txfifo_mode} {Phase compensation}
 	set_instance_parameter_value xcvr_native_a10_0 {enh_txfifo_pempty} {2}
@@ -223,7 +223,7 @@ proc do_create_trans {} {
 	set_instance_parameter_value xcvr_native_a10_0 {rx_pma_div_clkout_divider} {0}
 	set_instance_parameter_value xcvr_native_a10_0 {rx_ppm_detect_threshold} {1000}
 	set_instance_parameter_value xcvr_native_a10_0 {set_capability_reg_enable} {0}
-	set_instance_parameter_value xcvr_native_a10_0 {set_cdr_refclk_freq} {322.265625}
+	set_instance_parameter_value xcvr_native_a10_0 {set_cdr_refclk_freq} {161.132812}
 	set_instance_parameter_value xcvr_native_a10_0 {set_csr_soft_logic_enable} {0}
 	set_instance_parameter_value xcvr_native_a10_0 {set_data_rate} {10312.5}
 	set_instance_parameter_value xcvr_native_a10_0 {set_disconnect_analog_resets} {0}

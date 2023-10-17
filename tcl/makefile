@@ -6,6 +6,10 @@ PROJECT_FILE=$(PROJECT).qpf
 LANG=VERILOG
 QUARTUS_TCL=quartus_sh -t
 
+RTL_DIR=..
+FPGA_DIR=../cy10gx
+BSP_FILE=$(FPGA_DIR)/bsp_lite.tcl
+
 ########
 # Init #
 ########
@@ -45,14 +49,17 @@ $(eval $(foreach x,$(ip_list),$(call IP_GEN,$x)))
 ###########
 
 # setup project files and IP
-setup_$(PROJECT):quartus_setup.tcl $(ip_list)
+setup_$(PROJECT):quartus_setup.tcl $(BSP_FILE) $(PROJECT_FILE) $(ip_list)
 	$(QUARTUS_TCL) $<
 
 # lint
 # call lint when ip files are modified or when
 # verilog files are modified
-#rtl_deps := 
-#lint_#(PROJECT):quartus_init.tcl 
+rtl_deps = $(shell ls $(RTL_DIR)/*.v) $(FPGA_DIR)/top.v 
+
+lint_$(PROJECT):quartus_lint.tcl setup_$(PROJECT) $(rtl_deps) 
+	$(QUARTUS_TCL) $<
+
 # synth
 
 

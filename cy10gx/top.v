@@ -11,19 +11,19 @@ module top #(
 	/* transivers quad 1D 
  	* ch4 : SFP1
  	* ch5 : SFP2 */
-    output wire [5:0]  GXB1D_TXD,
-    input  wire [5:0]  GXB1D_RXD,
-    input  wire        GXB1D_644M, // 644,5312MHz
-    input  wire        GXB1D_125M  // 123MHz
+    output wire SFP1_TXD,
+    input  wire SFP1_RXD,
+    input  wire GXB1D_644M, // 644,5312MHz
+    input  wire GXB1D_125M  // 123MHz
 );
 localparam LANE0_CNT_N = !IS_10G ? 1 : 2;
 localparam KEEP_W = DATA_W/8;
 
 /* clk network
  * generate master clock at 161.MHz */
-logic ref_clk;    // ioPLL 644.5312 -> 161,13 MHz 
-logic logic_clk; // fPLL phase aligned -> 161.13 
-logic slow_clk;  // 50Mhz integer clock
+logic ref_clk;      // ioPLL 644.5312 -> 161,13 MHz 
+logic logic_clk;    // fPLL phase aligned -> 161.13 
+logic slow_clk;     // 50Mhz integer clock
 logic gx_rx_par_clk;// parallel clk
 logic gx_tx_ser_clk;// from core -> transiver fPLL
 
@@ -31,19 +31,24 @@ assign slow_clk = OSC_50m;
 
 /* iopll */
 reg   io_nreset;
-
+logic iopll_locked;
+ 
 iopll m_iopll_refclk (
   .refclk   (GXB1D_644M),   //   input,  width = 1,  refclk.clk
-  .locked   (),   //  output,  width = 1,  locked.export
+  .locked   (iopll_locked),   //  output,  width = 1,  locked.export
   .rst      (io_nreset),      //   input,  width = 1,   reset.reset
   .outclk_0 (ref_clk)  //  output,  width = 1, outclk0.clk
 );
 
 /* phase aligner */
+logic pa_fpll_locked;
+logic pa_fpll_cal_busy;
+logic rst_pll_powerdown;
+
 phase_align_fpll m_phase_align(
-	.pll_cal_busy  (),
-	.pll_locked    (),
-	.pll_powerdown (),
+	.pll_cal_busy  (pa_fpll_cal_busy),
+	.pll_locked    (pa_fpll_locked),
+	.pll_powerdown (rst_pll_powerdown),
 	.pll_refclk0   (ref_clk),
 	.pll_refclk1   (gx_rx_par_clk),
 	.outclk0       (logic_clk),
@@ -56,11 +61,11 @@ logic gx_tx_fpll_locked;
 logic gx_tx_fpll_powerdown;
 logic gx_tx_fpll_cal_busy;
 
-assign gx_tx_fpll_powerdown = 1'bx; // TODO
+
 
 phyfpll m_sfp1_tx_fpll (
 	.pll_refclk0   (logic_clk),   
-	.pll_powerdown (gx_tx_fpll_powerdown),
+	.pll_powerdown (rst_pll_powerdown),
 	.pll_locked    (gx_tx_fpll_locked),
 	.tx_serial_clk (gx_tx_ser_clk),
 	.pll_cal_busy  (gx_tx_fpll_cal_busy)
@@ -77,51 +82,6 @@ always @(posedge slow_clk) begin
 	io_nreset <= io_nreset_meta_q;
 end
 
-/* GX transiver */
-localparam SFP1_CH = 4;
-localparam SFP2_CH = 5;
-/* SFP1 */
-/* RX */
-logic gx_rx_is_lockedtodata;
-logic gx_rx_is_lockedtoref;
-logic gx_rx_set_locktodata;   
-logic gx_rx_set_locktoref;      
-logic [DATA_W-1:0] gx_rx_parallel_data;
-   
-logic gx_rx_analogreset;       
-logic gx_rx_digitalreset;        
-logic gx_rx_cal_busy;
-
-/* TX */
-logic [DATA_W-1:0] gx_tx_parallel_data;
-
-logic gx_tx_analogreset;  
-logic gx_tx_digitalreset;     
-logic gx_tx_cal_busy;       
-
-trans m_sfp1 (
-        .tx_analogreset          (gx_tx_analogreset),          //   input,   width = 1,          tx_analogreset.tx_analogreset
-        .tx_digitalreset         (gx_tx_digitalreset),         //   input,   width = 1,         tx_digitalreset.tx_digitalreset
-        .rx_analogreset          (gx_rx_analogreset),          //   input,   width = 1,          rx_analogreset.rx_analogreset
-        .rx_digitalreset         (gx_rx_digitalreset),         //   input,   width = 1,         rx_digitalreset.rx_digitalreset
-        .tx_cal_busy             (gx_tx_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
-        .rx_cal_busy             (gx_rx_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
-        .tx_serial_clk0          (gx_tx_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
-        .rx_cdr_refclk0          (), // not using cdc fifo TODO : remove
-        .tx_serial_data          (GXB1D_TXD[SFP1_CH]),          //  output,   width = 1,          tx_serial_data.tx_serial_data
-        .rx_serial_data          (GXB1D_RXD[SFP1_CH]),          //   input,   width = 1,          rx_serial_data.rx_serial_data
-        .rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
-        .rx_set_locktoref        (),        //   input,   width = 1,        rx_set_locktoref.rx_set_locktoref
-        .rx_is_lockedtoref       (gx_rx_is_lockedtoref),       //  output,   width = 1,       rx_is_lockedtoref.rx_is_lockedtoref
-        .rx_is_lockedtodata      (gx_rx_is_lockedtodata),      //  output,   width = 1,      rx_is_lockedtodata.rx_is_lockedtodata
-        .tx_clkout               (),               //  output,   width = 1,               tx_clkout.clk
-        .rx_clkout               (gx_rx_par_clk),               //  output,   width = 1,               rx_clkout.clk
-        .tx_parallel_data        (gx_tx_parallel_data),        //   input,  width = 64,        tx_parallel_data.tx_parallel_data
-        .unused_tx_parallel_data (), //   input,  width = 64, unused_tx_parallel_data.unused_tx_parallel_data
-        .rx_parallel_data        (gx_rx_parallel_data),        //  output,  width = 64,        rx_parallel_data.rx_parallel_data
-        .unused_rx_parallel_data ()  //  output,  width = 64, unused_rx_parallel_data.unused_rx_parallel_data
-);
-
 /* GX reset controller */
 logic gx_rx_ready;
 logic gx_tx_ready;
@@ -129,22 +89,26 @@ logic gx_nreset;
 reg   nreset_next;
 reg   nreset;
 
-logic prst_pll_powerdown;
-logic prst_pll_locked;
+logic gx_rx_is_lockedtodata;
 
-assign prst_pll_powerdown = 1'bx; /* TODO */
-assign prst_pll_locked = 1'bx; /* TODO */
+logic gx_tx_analogreset;  
+logic gx_tx_digitalreset;   
+logic gx_rx_analogreset;       
+logic gx_rx_digitalreset;        
+logic gx_rx_cal_busy;
+
+ 
 
 phy_rst m_phy_rst (
-        .clock               (slow_clk),               //   input,  width = 1,               clock.clk
-        .reset               (~io_nreset),               //   input,  width = 1,               reset.reset
-        .pll_powerdown0      (),      //  output,  width = 1,      pll_powerdown0.pll_powerdown
+        .clock               (slow_clk),              //   input,  width = 1,               clock.clk
+        .reset               (~io_nreset),            //   input,  width = 1,               reset.reset
+        .pll_powerdown0      (rst_pll_powerdown),     //  output,  width = 1,      pll_powerdown0.pll_powerdown
         .tx_analogreset0     (gx_tx_analogreset),     //  output,  width = 1,     tx_analogreset0.tx_analogreset
         .tx_digitalreset0    (gx_tx_digitalreset),    //  output,  width = 1,    tx_digitalreset0.tx_digitalreset
         .tx_ready0           (gx_tx_ready),           //  output,  width = 1,           tx_ready0.tx_ready
-        .pll_locked0         (),         //   input,  width = 1,         pll_locked0.pll_locked
-        .pll_select          (),          //   input,  width = 1,          pll_select.pll_select
-        .tx_cal_busy0        (gx_tx_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
+        .pll_locked0         (gx_tx_fpll_locked),        //   input,  width = 1,         pll_locked0.pll_locked
+        .pll_select          (1'b0),          //   input,  width = 1,          pll_select.pll_select
+        .tx_cal_busy0        (gx_tx_fpll_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
 
         .rx_analogreset0     (gx_rx_analogreset),     //  output,  width = 1,     rx_analogreset0.rx_analogreset
         .rx_digitalreset0    (gx_rx_digitalreset),    //  output,  width = 1,    rx_digitalreset0.rx_digitalreset
@@ -159,6 +123,43 @@ always @(posedge logic_clk) begin
 	nreset_next <= gx_nreset;
 	nreset      <= nreset_next;
 end
+
+
+/* GX transiver */
+/* SFP1 channel 4 */
+/* RX */
+logic gx_rx_is_lockedtoref;
+logic gx_rx_set_locktodata;   
+logic gx_rx_set_locktoref;      
+logic [DATA_W-1:0] gx_rx_parallel_data;
+   
+/* TX */
+logic [DATA_W-1:0] gx_tx_parallel_data;
+ 
+logic gx_tx_cal_busy;       
+
+trans m_sfp1 (
+        .tx_analogreset          (gx_tx_analogreset),          //   input,   width = 1,          tx_analogreset.tx_analogreset
+        .tx_digitalreset         (gx_tx_digitalreset),         //   input,   width = 1,         tx_digitalreset.tx_digitalreset
+        .rx_analogreset          (gx_rx_analogreset),          //   input,   width = 1,          rx_analogreset.rx_analogreset
+        .rx_digitalreset         (gx_rx_digitalreset),         //   input,   width = 1,         rx_digitalreset.rx_digitalreset
+        .tx_cal_busy             (gx_tx_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
+        .rx_cal_busy             (gx_rx_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
+        .tx_serial_clk0          (gx_tx_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
+        .rx_cdr_refclk0          (), // not using cdc fifo TODO : remove
+        .tx_serial_data          (SFP1_TXD),          //  output,   width = 1,          tx_serial_data.tx_serial_data
+        .rx_serial_data          (SFP1_RXD),          //   input,   width = 1,          rx_serial_data.rx_serial_data
+        .rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
+        .rx_set_locktoref        (),        //   input,   width = 1,        rx_set_locktoref.rx_set_locktoref
+        .rx_is_lockedtoref       (gx_rx_is_lockedtoref),       //  output,   width = 1,       rx_is_lockedtoref.rx_is_lockedtoref
+        .rx_is_lockedtodata      (gx_rx_is_lockedtodata),      //  output,   width = 1,      rx_is_lockedtodata.rx_is_lockedtodata
+        .tx_clkout               (),               //  output,   width = 1,               tx_clkout.clk
+        .rx_clkout               (gx_rx_par_clk),               //  output,   width = 1,               rx_clkout.clk
+        .tx_parallel_data        (gx_tx_parallel_data),        //   input,  width = 64,        tx_parallel_data.tx_parallel_data
+        .unused_tx_parallel_data (), //   input,  width = 64, unused_tx_parallel_data.unused_tx_parallel_data
+        .rx_parallel_data        (gx_rx_parallel_data),      //  output,  width = 64,        rx_parallel_data.rx_parallel_data
+        .unused_rx_parallel_data ()  //  output,  width = 64, unused_rx_parallel_data.unused_rx_parallel_data
+);
 
 /* PCS RX */
 logic pcs_rx_nreset;

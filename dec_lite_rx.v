@@ -112,7 +112,7 @@ assign start_v = start_lite & {LANE0_CNT_N{~block_nv}};
 // as we will not be using start_4 our keep signal doesn't show a correct mask for
 // that case ( 8'b1110_0000 ).
 // keep signal is only valid for term
-assign keep_o = term_lite - 'd1; 
+assign keep_o = term_lite - {{KEEP_W-1{1'b0}}, 1'b1}; 
 
 // check if block is valid
 assign block_nv = ~head_v | ( head_v & head_i[1] & block_type_none);

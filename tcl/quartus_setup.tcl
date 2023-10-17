@@ -44,5 +44,10 @@ set_global_assignment -name VERILOG_FILE $fpga_dir/top.v
 # set top
 set_global_assignment -name TOP_LEVEL_ENTITY top
 
+# setup pin assignements
+source $fpga_dir/bsp_lite.tcl
+# Commit assignments
+export_assignments
+
 #close
 project_close
