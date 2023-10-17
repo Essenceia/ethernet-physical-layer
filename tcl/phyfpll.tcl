@@ -37,7 +37,7 @@ proc do_create_phyfpll {} {
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk1_frequency} {161.13}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk2_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk3_frequency} {100.0}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_refclk_frequency} {161.13}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_refclk_frequency} {161.1328}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_50G_support} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_active_clk} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_cascade_out} {0}
@@ -86,9 +86,9 @@ proc do_create_phyfpll {} {
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_pll_set_hssi_m_counter} {8}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_pll_set_hssi_n_counter} {1}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk1_frequency} {161.13}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_cnt} {2}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_cnt} {1}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_index} {0}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_switch} {1}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_refclk_switch} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_reference_clock_frequency} {161.1328}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_self_reset_enabled} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_switchover_delay} {0}
@@ -120,7 +120,6 @@ proc do_create_phyfpll {} {
 
 	# add the exports
 	set_interface_property pll_refclk0 EXPORT_OF xcvr_fpll_a10_0.pll_refclk0
-	set_interface_property pll_refclk1 EXPORT_OF xcvr_fpll_a10_0.pll_refclk1
 	set_interface_property pll_powerdown EXPORT_OF xcvr_fpll_a10_0.pll_powerdown
 	set_interface_property pll_locked EXPORT_OF xcvr_fpll_a10_0.pll_locked
 	set_interface_property tx_serial_clk EXPORT_OF xcvr_fpll_a10_0.tx_serial_clk

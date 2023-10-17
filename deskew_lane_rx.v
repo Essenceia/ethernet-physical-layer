@@ -59,7 +59,7 @@ assign buff_next[BLOCK_W-1:0] = data_i;
 
 genvar x;
 generate
-	for(x=1; x < MAX_SKEW_BLOCK_N; x++) begin
+	for(x=1; x < MAX_SKEW_BLOCK_N; x++) begin : gen_buff_next_loop
         assign buff_next[x*BLOCK_W+:BLOCK_W] = buff_q[(x-1)*BLOCK_W+:BLOCK_W];
 	end
 endgenerate

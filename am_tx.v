@@ -69,7 +69,7 @@ end
 
 genvar i;
 generate
-for( i = 0; i < LANE_N; i++) begin
+for( i = 0; i < LANE_N; i++) begin : gen_am_lane_loop
 	logic [DATA_W-1:0] data;
 	logic [HEAD_W-1:0] head;
 	logic [DATA_W-1:0] data_m;

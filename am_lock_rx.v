@@ -47,6 +47,17 @@ assign marker_lane[1] = MARKER_LANE1;
 assign marker_lane[2] = MARKER_LANE2;
 assign marker_lane[3] = MARKER_LANE3;
 
+/* fsm */
+reg   sync_q;
+logic sync_next;
+reg   first_q; // we have found the 1st alignement marker 
+logic first_next;
+reg   lock_q;
+logic lock_next;
+reg   invalid_q;
+logic invalid_next;
+
+
 // counters
 reg   [NV_CNT_W-1:0] nv_cnt_q;
 logic [NV_CNT_W-1:0] nv_cnt_next;
@@ -61,6 +72,9 @@ logic am_first_v; // found a valid alignement marker, lite version
 logic am_v;
 logic slip_v;
 
+logic gap_zero;
+logic lane_match_same;
+
 assign nv_cnt_rst_v =  sync_q | ( lock_q & gap_zero & lane_match_same ); 
 // add
 assign { nv_cnt_add_of, nv_cnt_add } = nv_cnt_q + {{NV_CNT_W-1{1'b0}}, lock_q & gap_zero & ~lane_match_same}; 
@@ -74,7 +88,6 @@ reg   [GAP_W-1:0] gap_q;
 logic [GAP_W-1:0] gap_next;
 logic [GAP_W-1:0] gap_add;
 logic             unused_gap_add_of;
-logic             gap_zero;
 logic             gap_rst_v;
 
 assign gap_rst_v = invalid_q | slip_v;
@@ -93,12 +106,12 @@ end
 reg   [LANE_N-1:0] lane_q;
 logic [LANE_N-1:0] lane_next;
 logic [LANE_N-1:0] lane_match;
-logic              lane_match_same;// match same the alignement marker on the same lane
 
+// match same the alignement marker on the same lane
 assign lane_match_same = |(lane_match == lane_q) & nv_cnt_zero;
 genvar i;
 generate
-	for( i=0 ; i < LANE_N; i++ ) begin
+	for( i=0 ; i < LANE_N; i++ ) begin : gen_lan_match_loop
 		assign lane_match[i] = (marker_lane[i][3*8+2-1:0]  == block_i[3*8+2-1:0] )
 							 & (marker_lane[i][7*8+2-1:34] == block_i[7*8+2-1:34]);
 	end
@@ -117,15 +130,6 @@ assign slip_v = sync_q  & ~|lane_match
 			  
 
 // fsm
-reg   sync_q;
-logic sync_next;
-reg   first_q; // we have found the 1st alignement marker 
-logic first_next;
-reg   lock_q;
-logic lock_next;
-reg   invalid_q;
-logic invalid_next;
-
 assign invalid_next = ~valid_i;  
 assign sync_next  = valid_i 
 				  & ( invalid_q

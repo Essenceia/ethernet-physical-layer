@@ -41,6 +41,15 @@ localparam CNT_W = $clog2(CNT_N);
 localparam NV_CNT_N = 65;
 localparam NV_CNT_W = $clog2(NV_CNT_N);
 
+/* fsm */
+reg   invalid_q;
+logic invalid_next;
+reg   sync_q; // syncing in progress, havn't locked
+logic sync_next;
+reg   lock_q; // have a valid lock
+logic lock_next;
+
+
 // sync header test
 logic  sh_v; // sh_valid
 assign sh_v = head_i[0] ^ head_i[1]; // vaild syn header can be 2'b10 or 2'b01
@@ -90,13 +99,6 @@ assign slip_v = sync_q & ~sh_v // TEST_SH -> SLIP
 assign lock_v = sync_q & cnt_64;
  
 // fsm
-reg   invalid_q;
-logic invalid_next;
-reg   sync_q; // syncing in progress, havn't locked
-logic sync_next;
-reg   lock_q; // have a valid lock
-logic lock_next;
-
 assign invalid_next = invalid_q & ~signal_v_i 
 					| ~signal_v_i;
 assign sync_next = signal_v_i & ( invalid_q // signal ok, start testing
