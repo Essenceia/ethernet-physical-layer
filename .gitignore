@@ -23,4 +23,4 @@
 !*.hpp
 !*.md
 !cy10gx
-
+!clean_ip_tcl.sh

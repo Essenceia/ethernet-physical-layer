@@ -4,7 +4,7 @@ package require qsys
 proc do_create_phyfpll {} {
 	# create the system
 	create_system phyfpll
-	set_project_property BOARD {default}
+	
 	set_project_property DEVICE {10CX150YF780E5G}
 	set_project_property DEVICE_FAMILY {Cyclone 10 GX}
 	set_project_property HIDE_FROM_IP_CATALOG {true}
