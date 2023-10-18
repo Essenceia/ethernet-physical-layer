@@ -37,3 +37,9 @@ set_instance_assignment -name IO_STANDARD "3.0-V LVCMOS" -to FPGA_RSTn -entity t
 # GX 1D channels [0:3] and 5
 set_global_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON
 
+# Thermal
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name POWER_APPLY_THERMAL_MARGIN ADDITIONAL
+
+export_assignments
