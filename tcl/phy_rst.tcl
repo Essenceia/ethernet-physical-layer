@@ -21,7 +21,7 @@ proc do_create_phy_rst {} {
 	set_instance_parameter_value xcvr_reset_control_0 {RX_PER_CHANNEL} {0}
 	set_instance_parameter_value xcvr_reset_control_0 {SYNCHRONIZE_PLL_RESET} {0}
 	set_instance_parameter_value xcvr_reset_control_0 {SYNCHRONIZE_RESET} {1}
-	set_instance_parameter_value xcvr_reset_control_0 {SYS_CLK_IN_MHZ} {100}
+	set_instance_parameter_value xcvr_reset_control_0 {SYS_CLK_IN_MHZ} {50}
 	set_instance_parameter_value xcvr_reset_control_0 {TX_ENABLE} {1}
 	set_instance_parameter_value xcvr_reset_control_0 {TX_PER_CHANNEL} {0}
 	set_instance_parameter_value xcvr_reset_control_0 {TX_PLL_ENABLE} {1}
