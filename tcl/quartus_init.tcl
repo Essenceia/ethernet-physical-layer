@@ -22,7 +22,7 @@ set_global_assignment -name FAMILY $fpga_family
 set_global_assignment -name DEVICE $fpga_device
 
 # project configuration
-set_global_assignment -name OPTIMIZATION_MODE "AGGRESSIVE PERFORMANCE"
+set_global_assignment -name OPTIMIZATION_MODE "BALANCED"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY $project_dir
 
 set_global_assignment -name VERILOG_INPUT_VERSION SYSTEMVERILOG_2009
