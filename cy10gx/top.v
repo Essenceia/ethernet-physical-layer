@@ -56,16 +56,16 @@ ALT_OUTBUF_DIFF m_outbuf_sfp1_txd(
 
 /* clk network
  * generate master clock at 161.MHz */
-logic ref_clk;      // ioPLL 644.5312 -> 161,13 MHz 
-logic logic_clk;    // fPLL phase aligned -> 161.13 
 logic slow_clk;     // 50Mhz integer clock
 logic gx_rx_par_clk;// parallel clk
 logic gx_tx_ser_clk;// from core -> transiver fPLL
 
 assign slow_clk = OSC_50m;
 
-/* iopll */
 reg   io_nreset;
+/*
+// iopll
+logic ref_clk;      // ioPLL 644.5312 -> 161,13 MHz 
 logic iopll_locked;
 
 iopll m_iopll_refclk (
@@ -75,21 +75,22 @@ iopll m_iopll_refclk (
   .outclk_0 (ref_clk)  //  output,  width = 1, outclk0.clk
 );
 
-/* phase aligner */
+// phase aligner
 logic pa_fpll_locked;
 logic pa_fpll_cal_busy;
 logic rst_pll_powerdown;
+logic logic_clk;    // fPLL phase aligned -> 161.13 
 
 phase_align_fpll m_phase_align(
 	.pll_cal_busy  (pa_fpll_cal_busy),
 	.pll_locked    (pa_fpll_locked),
 	.pll_powerdown (rst_pll_powerdown),
-	.pll_refclk0   (ref_clk),
+	.pll_refclk0   (gx_644M_clk),
 	.pll_refclk1   (gx_rx_par_clk),
 	.outclk0       (logic_clk),
 	.outclk1       ()
 );
-
+*/
 /* tx gx fpll */
 logic gx_tx_fpll_reset;
 logic gx_tx_fpll_locked;
@@ -99,7 +100,8 @@ logic gx_tx_fpll_cal_busy;
 
 
 phyfpll m_sfp1_tx_fpll (
-	.pll_refclk0   (logic_clk),   
+	//.pll_refclk0   (logic_clk),   
+	.pll_refclk0   (gx_644M_clk),   
 	.pll_powerdown (rst_pll_powerdown),
 	.pll_locked    (gx_tx_fpll_locked),
 	.tx_serial_clk (gx_tx_ser_clk),
@@ -154,7 +156,7 @@ phy_rst m_phy_rst (
 /* 2ff cdc for reset */
 assign gx_nreset = ~( gx_rx_ready & gx_tx_ready );
 
-always @(posedge logic_clk) begin
+always @(posedge gx_rx_par_clk) begin
 	nreset_next <= gx_nreset;
 	nreset      <= nreset_next;
 end
@@ -212,7 +214,7 @@ logic [KEEP_W-1:0] pcs_rx_keep;
 	.IS_10G(IS_10G)
 )m_pcs_rx(
 .nreset          (nreset),
-.clk             (logic_clk),
+.clk             (gx_rx_par_clk),
 .serdes_lock_v_i (gx_rx_ready),
 .serdes_data_i   (gx_rx_parallel_data),
 .signal_v_o      (pcs_rx_signal_ok), 
@@ -243,7 +245,7 @@ logic pcs_tx_ready;
 pcs_tx#(
 .IS_10G(IS_10G)
 )m_pcs_tx(
-.clk        (logic_clk),
+.clk        (gx_rx_par_clk),
 .nreset     (pcs_tx_nreset),
 
 .ctrl_v_i   (pcs_tx_ctrl),
@@ -264,13 +266,13 @@ pcs_tx#(
  * flop nreset */
 reg   pcs_tx_nreset_next;
 
-always @(posedge logic_clk) begin
+always @(posedge gx_rx_par_clk) begin
 	pcs_tx_nreset_next <= nreset;
 	pcs_tx_nreset      <= pcs_tx_nreset_next; 
 end 
  
 /* Flop rx data before sending to tx */
-always @(posedge logic_clk) begin
+always @(posedge gx_rx_par_clk) begin
 	pcs_tx_ctrl  <= pcs_rx_ctrl;
 	pcs_tx_idle  <= pcs_rx_idle;
 	pcs_tx_term  <= pcs_rx_term;

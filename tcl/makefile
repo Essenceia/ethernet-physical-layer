@@ -41,7 +41,8 @@ $1: $1.tcl $(PROJECT_FILE)
 endef
 
 # ip list
-ip_list := phase_align_fpll trans phy_rst phyfpll iopll
+#ip_list := phase_align_fpll trans phy_rst phyfpll iopll
+ip_list := trans phy_rst phyfpll
 
 $(eval $(foreach x,$(ip_list),$(call IP_GEN,$x)))
 
@@ -70,4 +71,4 @@ clean:
 	$(foreach x,$(ip_list),$(call IP_CLEAN,$x))
 	rm -rf qdb
 	rm -f PCS.*
-
+	rm -f serv_req_info.txt

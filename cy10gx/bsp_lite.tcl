@@ -32,3 +32,26 @@ set_instance_assignment -name IO_STANDARD "1.8 V" -to OSC_50m -entity top
 set_location_assignment PIN_E22 -to FPGA_RSTn
 set_instance_assignment -name IO_STANDARD "3.0-V LVCMOS" -to FPGA_RSTn -entity top
 
+# Unusued 
+
+# GX 1D channels [0:3] and 5
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_P26 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_M26 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_K26 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_H26 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_D26 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_D25 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_H25 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_K25 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_M25 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_P25 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_R28 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_N28 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_L28 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_J28 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_E28 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_E27 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_J27 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_L27 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_N27 
+set_instance_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON -to PIN_R27 
