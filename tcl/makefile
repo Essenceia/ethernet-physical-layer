@@ -66,6 +66,12 @@ lint_$(PROJECT):quartus_lint.tcl setup_$(PROJECT) $(rtl_deps)
 
 # synth
 
+# place and route
+place_$(PROJECT):quartus_place.tcl lint_$(PROJECT) 
+	$(QUARTUS_TCL) $<
+
+
+
 # clean
 clean:
 	rm -rf db
