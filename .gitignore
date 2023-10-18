@@ -22,5 +22,6 @@
 !*.h
 !*.hpp
 !*.md
+!*.sdc
 !cy10gx
 !clean_ip_tcl.sh

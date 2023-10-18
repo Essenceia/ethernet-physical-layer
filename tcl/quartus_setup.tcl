@@ -15,6 +15,9 @@ project_open $project_name.qpf
 
 # setup pin assignements
 source $fpga_dir/bsp_lite.tcl
+# setup timing constraints
+set_global_assignment -name SDC_FILE timing.sdc
+
 # Commit assignments
 export_assignments
 

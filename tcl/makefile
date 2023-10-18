@@ -8,7 +8,6 @@ QUARTUS_TCL=quartus_sh -t
 
 RTL_DIR=..
 FPGA_DIR=../cy10gx
-BSP_FILE=$(FPGA_DIR)/bsp_lite.tcl
 
 ########
 # Init #
@@ -51,8 +50,10 @@ $(eval $(foreach x,$(ip_list),$(call IP_GEN,$x)))
 # Project #
 ###########
 
+bsp_deps:= $(FPGA_DIR)/bsp_lite.tcl timing.sdc
+ 
 # setup project files and IP
-setup_$(PROJECT):quartus_setup.tcl $(BSP_FILE) $(PROJECT_FILE) $(ip_list)
+setup_$(PROJECT):quartus_setup.tcl $(bsp_deps) $(PROJECT_FILE) $(ip_list)
 	$(QUARTUS_TCL) $<
 
 # lint
