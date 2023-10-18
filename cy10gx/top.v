@@ -40,16 +40,16 @@ ALT_INBUF_DIFF m_inbuf_125M_clk (
     .o(gx_125M_clk)
 ); 
 
-logic sfp1_rxd;
+logic gx_rx_ser_data;
 ALT_INBUF_DIFF m_inbuf_sfp1_rx (
     .i (SFP1_RXD),
     .ibar (SFP1_RXD_N),
-    .o(sfp1_rxd)
+    .o(gx_rx_ser_data)
 ); 
 
-logic spf1_txd;
+logic gx_tx_ser_data;
 ALT_OUTBUF_DIFF m_outbuf_sfp1_txd(
-	.i(sfp1_txd),
+	.i(gx_tx_ser_data),
 	.o(SFP1_TXD),
 	.obar(SFP1_TXD_N)
 );
@@ -58,6 +58,7 @@ ALT_OUTBUF_DIFF m_outbuf_sfp1_txd(
  * generate master clock at 161.MHz */
 logic slow_clk;     // 50Mhz integer clock
 logic gx_rx_par_clk;// parallel clk
+logic gx_tx_par_clk;// parallel clk
 logic gx_tx_ser_clk;// from core -> transiver fPLL
 
 assign slow_clk = OSC_50m;
@@ -134,7 +135,9 @@ logic gx_rx_analogreset;
 logic gx_rx_digitalreset;        
 logic gx_rx_cal_busy;
 
- 
+logic rst_tx_cal_busy;
+logic gx_tx_cal_busy;       
+assign rst_tx_cal_busy = gx_tx_fpll_cal_busy | gx_tx_cal_busy; 
 
 phy_rst m_phy_rst (
         .clock               (slow_clk),              //   input,  width = 1,               clock.clk
@@ -145,7 +148,7 @@ phy_rst m_phy_rst (
         .tx_ready0           (gx_tx_ready),           //  output,  width = 1,           tx_ready0.tx_ready
         .pll_locked0         (gx_tx_fpll_locked),        //   input,  width = 1,         pll_locked0.pll_locked
         .pll_select          (1'b0),          //   input,  width = 1,          pll_select.pll_select
-        .tx_cal_busy0        (gx_tx_fpll_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
+        .tx_cal_busy0        (rst_tx_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
 
         .rx_analogreset0     (gx_rx_analogreset),     //  output,  width = 1,     rx_analogreset0.rx_analogreset
         .rx_digitalreset0    (gx_rx_digitalreset),    //  output,  width = 1,    rx_digitalreset0.rx_digitalreset
@@ -173,7 +176,6 @@ logic [DATA_W-1:0] gx_rx_parallel_data;
 /* TX */
 logic [DATA_W-1:0] gx_tx_parallel_data;
  
-logic gx_tx_cal_busy;       
 
 trans m_sfp1 (
         .tx_analogreset          (gx_tx_analogreset),          //   input,   width = 1,          tx_analogreset.tx_analogreset
@@ -184,13 +186,13 @@ trans m_sfp1 (
         .rx_cal_busy             (gx_rx_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
         .tx_serial_clk0          (gx_tx_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
         .rx_cdr_refclk0          (gx_644M_clk), // not using cdc fifo TODO : remove
-        .tx_serial_data          (sfp1_rxd),          //  output,   width = 1,          tx_serial_data.tx_serial_data
-        .rx_serial_data          (sfp1_txd),          //   input,   width = 1,          rx_serial_data.rx_serial_data
+        .tx_serial_data          (gx_tx_ser_data),          //  output,   width = 1,          tx_serial_data.tx_serial_data
+        .rx_serial_data          (gx_rx_ser_data),          //   input,   width = 1,          rx_serial_data.rx_serial_data
         .rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
         .rx_set_locktoref        (),        //   input,   width = 1,        rx_set_locktoref.rx_set_locktoref
         .rx_is_lockedtoref       (gx_rx_is_lockedtoref),       //  output,   width = 1,       rx_is_lockedtoref.rx_is_lockedtoref
         .rx_is_lockedtodata      (gx_rx_is_lockedtodata),      //  output,   width = 1,      rx_is_lockedtodata.rx_is_lockedtodata
-        .tx_clkout               (),               //  output,   width = 1,               tx_clkout.clk
+        .tx_clkout               (gx_tx_par_clk),               //  output,   width = 1,               tx_clkout.clk
         .rx_clkout               (gx_rx_par_clk),               //  output,   width = 1,               rx_clkout.clk
         .tx_parallel_data        (gx_tx_parallel_data),        //   input,  width = 64,        tx_parallel_data.tx_parallel_data
         .unused_tx_parallel_data (), //   input,  width = 64, unused_tx_parallel_data.unused_tx_parallel_data
@@ -245,7 +247,7 @@ logic pcs_tx_ready;
 pcs_tx#(
 .IS_10G(IS_10G)
 )m_pcs_tx(
-.clk        (gx_rx_par_clk),
+.clk        (gx_tx_par_clk),
 .nreset     (pcs_tx_nreset),
 
 .ctrl_v_i   (pcs_tx_ctrl),
