@@ -35,6 +35,7 @@ endef
 define IP_GEN
 $1: $1.tcl $(PROJECT_FILE)
 	$$(call IP_CLEAN,$$@)
+	./clean_ip_tcl.sh $1.tcl
 	qsys-script --script=$$< $(QSYS_ARGS)
 	qsys-generate $$@.ip --synthesis=$(LANG) $(QSYS_ARGS)
 
