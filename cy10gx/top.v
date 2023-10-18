@@ -12,12 +12,47 @@ module top #(
  	* ch4 : SFP1
  	* ch5 : SFP2 */
     output wire SFP1_TXD,
+    output wire SFP1_TXD_N,
     input  wire SFP1_RXD,
-    input  wire GXB1D_644M, // 644,5312MHz
-    input  wire GXB1D_125M  // 123MHz
+    input  wire SFP1_RXD_N,
+ 	/* 644,5312 MHz */
+    input  wire GXB1D_644M,
+    input  wire GXB1D_644M_N,
+	/* 125 MHz */
+    input  wire GXB1D_125M,
+    input  wire GXB1D_125M_N
 );
 localparam LANE0_CNT_N = !IS_10G ? 1 : 2;
 localparam KEEP_W = DATA_W/8;
+
+/* differential input buffers */
+logic gx_644M_clk;
+ALT_INBUF_DIFF m_inbuf_644M_clk (
+    .i (GXB1D_644M),
+    .ibar (GXB1D_644M_N),
+    .o(gx_644M_clk)
+); 
+
+logic gx_125M_clk;
+ALT_INBUF_DIFF m_inbuf_125M_clk (
+    .i (GXB1D_125M),
+    .ibar (GXB1D_125M_N),
+    .o(gx_125M_clk)
+); 
+
+logic sfp1_rxd;
+ALT_INBUF_DIFF m_inbuf_sfp1_rx (
+    .i (SFP1_RXD),
+    .ibar (SFP1_RXD_N),
+    .o(sfp1_rxd)
+); 
+
+logic spf1_txd;
+ALT_OUTBUF_DIFF m_outbuf_sfp1_txd(
+	.i(sfp1_txd),
+	.o(SFP1_TXD),
+	.obar(SFP1_TXD_N)
+);
 
 /* clk network
  * generate master clock at 161.MHz */
@@ -32,9 +67,9 @@ assign slow_clk = OSC_50m;
 /* iopll */
 reg   io_nreset;
 logic iopll_locked;
- 
+
 iopll m_iopll_refclk (
-  .refclk   (GXB1D_644M),   //   input,  width = 1,  refclk.clk
+  .refclk   (gx_644M_clk),   //   input,  width = 1,  refclk.clk
   .locked   (iopll_locked),   //  output,  width = 1,  locked.export
   .rst      (io_nreset),      //   input,  width = 1,   reset.reset
   .outclk_0 (ref_clk)  //  output,  width = 1, outclk0.clk
@@ -146,9 +181,9 @@ trans m_sfp1 (
         .tx_cal_busy             (gx_tx_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
         .rx_cal_busy             (gx_rx_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
         .tx_serial_clk0          (gx_tx_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
-        .rx_cdr_refclk0          (), // not using cdc fifo TODO : remove
-        .tx_serial_data          (SFP1_TXD),          //  output,   width = 1,          tx_serial_data.tx_serial_data
-        .rx_serial_data          (SFP1_RXD),          //   input,   width = 1,          rx_serial_data.rx_serial_data
+        .rx_cdr_refclk0          (gx_644M_clk), // not using cdc fifo TODO : remove
+        .tx_serial_data          (sfp1_rxd),          //  output,   width = 1,          tx_serial_data.tx_serial_data
+        .rx_serial_data          (sfp1_txd),          //   input,   width = 1,          rx_serial_data.rx_serial_data
         .rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
         .rx_set_locktoref        (),        //   input,   width = 1,        rx_set_locktoref.rx_set_locktoref
         .rx_is_lockedtoref       (gx_rx_is_lockedtoref),       //  output,   width = 1,       rx_is_lockedtoref.rx_is_lockedtoref
@@ -177,7 +212,7 @@ logic [KEEP_W-1:0] pcs_rx_keep;
 	.IS_10G(IS_10G)
 )m_pcs_rx(
 .nreset          (nreset),
-.clk             (gx_rx_par_clk),
+.clk             (logic_clk),
 .serdes_lock_v_i (gx_rx_ready),
 .serdes_data_i   (gx_rx_parallel_data),
 .signal_v_o      (pcs_rx_signal_ok), 

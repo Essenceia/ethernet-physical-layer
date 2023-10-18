@@ -223,7 +223,7 @@ proc do_create_trans {} {
 	set_instance_parameter_value xcvr_native_a10_0 {rx_pma_div_clkout_divider} {0}
 	set_instance_parameter_value xcvr_native_a10_0 {rx_ppm_detect_threshold} {1000}
 	set_instance_parameter_value xcvr_native_a10_0 {set_capability_reg_enable} {0}
-	set_instance_parameter_value xcvr_native_a10_0 {set_cdr_refclk_freq} {161.132812}
+	set_instance_parameter_value xcvr_native_a10_0 {set_cdr_refclk_freq} {644.531250}
 	set_instance_parameter_value xcvr_native_a10_0 {set_csr_soft_logic_enable} {0}
 	set_instance_parameter_value xcvr_native_a10_0 {set_data_rate} {10312.5}
 	set_instance_parameter_value xcvr_native_a10_0 {set_disconnect_analog_resets} {0}

@@ -30,6 +30,7 @@ define IP_CLEAN
 	rm -f $1.ip
 	rm -f $1.qdf
 	rm -f $1.qpf
+
 endef
 define IP_GEN
 $1: $1.tcl $(PROJECT_FILE)
@@ -62,8 +63,11 @@ lint_$(PROJECT):quartus_lint.tcl setup_$(PROJECT) $(rtl_deps)
 
 # synth
 
-
+# clean
 clean:
-	yes | rm -r db
-	$(eval $(foreach x,$(ip_list),$(call IP_CLEAN,$x)))
+	rm -rf db
+	rm -rf tmp-clearbox
+	$(foreach x,$(ip_list),$(call IP_CLEAN,$x))
+	rm -rf qdb
 	rm -f PCS.*
+

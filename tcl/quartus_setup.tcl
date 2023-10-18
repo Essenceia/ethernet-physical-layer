@@ -13,6 +13,11 @@ set fpga_dir "../cy10gx"
 # Open project
 project_open $project_name.qpf 
 
+# setup pin assignements
+source $fpga_dir/bsp_lite.tcl
+# Commit assignments
+export_assignments
+
 # include project files
 # TX
 set_global_assignment -name VERILOG_FILE $rtl_dir/_64b66b_tx.v
@@ -43,11 +48,6 @@ set_global_assignment -name VERILOG_FILE $rtl_dir/pcs_rx.v
 set_global_assignment -name VERILOG_FILE $fpga_dir/top.v
 # set top
 set_global_assignment -name TOP_LEVEL_ENTITY top
-
-# setup pin assignements
-source $fpga_dir/bsp_lite.tcl
-# Commit assignments
-export_assignments
 
 #close
 project_close
