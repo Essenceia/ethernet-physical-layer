@@ -43,7 +43,6 @@ module pcs_tx#(
 	/* SerDes */
 	output [LANE_N*DATA_W-1:0]    serdes_data_o
 );
-localparam SEQ_W  = $clog2(DATA_W/HEAD_W+1);
 // encoder
 logic                    scram_v;
 logic [LANE_N-1:0]       unused_enc_head_v;
@@ -63,31 +62,12 @@ logic [LANE_N*HEAD_W-1:0] sync_head;
 * within the same cycle, this may be changed in future
 * versions */
 /*verilator lint_off UNUSEDSIGNAL */
-logic [LANE_N-1:0] gearbox_full;
+logic [LANE_N-1:0] gb_accept;
 /*verilator lint_on UNUSEDSIGNAL */
-logic gb_accept;
 
 /* input to gearbox */
 logic [LANE_N*HEAD_W-1:0] gb_head;
 logic [LANE_N*DATA_W-1:0] gb_data;
-
-// pcs fsm
-logic             seq_rst;
-logic [SEQ_W-1:0] seq_next;
-logic [SEQ_W-1:0] seq_inc;
-logic             unused_seq_inc_of;
-reg   [SEQ_W-1:0] seq_q;
-
-assign seq_rst = gearbox_full[0];
-assign { unused_seq_inc_of, seq_inc } = seq_q + {{SEQ_W-1{1'b0}} , 1'b1};
-assign seq_next = seq_rst ? {SEQ_W{1'b0}} : seq_inc;
-always @(posedge clk) begin
-	if ( ~nreset ) begin
-		seq_q <= {SEQ_W{1'b0}};
-	end else begin
-		seq_q <= seq_next;
-	end
-end
 
 genvar l;
 generate
@@ -131,7 +111,7 @@ if ( !IS_10G ) begin : gen_not_10g
 	m_align_market(
 		.clk(clk),
 		.nreset(nreset),
-		.valid_i(gb_accept),
+		.valid_i(gb_accept[0]),
 		.head_i(sync_head),
 		.data_i(data_scram ),
 		.marker_v_o(marker_v),
@@ -139,7 +119,7 @@ if ( !IS_10G ) begin : gen_not_10g
 		.data_o(data_mark )
 	);
 	// scrambler
-	assign scram_v = ~marker_v & gb_accept;
+	assign scram_v = ~marker_v & gb_accept[0];
 
 	// gearbox data : marked data
 	assign gb_data = data_mark;
@@ -154,7 +134,7 @@ end else begin : gen_10g
 	assign gb_head = sync_head;
 	
 	// scrambler
-	assign scram_v = gb_accept;
+	assign scram_v = gb_accept[0];
 
 	/* PCS is non blocking in 10G mode
 	* The only case where the PCS becomes blocking is when we
@@ -163,7 +143,7 @@ end else begin : gen_10g
 	* signal is not expected to be used in this configuration */
 	assign marker_v_o = 1'bX;
 
-	assign ready_o   = gb_accept;
+	assign ready_o   = gb_accept[0];
 end //!IS_10G
 
 
@@ -173,19 +153,17 @@ for(l=0; l<LANE_N; l++) begin : gen_gearbox_lane
 	gearbox_tx #(
 		.BLOCK_DATA_W(BLOCK_W),
 		.DATA_W(DATA_W),
-		.HEAD_W(HEAD_W),
-		.SEQ_W(SEQ_W)
+		.HEAD_W(HEAD_W)
 	)m_gearbox_tx(
 		.clk(clk),
-		.seq_i(seq_q),
+		.nreset(nreset),
 		.head_i(gb_head[l*HEAD_W+HEAD_W-1:l*HEAD_W]),
 		.data_i(gb_data[l*DATA_W+DATA_W-1:l*DATA_W]),
-		.full_v_o(gearbox_full[l]),  
+		.accept_v_o(gb_accept[l]),  
 		.data_o(serdes_data_o[l*DATA_W+DATA_W-1:l*DATA_W])
 	);
 end
 endgenerate
-assign gb_accept = ~gearbox_full[0];
 
 `ifdef FORMAL
 
