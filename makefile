@@ -268,10 +268,11 @@ wave: config
 # HW testbench  #
 #################
 
-top_deps := $(HW_DIR)/top.v $(pcs_rx_deps) $(pcs_tx_deps)
+pcs_10g_deps := pcs_10g_loopback.v $(pcs_rx_deps) $(pcs_tx_deps)
+top_deps := $(HW_DIR)/top.v $(pcs_10g_deps)
 
-fpga_lint_top : $(pcs_10g_deps)
-	$(call LINT, $(top_deps),top)
+fpga_lint : $(pcs_10g_deps)
+	$(call LINT, $(pcs_10g_deps),pcs_10g_loopback)
 	
 #################
 # Debug targets #
