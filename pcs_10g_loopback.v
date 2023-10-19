@@ -30,19 +30,19 @@ logic [DATA_W-1:0]      rx_data;
 logic [KEEP_W-1:0]      rx_keep;
 
 /* verilator lint_off UNUSEDSIGNAL */
-logic                   rx_signal_ok;
-logic                   rx_valid;
+logic                   debug_rx_signal_ok;
+reg                     debug_rx_valid;
 /* verilator lint_on UNUSEDSIGNAL */
 
- pcs_rx #(
+pcs_rx #(
 	.IS_10G(IS_10G)
 )m_pcs_rx(
 .nreset          (nreset),
 .clk             (rx_par_clk),
 .serdes_lock_v_i (rx_locked_i),
 .serdes_data_i   (rx_par_data_i),
-.signal_v_o      (rx_signal_ok), 
-.valid_o         (rx_valid),
+.signal_v_o      (debug_rx_signal_ok), 
+.valid_o         (debug_rx_valid),
 .ctrl_v_o        (rx_ctrl),
 .idle_v_o        (rx_idle),
 .start_v_o       (rx_start),
@@ -95,14 +95,17 @@ pcs_tx#(
 /* RX -> TX loopback 
  * flop nreset */
 reg   tx_nreset_next;
+reg   tx_nreset_2_next;
 
 always @(posedge tx_par_clk) begin
 	if (~nreset) begin
 		tx_nreset_next <= 1'b0;
+		tx_nreset_2_next <= 1'b0;
 		tx_nreset      <= 1'b0;
 	end else begin
 		tx_nreset_next <= nreset;
-		tx_nreset      <= tx_nreset_next; 
+		tx_nreset_2_next <= tx_nreset_next;
+		tx_nreset      <= tx_nreset_2_next; 
 	end
 end 
  
@@ -117,5 +120,11 @@ always @(posedge tx_par_clk) begin
 	tx_keep  <= rx_keep;
 end
 
+`ifdef DEBUG
+reg debug_rx_valid_q;
+always @(posedge tx_par_clk) begin
+	debug_rx_valid_q <= debug_rx_valid;
+end
+`endif
  
 endmodule	

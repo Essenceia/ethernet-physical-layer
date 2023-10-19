@@ -70,7 +70,7 @@ logic [DATA_W-1:0] dec_data[LANE_N-1:0];
 
 genvar l;
 generate
-for(l=0; l<LANE_N; l++)begin : gen_lane_common_loop
+for(l=0; l<LANE_N; l++)begin : gen_gearbox_block_sync_loop
 
 /* SerDes
  * signal valid when locked */
