@@ -201,6 +201,7 @@ lint_pcs_rx: $(pcs_rx_deps)
 
 # The list of testbenches.
 tbs := _64b66b gearbox_tx gearbox_rx block_sync_rx am_lock_rx lane_reorder_rx xgmii_dec_rx deskew_rx
+tbs += pcs_10g_loopback
 
 # Standard run recipe to build a given testbench
 define build_recipe
@@ -219,6 +220,7 @@ am_lock_rx_deps := am_lock_rx.v $(TB_DIR)/am_lock_rx_tb.sv
 lane_reorder_rx_deps := lane_reorder_rx.v $(TB_DIR)/lane_reorder_rx_tb.sv 
 xgmii_dec_rx_deps := dec_lite_rx.v xgmii_dec_intf_rx.v $(TB_DIR)/xgmii_dec_rx_tb.sv 
 deskew_rx_deps := deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv 
+pcs_10g_loopback_deps :=  pcs_10g_loopback.v $(pcs_rx_deps) $(pcs_tx_deps) $(TB_DIR)/pcs_10g_loopback_tb.sv 
 
 # Standard run recipe to run a given testbench
 define run_recipe
@@ -268,11 +270,6 @@ wave: config
 # HW testbench  #
 #################
 
-pcs_10g_deps := pcs_10g_loopback.v $(pcs_rx_deps) $(pcs_tx_deps)
-top_deps := $(HW_DIR)/top.v $(pcs_10g_deps)
-
-fpga_lint : $(pcs_10g_deps)
-	$(call LINT, $(pcs_10g_deps),pcs_10g_loopback)
 	
 #################
 # Debug targets #
