@@ -9,7 +9,6 @@
 * Expected parameters for data widths : 16,32, 64
 * Tested parameters : 16, 64 */
 module gearbox_tx #(
-	parameter BLOCK_DATA_W = 66,
 	parameter DATA_W = 64,
 	parameter HEAD_W = 2
 )(
@@ -23,9 +22,6 @@ module gearbox_tx #(
 	output              accept_v_o, // backpressure, buffer is full, need a cycle to clear 
 	output [DATA_W-1:0] data_o
 );
-localparam CNT_N   = BLOCK_DATA_W/DATA_W;
-localparam CNT_W   = $clog2(CNT_N);
-//localparam FIFO_W   = 2*(BLOCK_DATA_W+HEAD_W);
 localparam FIFO_W  = DATA_W;
 localparam SHIFT_N = DATA_W/HEAD_W;
 localparam SEQ_W  = $clog2(DATA_W/HEAD_W+1);
@@ -47,9 +43,7 @@ assign seq_next = seq_rst ? {SEQ_W{1'b0}} : seq_inc;
 
 always @(posedge clk) begin
 	if ( ~nreset ) begin
-		/* reset on fifo purge of easier syncing with rx gearbox
-		 * in loopback mode */
-		seq_q <= {1'b1,{ SEQ_W-1{1'b0}}};
+		seq_q <= { SEQ_W{1'b0}};
 	end else begin
 		seq_q <= seq_next;
 	end
@@ -58,19 +52,6 @@ end
 // current fifo depth is derrived from the sequence number
 logic [FIFO_W-1:0] fifo_next;
 reg   [FIFO_W-1:0] fifo_q;
-
-// input sync header is valid
-logic head_v;
-
-generate
-
-if ( DATA_W == BLOCK_DATA_W ) begin : gen_data_w_eq_block_w_head_v
-	assign head_v = 1'b1;
-end else begin : gen_data_w_neq_block_w_head_v
-	assign head_v = ~|seq_q[CNT_W:0];
-end
-
-endgenerate
 
 // shift data
 localparam MASK_ARR_W = FIFO_W / HEAD_W;
@@ -99,7 +80,7 @@ generate
 		 * seq 32 : X */
 		assign wr_fifo_shifted_arr[i] = { {DATA_W-(i+1)*HEAD_W{1'bx}} , data_i[DATA_W-1:DATA_W - (i+1)*HEAD_W] };
 	
-		if ( i == 0 ) begin : gen_lt_SHIFT_N
+		if ( i != SHIFT_N-1 ) begin : gen_lt_SHIFT_N
 			assign rd_data_shifted_arr[i] = { data_i[DATA_W-HEAD_W-i*HEAD_W-1:0], head_i , {i*HEAD_W{1'bx}}} ;
 			//assign rd_data_shifted_arr[0] = { data_i[DATA_W-HEAD_W-i*HEAD_W-1:0], head_i } ;
 		end else begin : gen_eq_SHIFT_N
@@ -111,19 +92,6 @@ endgenerate
 assign wr_fifo_shifted = wr_fifo_shifted_arr[seq_q[SEQ_W-2:0]];
 assign rd_data_shifted = rd_data_shifted_arr[seq_q[SEQ_W-2:0]];
 
-//always_comb begin
-//	for( int x=0; x < SHIFT_N; x++) begin
-//		/* setting default state to prevent latch inference */
-//		//wr_fifo_shifted = 'x;
-//		//rd_data_shifted = 'x;
-//
-//		if ( x < SHIFT_N ) begin
-//			if ( shift_sel[x] ) wr_fifo_shifted = wr_fifo_shifted_arr[x];
-//			if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];
-//		end
-//	end
-//end
-
 /* read fifo mask
  * seq 0 : nothing from fifo
  * seq 1 : read 2 bytes from fifo ( 1 i lite mask version )
@@ -131,7 +99,9 @@ assign rd_data_shifted = rd_data_shifted_arr[seq_q[SEQ_W-2:0]];
  * ...
  * seq 32 : read 64 bytes from fifo ( entire content ) */
 logic [MASK_ARR_W-1:0] rd_fifo_mask_lite;
-assign rd_fifo_mask_lite = shift_sel - {{SHIFT_N{1'b0}}, 1'b1};
+logic unused_rd_fifo_mask_lite;
+
+assign { unused_rd_fifo_mask_lite, rd_fifo_mask_lite } = shift_sel - {{SHIFT_N-1{1'b0}}, 1'b1};
 
 // extend masks
 logic [FIFO_W-1:0] rd_fifo_mask; // full version of the mask
