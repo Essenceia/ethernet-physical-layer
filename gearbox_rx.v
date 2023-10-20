@@ -20,7 +20,7 @@ module gearbox_rx #(
 	input              slip_v_i,
 
 	/* to block sync */
-	output              valid_o, // backpressure, buffer is full, need a cycle to clear 
+	output              valid_o, // output data is valid : backpressure, buffer is full, need a cycle to clear 
 	output [HEAD_W-1:0] head_o,
 	output [DATA_W-1:0] data_o
 );
@@ -29,7 +29,7 @@ localparam BLOCK_DATA_W = DATA_W + HEAD_W;
 localparam FIFO_W = DATA_W;
 localparam SHIFT_N = FIFO_W;
 
-localparam CNT_W = $clog2(SHIFT_N);
+localparam CNT_W = $clog2(SHIFT_N+1);
 
 
 logic [SHIFT_N:0] shift_sel;
@@ -66,6 +66,7 @@ endgenerate
 localparam INC_W = $clog2( HEAD_W + 2);
 reg   [CNT_W-1:0] seq_q;
 logic [CNT_W-1:0] seq_next;
+logic [CNT_W-1:0] seq_xor;
 logic             seq_rst;
 logic [CNT_W-1:0] seq_add;
 logic [INC_W-1:0] seq_inc;
@@ -74,13 +75,13 @@ logic             unused_seq_add_of;
 /* increment by 2 or 3 sequence counter bepending on if we are
  * slipping the lsb */
 assign seq_inc = { 1'b1, slip_v_i };
-
 assign {unused_seq_add_of, seq_add } = seq_q + { {CNT_W-INC_W{1'b0}}, seq_inc };
-/* reset sequence */
 
+/* reset sequence */
 assign seq_rst = ~lock_v_i;
-/* reset to zero */
-assign seq_next = {CNT_W{~seq_rst}} & seq_add; 
+
+/* reset to zero, and set next to mod % 64 when seq_q >= 64 */
+assign seq_next = {CNT_W{~seq_rst}} & (seq_add & ~{{CNT_W-1{seq_q[CNT_W-1]}},1'b0}) ; 
  
 always @(posedge clk) begin
 	if ( ~nreset ) begin
