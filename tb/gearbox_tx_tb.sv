@@ -13,11 +13,12 @@ localparam SEQ_W  = $clog2(SEQ_N);
 localparam TB_BUF_W = SEQ_N * ( HEAD_W + DATA_W );
 
 reg   clk = 1'b0;
+logic nreset;
 
 logic [SEQ_W-1:0]  seq_i;
 logic [HEAD_W-1:0] head_i;
 logic [DATA_W-1:0] data_i;
-logic              full_v_o; // backpressure, buffer is full, need a cycle to clear 
+logic              accept_v_o; // backpressure, buffer is full, need a cycle to clear 
 logic [DATA_W-1:0] data_o;
 
 logic [TB_BUF_W-1:0] tb_buf;
@@ -36,19 +37,19 @@ task new_seq();
 	logic [DATA_W-1:0] d;
 	for( int seq = 0; seq< SEQ_N; seq++ ) begin
 		h = 2'b11;
-		d = { $random(), $random() };
+		//d = { $random(), $random() };
+		d = {DATA_W{1'b1}};
 		// fill tb buffer
 		tb_buf = { tb_buf[TB_BUF_W-(HEAD_W+DATA_W)-1:0],d, h };
 		// drive uut
-		seq_i = SEQ_W'(seq);
 		head_i = h;
 		data_i = d;
 		#1
-		assert(~full_v_o);
+		assert(accept_v_o);
 		#9
 		$display("Seq %d", seq);
 	end	
-	assert(full_v_o);
+	assert(~accept_v_o);
 endtask
 
 always @(posedge clk) begin
@@ -60,7 +61,9 @@ assign db_buf_diff = got_buf ^ tb_buf;
 initial begin
 	$dumpfile("wave/gearbox_tx_tb.vcd");
 	$dumpvars(0, gearbox_tx_tb);
+	nreset = 1'b0;
 	#10
+	nreset = 1'b1;
 	$display("test 1 %t", $time);
 	new_seq();
 	#10
@@ -72,14 +75,21 @@ initial begin
 	$finish;
 end
 
+always @(posedge clk) begin
+	if ( nreset ) begin
+		assert( ~$isunknown( data_o ));
+	end
+end
+
 // uut 
 gearbox_tx #(.DATA_W(DATA_W))
 m_gearbox_tx(
 .clk(clk),
-.seq_i(seq_i),
+.nreset(nreset),
+
 .head_i(head_i),
 .data_i(data_i),
-.full_v_o(full_v_o),
+.accept_v_o(accept_v_o),
 .data_o(data_o)
 );
 endmodule

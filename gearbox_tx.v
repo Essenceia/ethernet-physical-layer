@@ -44,9 +44,12 @@ assign fifo_full = seq_q[SEQ_W-1];
 assign seq_rst = fifo_full;
 assign { unused_seq_inc_of, seq_inc } = seq_q + {{SEQ_W-1{1'b0}} , 1'b1};
 assign seq_next = seq_rst ? {SEQ_W{1'b0}} : seq_inc;
+
 always @(posedge clk) begin
 	if ( ~nreset ) begin
-		seq_q <= {SEQ_W{1'b0}};
+		/* reset on fifo purge of easier syncing with rx gearbox
+		 * in loopback mode */
+		seq_q <= {1'b1,{ SEQ_W-1{1'b0}}};
 	end else begin
 		seq_q <= seq_next;
 	end
@@ -73,57 +76,73 @@ endgenerate
 localparam MASK_ARR_W = FIFO_W / HEAD_W;
 
 logic [SHIFT_N:0] shift_sel;
-logic [FIFO_W-1:0] wr_data_shifted_arr[SHIFT_N-1:0];
+
+logic [FIFO_W-1:0] wr_fifo_shifted_arr[SHIFT_N-1:0];
 logic [FIFO_W-1:0] rd_data_shifted_arr[SHIFT_N-1:0];
-logic [FIFO_W-1:0] wr_data_shifted;
+logic [FIFO_W-1:0] wr_fifo_shifted;
 logic [FIFO_W-1:0] rd_data_shifted;
-logic [MASK_ARR_W-1:0] rd_fifo_mask_lite_shifted_arr[SHIFT_N-1:0];
-logic [MASK_ARR_W-1:0] rd_fifo_mask_lite_shifted;
-logic [FIFO_W-1:0]     rd_fifo_mask; // full version of the mask
+
 genvar i;
 generate
-	for( i = 0; i < SHIFT_N; i++ ) begin : rd_data_shifted_loop
-		// data
-		//assign wr_data_shifted_arr[i] = { {DATA_W-HEAD_W-i{1'bx}} , data_i[DATA_W-1:DATA_W-HEAD_W-i] } ;
-		assign wr_data_shifted_arr[i] = { {DATA_W-(i+1)*HEAD_W{1'bx}} , data_i[DATA_W-1:DATA_W - (i+1)*HEAD_W] };
-		if ( i == SHIFT_N-1 ) begin : gen_last_idx_rd_data_shifted_arr
-			assign rd_data_shifted_arr[i] = { head_i , {i*HEAD_W{1'bx}}} ;
-		end else begin : gen_idx_rd_data_shifted_arr
-			assign rd_data_shifted_arr[i] = { data_i[DATA_W-HEAD_W-i*HEAD_W-1:0], head_i , {i*HEAD_W{1'bx}}} ;
-		end
-		// mask
-		assign rd_fifo_mask_lite_shifted_arr[i] = { {MASK_ARR_W-i{1'b0}} , {i{1'b1}} };
-		// sel
-	end
+	/* shift sel : dec to bin onehot */
 	for( i = 0; i <=SHIFT_N; i++) begin : shift_sel_loop
 		assign shift_sel[i] = ( seq_q == i );
 	end
-endgenerate
-always_comb begin
-	for( int x=0; x <= SHIFT_N; x++) begin
-		/* setting default state to prevent latch inference */
-		wr_data_shifted = 'x;
-		rd_data_shifted = 'x;
-		rd_fifo_mask_lite_shifted = 'x;
 
-		if ( x < SHIFT_N ) begin
-			if ( shift_sel[x] ) wr_data_shifted = wr_data_shifted_arr[x];
-			if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];
-			if ( shift_sel[x] ) rd_fifo_mask_lite_shifted = rd_fifo_mask_lite_shifted_arr[x];
-		end else begin
-			if ( shift_sel[x] ) rd_fifo_mask_lite_shifted = {MASK_ARR_W{1'b1}}; 
+	/* read and write data shifted */
+	for( i = 0; i < SHIFT_N; i++ ) begin : rd_data_shifted_loop
+		/* block data to be written to fifo 
+		 * seq 0 : write 2 msb bits to fifo 
+		 * seq 1 : write 4 msb bits to fifo
+		 * ...
+	     * seq 31 : write 64 msb bits to fifo 
+		 * seq 32 : X */
+		assign wr_fifo_shifted_arr[i] = { {DATA_W-(i+1)*HEAD_W{1'bx}} , data_i[DATA_W-1:DATA_W - (i+1)*HEAD_W] };
+	
+		if ( i == 0 ) begin : gen_lt_SHIFT_N
+			assign rd_data_shifted_arr[i] = { data_i[DATA_W-HEAD_W-i*HEAD_W-1:0], head_i , {i*HEAD_W{1'bx}}} ;
+			//assign rd_data_shifted_arr[0] = { data_i[DATA_W-HEAD_W-i*HEAD_W-1:0], head_i } ;
+		end else begin : gen_eq_SHIFT_N
+			assign rd_data_shifted_arr[i] = {  head_i , {i*HEAD_W{1'bx}} } ;
 		end
 	end
-end
+endgenerate
+
+assign wr_fifo_shifted = wr_fifo_shifted_arr[seq_q[SEQ_W-2:0]];
+assign rd_data_shifted = rd_data_shifted_arr[seq_q[SEQ_W-2:0]];
+
+//always_comb begin
+//	for( int x=0; x < SHIFT_N; x++) begin
+//		/* setting default state to prevent latch inference */
+//		//wr_fifo_shifted = 'x;
+//		//rd_data_shifted = 'x;
+//
+//		if ( x < SHIFT_N ) begin
+//			if ( shift_sel[x] ) wr_fifo_shifted = wr_fifo_shifted_arr[x];
+//			if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];
+//		end
+//	end
+//end
+
+/* read fifo mask
+ * seq 0 : nothing from fifo
+ * seq 1 : read 2 bytes from fifo ( 1 i lite mask version )
+ * seq 2 : read 4 bytes from fifo
+ * ...
+ * seq 32 : read 64 bytes from fifo ( entire content ) */
+logic [MASK_ARR_W-1:0] rd_fifo_mask_lite;
+assign rd_fifo_mask_lite = shift_sel - {{SHIFT_N{1'b0}}, 1'b1};
 
 // extend masks
+logic [FIFO_W-1:0] rd_fifo_mask; // full version of the mask
 generate
 	for( i = 0; i < MASK_ARR_W; i++ ) begin : mask_loop
-		assign rd_fifo_mask[i*HEAD_W+HEAD_W-1:i*HEAD_W] = {HEAD_W{rd_fifo_mask_lite_shifted[i] }};
+		assign rd_fifo_mask[i*HEAD_W+HEAD_W-1:i*HEAD_W] = {HEAD_W{rd_fifo_mask_lite[i] }};
 	end
 endgenerate
+
 // buf data
-assign fifo_next = wr_data_shifted;
+assign fifo_next = wr_fifo_shifted;
 always @(posedge clk) begin
 	fifo_q <= fifo_next;
 end
