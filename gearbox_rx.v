@@ -24,7 +24,7 @@ module gearbox_rx #(
 	output [HEAD_W-1:0] head_o,
 	output [DATA_W-1:0] data_o
 );
-localparam BLOCK_DATA_W = DATA_W + HEAD_W;
+localparam BLOCK_W = DATA_W + HEAD_W;
 
 localparam FIFO_W = DATA_W;
 localparam SHIFT_N = FIFO_W;
@@ -32,32 +32,22 @@ localparam SHIFT_N = FIFO_W;
 localparam CNT_W = $clog2(SHIFT_N+1);
 
 
-logic [SHIFT_N:0] shift_sel;
 logic [FIFO_W-1:0] wr_fifo_shifted_arr[SHIFT_N-1:0];
 logic [FIFO_W-1:0] wr_fifo_shifted; // write data to write into fifo register
-//logic [FIFO_W-1:0] wr_mask_shifted_arr[SHIFT_N-1:0];
 
-logic [BLOCK_DATA_W-1:0] rd_data_shifted_arr[SHIFT_N-1:1];
-logic [BLOCK_DATA_W-1:0] rd_data_shifted;
-
-logic [BLOCK_DATA_W-1:0] rd_data_mask_arr[SHIFT_N-1:1];
-logic [BLOCK_DATA_W-1:0] rd_data_mask; // full version of the mask
+logic [BLOCK_W-1:0] rd_data_shifted_arr[SHIFT_N:1];
+logic [BLOCK_W-1:0] rd_data_shifted;
 
 genvar i;
 generate
 	for( i = 0; i < SHIFT_N; i++ ) begin : wr_fifo_shifted_loop
-		// wr fifo
-		if ( i == 0 ) begin : i_eq_zero
-			assign wr_fifo_shifted_arr[i] = data_i;
-		end else begin : i_gt_zero
-			assign wr_fifo_shifted_arr[i] = { {i{1'bx}}, data_i[DATA_W-1:i] };
-		end	
+		/* wr fifo data shifted
+	 	 * seq_q 0 : write all of data into fifo */	
+		assign wr_fifo_shifted_arr[i] = { {i{1'bx}}, data_i[DATA_W-1:i] };
 	end
-	
-	for( i = 1; i < SHIFT_N; i++ ) begin : rd_shifted_loop
+	for( i = 1; i <= SHIFT_N; i++ ) begin : rd_shifted_loop
 		// rd data and mask
-		assign rd_data_shifted_arr[i] = { data_i[0+:i], {BLOCK_DATA_W-i{1'bx}}}; 
-		assign rd_data_mask_arr[i] = { {i{1'b1}}, {BLOCK_DATA_W- i{1'b0}}};
+		assign rd_data_shifted_arr[i] = { data_i[0+:i], {BLOCK_W-i{1'bx}}}; 
 	end
 	
 endgenerate
@@ -80,7 +70,7 @@ assign {unused_seq_add_of, seq_add } = seq_q + { {CNT_W-INC_W{1'b0}}, seq_inc };
 /* reset sequence */
 assign seq_rst = ~lock_v_i;
 
-/* reset to zero, and set next to mod % 64 when seq_q >= 64 */
+/* reset to zero, and set next to mod % 64 when seq_q >= 64 to keep slip offset */
 assign seq_next = {CNT_W{~seq_rst}} & (seq_add & ~{{CNT_W-1{seq_q[CNT_W-1]}},1'b0}) ; 
  
 always @(posedge clk) begin
@@ -91,29 +81,37 @@ always @(posedge clk) begin
 	end
 end
 
+logic [SHIFT_N:0] shift_sel;
 generate
 	for( i = 0; i <= SHIFT_N; i++) begin : shift_sel_loop
 		/* verilator lint_off WIDTHEXPAND */
 		assign shift_sel[i] = ( seq_q == i );
 		/* verilator lint_on WIDTHEXPAND */
 	end
-endgenerate
+
+logic [DATA_W-1:0] rd_data_mask_rev; // reversed verson of the data mask
+logic [BLOCK_W-1:0] rd_data_mask; // full version of the mask
+
+assign rd_data_mask_rev = shift_sel - {{DATA_W-1{1'b0}}, 1'b1};
+
+assign rd_data_mask[HEAD_W-1:0] = {HEAD_W{1'b0}};
+for(i=HEAD_W; i< BLOCK_W; i++) begin: rd_data_mask_reverse
+	assign rd_data_mask[i] = rd_data_mask_rev[BLOCK_W-i-1];
+end
+
+endgenerate 
 
 always_comb begin : rd_wr_shift_sel
-	// wr fifo
-	wr_fifo_shifted = {FIFO_W{1'bx}};
-	for( int x=0; x < SHIFT_N; x++) begin
-		if ( shift_sel[x] ) wr_fifo_shifted = wr_fifo_shifted_arr[x];
-	end
+
 	// rd mask and data
-	rd_data_shifted = {BLOCK_DATA_W{1'bx}};
-	rd_data_mask = {BLOCK_DATA_W{1'bx}}; 
-	for( int x=1; x < SHIFT_N; x++) begin
+	rd_data_shifted = {BLOCK_W{1'bx}};
+	for( int x=1; x <=SHIFT_N; x++) begin
 		/* setting default state to prevent latch inference */
 		if ( shift_sel[x] ) rd_data_shifted = rd_data_shifted_arr[x];
-		if ( shift_sel[x] ) rd_data_mask = rd_data_mask_arr[x];
 	end
 end
+
+assign wr_fifo_shifted = wr_fifo_shifted_arr[seq_q[CNT_W-2:0]];
 
 // buf data
 reg   [FIFO_W-1:0] fifo_q;
@@ -125,7 +123,7 @@ always @(posedge clk) begin
 end
 
 // reassemble output data
-logic [BLOCK_DATA_W-1:0] block;
+logic [BLOCK_W-1:0] block;
 
 
 assign block = rd_data_mask & rd_data_shifted

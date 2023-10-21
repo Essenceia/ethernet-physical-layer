@@ -34,7 +34,7 @@ logic [DATA_W-1:0] data_o;
 logic [DATA_W-1:0]   tb_pma_data;
 
 logic [BLOCK_W-1:0]  tb_pcs_data;
-logic [BLOCK_W-1:0]  tb_pcs_data_arr[SEQ_N-1:0];
+logic [BLOCK_W-1:0]  tb_pcs_data_arr[SEQ_N:0];
 
 /* verilator lint_off UNUSEDSIGNAL */
 /* debug signal to view the difference between gotten
@@ -43,7 +43,7 @@ logic [BLOCK_W-1:0] tb_pcs_data_diff;
 /* verilator lint_on UNUSEDSIGNAL */
 
 reg   [DATA_W-1:0]  tb_buff_q;
-logic [DATA_W-1:0]  tb_buff_next_arr[SEQ_N-1:0];
+logic [DATA_W-1:0]  tb_buff_next_arr[SEQ_N:0];
 logic [DATA_W-1:0]  tb_buff_next;
 
 logic [BLOCK_W-1:0] tb_gb_data;
@@ -56,7 +56,7 @@ task simple_test();
 	// 64 bit pma data
 	logic [DATA_W-1:0] pma;
 
-	for( int seq = 0; seq< SEQ_N; seq++ ) begin
+	for( int seq = 0; seq<= SEQ_N; seq++ ) begin
 		lock_v_i = 1'b1;
 		slip_v_i = 1'b0;
 		//pma = {8{8'h01}};
