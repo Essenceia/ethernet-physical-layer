@@ -94,18 +94,21 @@ pcs_tx#(
 
 /* RX -> TX loopback 
  * flop nreset */
-reg   tx_nreset_next;
+reg   tx_nreset_3_next;
 reg   tx_nreset_2_next;
+reg   tx_nreset_next;
 
 always @(posedge tx_par_clk) begin
 	if (~nreset) begin
-		tx_nreset_next <= 1'b0;
+		tx_nreset_3_next <= 1'b0;
 		tx_nreset_2_next <= 1'b0;
-		tx_nreset      <= 1'b0;
+		tx_nreset_next   <= 1'b0;
+		tx_nreset        <= 1'b0;
 	end else begin
-		tx_nreset_next <= nreset;
-		tx_nreset_2_next <= tx_nreset_next;
-		tx_nreset      <= tx_nreset_2_next; 
+		tx_nreset_3_next <= nreset;
+		tx_nreset_2_next <= tx_nreset_3_next;
+		tx_nreset_next   <= tx_nreset_2_next;
+		tx_nreset        <= tx_nreset_next; 
 	end
 end 
  
@@ -121,10 +124,12 @@ always @(posedge tx_par_clk) begin
 end
 
 `ifdef DEBUG
+/* verilator lint_off UNUSEDSIGNAL */
 reg debug_rx_valid_q;
 always @(posedge tx_par_clk) begin
 	debug_rx_valid_q <= debug_rx_valid;
 end
+/* verilator lint_on UNUSEDSIGNAL */
 `endif
  
 endmodule	

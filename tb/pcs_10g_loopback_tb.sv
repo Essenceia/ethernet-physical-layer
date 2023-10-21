@@ -6,7 +6,7 @@
  * This code is provided "as is" without any express or implied warranties. */ 
 
 `ifndef TB_LOOP_N
-`define TB_LOOP_N 2
+`define TB_LOOP_N 10
 `endif
 
 `define SYNC_CTRL 2'b10

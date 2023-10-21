@@ -18,7 +18,9 @@ module pcs_tx#(
 	parameter LANE_N = IS_10G ? 1 : 4,
 	parameter DATA_W = 64,
 	parameter HEAD_W = 2,
+	/* verilator lint_off UNUSEDPARAM */
 	parameter BLOCK_W = DATA_W+HEAD_W,
+	/* verilator lint_on UNUSEDPARAM */
 	parameter KEEP_W = DATA_W/8,
 	parameter LANE0_CNT_N = IS_10G ? 2 : 1,
 	parameter XGMII_DATA_W = LANE_N*DATA_W,
@@ -151,7 +153,6 @@ end //!IS_10G
 generate
 for(l=0; l<LANE_N; l++) begin : gen_gearbox_lane
 	gearbox_tx #(
-		.BLOCK_DATA_W(BLOCK_W),
 		.DATA_W(DATA_W),
 		.HEAD_W(HEAD_W)
 	)m_gearbox_tx(
