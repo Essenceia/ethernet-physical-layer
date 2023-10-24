@@ -16,12 +16,12 @@ ifndef compat
 compat:=
 endif
 
-.PHONY:setup lint synth place
+.PHONY: build setup lint synth place
 ########
 # Init #
 ########
 # init project
-$(PROJECT_FILE):quartus_init.tcl
+init:quartus_init.tcl
 	$(QUARTUS_TCL) $<	 
 
  
@@ -79,12 +79,18 @@ synth:
 
 # place and route
 place:
-	quartus_fit $(PROJECT) --incremental_fitting
+	quartus_fit $(PROJECT)
 
-timing: quartus_place.tcl
+timing: quartus_timing.tcl
 	quartus_sta -t $<
-	quartus_sta $(PROJECT) --do_report_timing
-	
+
+build:
+	$(MAKE) init	
+	$(MAKE) setup
+	$(MAKE) synth
+	$(MAKE) place
+	$(MAKE) timing
+
 # clean
 clean:
 	rm -rf db

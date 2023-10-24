@@ -65,8 +65,6 @@ logic gx_tx_ser_clk;// from core -> transiver fPLL
 assign slow_clk = OSC_50m;
 
 reg   io_nreset;
-logic ref_clk;
-assign ref_clk = gx_644M_clk;
 
 /*
 // iopll
@@ -119,7 +117,7 @@ phyfpll m_sfp1_tx_fpll (
 */
 atxpll m_sfp1_tx_atxpll(
 		.pll_powerdown(gx_tx_pll_powerdown), // pll_powerdown.pll_powerdown
-		.pll_refclk0(ref_clk),               //   pll_refclk0.clk
+		.pll_refclk0(gx_644M_clk),               //   pll_refclk0.clk
 		.tx_serial_clk(gx_tx_ser_clk),       // tx_serial_clk.clk
 		.pll_locked(gx_tx_pll_locked),       //    pll_locked.pll_locked
 		.pll_cal_busy(gx_tx_pll_cal_busy)    //  pll_cal_busy.pll_cal_busy
@@ -138,12 +136,6 @@ always @(posedge slow_clk) begin
 end
 
 /* GX reset controller */
-logic gx_rx_ready;
-logic gx_tx_ready;
-logic gx_nreset;
-reg   nreset_next;
-reg   nreset;
-
 logic gx_rx_is_lockedtodata;
 
 logic gx_tx_analogreset;  
@@ -174,7 +166,18 @@ phy_rst m_phy_rst (
         .rx_cal_busy0        (gx_rx_cal_busy)         //   input,  width = 1,        rx_cal_busy0.rx_cal_busy
 );
 /* 2ff cdc for reset */
-assign gx_nreset = ~( gx_rx_ready & gx_tx_ready );
+logic gx_rx_ready;
+logic gx_tx_ready;
+logic gx_nreset_next;
+reg   gx_nreset;
+reg   nreset_next;
+reg   nreset;
+
+assign gx_nreset_next = ~( gx_rx_ready & gx_tx_ready );
+
+always @(posedge slow_clk) begin
+	gx_nreset_next <= gx_nreset;
+end
 
 always @(posedge gx_rx_par_clk) begin
 	nreset_next <= gx_nreset;
@@ -202,7 +205,7 @@ trans m_sfp1 (
         .tx_cal_busy             (gx_tx_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
         .rx_cal_busy             (gx_rx_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
         .tx_serial_clk0          (gx_tx_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
-        .rx_cdr_refclk0          (ref_clk), // not using cdc fifo TODO : remove
+        .rx_cdr_refclk0          (gx_644M_clk), // not using cdc fifo TODO : remove
         .tx_serial_data          (gx_tx_ser_data),          //  output,   width = 1,          tx_serial_data.tx_serial_data
         .rx_serial_data          (gx_rx_ser_data),          //   input,   width = 1,          rx_serial_data.rx_serial_data
         .rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
