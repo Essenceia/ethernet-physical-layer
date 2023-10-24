@@ -1,10 +1,9 @@
-package require qsys
+package require -exact qsys 21.3
 
 # create the system "iopll"
 proc do_create_iopll {} {
 	# create the system
 	create_system iopll
-	
 	set_project_property DEVICE {10CX150YF780E5G}
 	set_project_property DEVICE_FAMILY {Cyclone 10 GX}
 	set_project_property HIDE_FROM_IP_CATALOG {true}
@@ -141,7 +140,7 @@ proc do_create_iopll {} {
 	set_instance_parameter_value iopll_0 {gui_new_mif_file_path} {~/pll.mif}
 	set_instance_parameter_value iopll_0 {gui_number_of_clocks} {1}
 	set_instance_parameter_value iopll_0 {gui_operation_mode} {direct}
-	set_instance_parameter_value iopll_0 {gui_output_clock_frequency0} {161.13}
+	set_instance_parameter_value iopll_0 {gui_output_clock_frequency0} {161.1328}
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency1} {100.0}
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency10} {100.0}
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency11} {100.0}
@@ -159,7 +158,7 @@ proc do_create_iopll {} {
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency7} {100.0}
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency8} {100.0}
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency9} {100.0}
-	set_instance_parameter_value iopll_0 {gui_output_clock_frequency_ps0} {6206.169}
+	set_instance_parameter_value iopll_0 {gui_output_clock_frequency_ps0} {6206.061}
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency_ps1} {10000.0}
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency_ps10} {10000.0}
 	set_instance_parameter_value iopll_0 {gui_output_clock_frequency_ps11} {10000.0}

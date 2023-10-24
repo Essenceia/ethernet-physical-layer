@@ -1,10 +1,9 @@
-package require qsys
+package require -exact qsys 21.3
 
 # create the system "fpll"
 proc do_create_fpll {} {
 	# create the system
 	create_system fpll
-	
 	set_project_property DEVICE {10CX150YF780E5G}
 	set_project_property DEVICE_FAMILY {Cyclone 10 GX}
 	set_project_property HIDE_FROM_IP_CATALOG {true}
@@ -37,7 +36,7 @@ proc do_create_fpll {} {
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk1_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk2_frequency} {100.0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_outclk3_frequency} {100.0}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_refclk_frequency} {161.13}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_desired_refclk_frequency} {161.1328}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_50G_support} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_active_clk} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_cascade_out} {0}
@@ -49,10 +48,10 @@ proc do_create_fpll {} {
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_manual_hssi_counters} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_phase_alignment} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_enable_pld_cal_busy_port} {1}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_fpll_mode} {0}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_fpll_mode} {2}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_fractional_x} {32}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_hip_cal_en} {0}
-	set_instance_parameter_value xcvr_fpll_a10_0 {gui_hssi_output_clock_frequency} {161.13}
+	set_instance_parameter_value xcvr_fpll_a10_0 {gui_hssi_output_clock_frequency} {5156.25}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_hssi_prot_mode} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_iqtxrxclk_outclk_index} {0}
 	set_instance_parameter_value xcvr_fpll_a10_0 {gui_is_downstream_cascaded_pll} {0}
@@ -122,7 +121,7 @@ proc do_create_fpll {} {
 	set_interface_property pll_refclk0 EXPORT_OF xcvr_fpll_a10_0.pll_refclk0
 	set_interface_property pll_powerdown EXPORT_OF xcvr_fpll_a10_0.pll_powerdown
 	set_interface_property pll_locked EXPORT_OF xcvr_fpll_a10_0.pll_locked
-	set_interface_property outclk0 EXPORT_OF xcvr_fpll_a10_0.outclk0
+	set_interface_property tx_serial_clk EXPORT_OF xcvr_fpll_a10_0.tx_serial_clk
 	set_interface_property pll_cal_busy EXPORT_OF xcvr_fpll_a10_0.pll_cal_busy
 
 	# set values for exposed HDL parameters

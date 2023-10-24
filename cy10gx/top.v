@@ -1,3 +1,4 @@
+
 module top #(
 	localparam IS_10G = 1,
 	localparam HEAD_W = 2,
@@ -64,10 +65,14 @@ logic gx_tx_ser_clk;// from core -> transiver fPLL
 assign slow_clk = OSC_50m;
 
 reg   io_nreset;
+logic ref_clk;
+assign ref_clk = gx_644M_clk;
+
 /*
 // iopll
-logic ref_clk;      // ioPLL 644.5312 -> 161,13 MHz 
+// ref_clk 644.5312 -> 161,13 MHz 
 logic iopll_locked;
+logic pll_locked;
 
 iopll m_iopll_refclk (
   .refclk   (gx_644M_clk),   //   input,  width = 1,  refclk.clk
@@ -75,7 +80,8 @@ iopll m_iopll_refclk (
   .rst      (io_nreset),      //   input,  width = 1,   reset.reset
   .outclk_0 (ref_clk)  //  output,  width = 1, outclk0.clk
 );
-
+*/
+/*
 // phase aligner
 logic pa_fpll_locked;
 logic pa_fpll_cal_busy;
@@ -92,23 +98,34 @@ phase_align_fpll m_phase_align(
 	.outclk1       ()
 );
 */
-/* tx gx fpll */
-logic gx_tx_fpll_reset;
-logic gx_tx_fpll_locked;
-logic gx_tx_fpll_powerdown;
-logic gx_tx_fpll_cal_busy;
 
 
+logic gx_tx_pll_reset;
+logic gx_tx_pll_locked;
+logic gx_tx_pll_powerdown;
+logic gx_tx_pll_cal_busy;
 
+/*
+// tx gx fpll 
 phyfpll m_sfp1_tx_fpll (
 	//.pll_refclk0   (logic_clk),   
-	.pll_refclk0   (gx_644M_clk),   
+	//.pll_refclk0   (gx_644M_clk),   
+	.pll_refclk0   (ref_clk),   
 	.pll_powerdown (rst_pll_powerdown),
-	.pll_locked    (gx_tx_fpll_locked),
+	.pll_locked    (gx_tx_pll_locked),
 	.tx_serial_clk (gx_tx_ser_clk),
-	.pll_cal_busy  (gx_tx_fpll_cal_busy)
+	.pll_cal_busy  (gx_tx_pll_cal_busy)
 );
-
+*/
+atxpll m_sfp1_tx_atxpll(
+		.pll_powerdown(gx_tx_pll_powerdown), // pll_powerdown.pll_powerdown
+		.pll_refclk0(ref_clk),               //   pll_refclk0.clk
+		.tx_serial_clk(gx_tx_ser_clk),       // tx_serial_clk.clk
+		.pll_locked(gx_tx_pll_locked),       //    pll_locked.pll_locked
+		.pll_cal_busy(gx_tx_pll_cal_busy)    //  pll_cal_busy.pll_cal_busy
+);
+	
+assign pll_locked = gx_tx_pll_locked;
 
 /* reset from IO, go through 2ff sync before use */
 logic io_nreset_raw;
@@ -137,7 +154,7 @@ logic gx_rx_cal_busy;
 
 logic rst_tx_cal_busy;
 logic gx_tx_cal_busy;       
-assign rst_tx_cal_busy = gx_tx_fpll_cal_busy | gx_tx_cal_busy; 
+assign rst_tx_cal_busy = gx_tx_pll_cal_busy | gx_tx_cal_busy; 
 
 phy_rst m_phy_rst (
         .clock               (slow_clk),              //   input,  width = 1,               clock.clk
@@ -146,7 +163,7 @@ phy_rst m_phy_rst (
         .tx_analogreset0     (gx_tx_analogreset),     //  output,  width = 1,     tx_analogreset0.tx_analogreset
         .tx_digitalreset0    (gx_tx_digitalreset),    //  output,  width = 1,    tx_digitalreset0.tx_digitalreset
         .tx_ready0           (gx_tx_ready),           //  output,  width = 1,           tx_ready0.tx_ready
-        .pll_locked0         (gx_tx_fpll_locked),        //   input,  width = 1,         pll_locked0.pll_locked
+        .pll_locked0         (pll_locked),        //   input,  width = 1,         pll_locked0.pll_locked
         .pll_select          (1'b0),          //   input,  width = 1,          pll_select.pll_select
         .tx_cal_busy0        (rst_tx_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
 
@@ -185,7 +202,7 @@ trans m_sfp1 (
         .tx_cal_busy             (gx_tx_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
         .rx_cal_busy             (gx_rx_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
         .tx_serial_clk0          (gx_tx_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
-        .rx_cdr_refclk0          (gx_644M_clk), // not using cdc fifo TODO : remove
+        .rx_cdr_refclk0          (ref_clk), // not using cdc fifo TODO : remove
         .tx_serial_data          (gx_tx_ser_data),          //  output,   width = 1,          tx_serial_data.tx_serial_data
         .rx_serial_data          (gx_rx_ser_data),          //   input,   width = 1,          rx_serial_data.rx_serial_data
         .rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata

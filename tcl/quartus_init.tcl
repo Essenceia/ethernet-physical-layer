@@ -9,7 +9,7 @@ set project_name "PCS"
 
 set fpga_family "Cyclone 10 GX"
 
-set project_dir "pcs"
+set project_dir $project_name
 
 set fpga_device 10CX150YF780E5G
 
