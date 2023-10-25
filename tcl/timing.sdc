@@ -15,6 +15,16 @@ create_clock -period 1.551 [get_ports GXB1D_644M]
 # 125 MHz oscillator on transiver bank 1D
 create_clock -period 8.0 [get_ports GXB1D_125M]  
 
+
+# Internal logic periode
+set lp 6.204 
+# GX parallel clks
+set regs [get_clocks m_sfp*_clkout]
+foreach_in_collection reg $regs {
+	puts [append "clock : " [get_clock_info -name $reg]]
+	create_clock -period $lp [get_clock_info -name $reg]
+}
+
 # User contrained generate clocks : for PLLs
 # ATX -> tx transiver
 derive_pll_clocks
