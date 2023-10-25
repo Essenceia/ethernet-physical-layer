@@ -35,6 +35,14 @@ foreach_in_collection node $nodes {
 }
 
 
+proc readclocks { regex } {
+set clocks [get_clocks $regex]
+foreach_in_collection clk $clocks {
+    puts [get_clock_info -name $clk]
+}
+}
+
+
 proc setup_timing { project_name } {
 # Open project
 project_open $project_name 
