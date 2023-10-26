@@ -16,13 +16,14 @@ create_clock -period 1.551 [get_ports GXB1D_644M]
 create_clock -period 8.0 [get_ports GXB1D_125M]  
 
 # nreset 2ff sync
-set_false_path -from [get_clocks OSC_50m] -to [get_clocks *rx_clkout]
-# rx -> tx data
-set_false_path -from [get_clocks *rx_clkout] -to [get_clocks *tx_clkout]
+set_false_path -from [get_registers gx_nreset] -to [get_registers nreset_next]
 
 # User contrained generate clocks : for PLLs
 # ATX -> tx transiver
 derive_pll_clocks
+
+# rx -> tx, data and reset
+set_multicycle_path -from [get_clocks *rx_clkout] -to [get_clocks *tx_clkout] 2
 
 # User contrained clock uncertainty
 derive_clock_uncertainty 
