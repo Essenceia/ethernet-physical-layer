@@ -2,10 +2,6 @@
 
 - add formal assertions
 
-- verilator sim: 
-    - set default values to 'X ?
-    - find a way to force re-evaliation of assignations in generate constructs for tb
-
 - 10BASE-R
     - add testbench for full pcs tx lite in 16b
 
@@ -15,18 +11,17 @@
     - CDC
 
 - RX 
-    - add gearbox to pcs top
     - write 10G version
     - test 10G version
-    - deskew tb broken : fix
     - CDC
-    - move pcs fsm into gearbox
+    - fix broken geabox tb
 
 - Code clean :
     - rename `IS_40G` parameter to `IS_10G`
 
-- TB :
-    - Re-add gearbox's to tb
-    - add 10g pcs tb
+- TCL:
+    - singal tap file when I have fpga and probe
 
-- Move 10G PCS it's own module
+- TB :
+    - add 10g pcs tb
+    - quartus simulation tb
