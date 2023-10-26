@@ -116,7 +116,7 @@ phyfpll m_sfp1_tx_fpll (
 );
 */
 atxpll m_sfp1_tx_atxpll(
-		.pll_powerdown(gx_tx_pll_powerdown), // pll_powerdown.pll_powerdown
+		.pll_powerdown(rst_pll_powerdown), // pll_powerdown.pll_powerdown
 		.pll_refclk0(gx_644M_clk),               //   pll_refclk0.clk
 		.tx_serial_clk(gx_tx_ser_clk),       // tx_serial_clk.clk
 		.pll_locked(gx_tx_pll_locked),       //    pll_locked.pll_locked
@@ -148,6 +148,9 @@ logic rst_tx_cal_busy;
 logic gx_tx_cal_busy;       
 assign rst_tx_cal_busy = gx_tx_pll_cal_busy | gx_tx_cal_busy; 
 
+logic gx_rx_ready;
+logic gx_tx_ready;
+
 phy_rst m_phy_rst (
         .clock               (slow_clk),              //   input,  width = 1,               clock.clk
         .reset               (~io_nreset),            //   input,  width = 1,               reset.reset
@@ -166,8 +169,6 @@ phy_rst m_phy_rst (
         .rx_cal_busy0        (gx_rx_cal_busy)         //   input,  width = 1,        rx_cal_busy0.rx_cal_busy
 );
 /* 2ff cdc for reset */
-logic gx_rx_ready;
-logic gx_tx_ready;
 logic gx_nreset_next;
 reg   gx_nreset;
 reg   nreset_next;
@@ -176,7 +177,7 @@ reg   nreset;
 assign gx_nreset_next = ~( gx_rx_ready & gx_tx_ready );
 
 always @(posedge slow_clk) begin
-	gx_nreset_next <= gx_nreset;
+	gx_nreset <= gx_nreset_next;
 end
 
 always @(posedge gx_rx_par_clk) begin
@@ -207,7 +208,7 @@ trans m_sfp1 (
         .tx_serial_clk0          (gx_tx_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
         .rx_cdr_refclk0          (gx_644M_clk), // not using cdc fifo TODO : remove
         .tx_serial_data          (gx_tx_ser_data),          //  output,   width = 1,          tx_serial_data.tx_serial_data
-        .rx_serial_data          (gx_rx_ser_data),          //   input,   width = 1,          rx_serial_data.rx_serial_data
+        .rx_serial_data          (gx_rx_ser_data),        //   input,   width = 1,          rx_serial_data.rx_serial_data
         .rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
         .rx_set_locktoref        (),        //   input,   width = 1,        rx_set_locktoref.rx_set_locktoref
         .rx_is_lockedtoref       (gx_rx_is_lockedtoref),       //  output,   width = 1,       rx_is_lockedtoref.rx_is_lockedtoref
@@ -237,7 +238,7 @@ logic [KEEP_W-1:0] pcs_rx_keep;
 )m_pcs_rx(
 .nreset          (nreset),
 .clk             (gx_rx_par_clk),
-.serdes_lock_v_i (gx_rx_ready),
+.serdes_lock_v_i (1'b1),// always ready otherwise reset
 .serdes_data_i   (gx_rx_parallel_data),
 .signal_v_o      (pcs_rx_signal_ok), 
 .valid_o         (pcs_rx_valid),
@@ -254,10 +255,19 @@ logic [KEEP_W-1:0] pcs_rx_keep;
 /* RCS TX */
 reg pcs_tx_nreset;
 
-reg pcs_tx_ctrl;
-reg pcs_tx_idle;
-reg pcs_tx_term;
-reg pcs_tx_err;
+// next
+reg                   pcs_tx_ctrl_next;
+reg                   pcs_tx_idle_next;
+reg                   pcs_tx_term_next;
+reg                   pcs_tx_err_next;
+reg [LANE0_CNT_N-1:0] pcs_tx_start_next;
+reg [DATA_W-1:0]      pcs_tx_data_next;
+reg [KEEP_W-1:0]      pcs_tx_keep_next;
+// tx input
+reg                   pcs_tx_ctrl;
+reg                   pcs_tx_idle;
+reg                   pcs_tx_term;
+reg                   pcs_tx_err;
 reg [LANE0_CNT_N-1:0] pcs_tx_start;
 reg [DATA_W-1:0]      pcs_tx_data;
 reg [KEEP_W-1:0]      pcs_tx_keep;
@@ -286,23 +296,36 @@ pcs_tx#(
 
 /* RX -> TX loopback 
  * flop nreset */
+reg   pcs_tx_nreset_2_next;
 reg   pcs_tx_nreset_next;
 
 always @(posedge gx_rx_par_clk) begin
-	pcs_tx_nreset_next <= nreset;
-	pcs_tx_nreset      <= pcs_tx_nreset_next; 
+	pcs_tx_nreset_2_next <= nreset;
 end 
+always @(posedge gx_tx_par_clk) begin
+	pcs_tx_nreset_next <= pcs_tx_nreset_2_next; 	
+	pcs_tx_nreset      <= pcs_tx_nreset_next; 	
+end
  
 /* Flop rx data before sending to tx */
 always @(posedge gx_rx_par_clk) begin
-	pcs_tx_ctrl  <= pcs_rx_ctrl;
-	pcs_tx_idle  <= pcs_rx_idle;
-	pcs_tx_term  <= pcs_rx_term;
-	pcs_tx_err   <= pcs_rx_err;	
-	pcs_tx_start <= pcs_rx_start;
-	pcs_tx_data  <= pcs_rx_data;
-	pcs_tx_keep  <= pcs_rx_keep;
+	pcs_tx_ctrl_next  <= pcs_rx_ctrl;
+	pcs_tx_idle_next  <= pcs_rx_idle;
+	pcs_tx_term_next  <= pcs_rx_term;
+	pcs_tx_err_next   <= pcs_rx_err;	
+	pcs_tx_start_next <= pcs_rx_start;
+	pcs_tx_data_next  <= pcs_rx_data;
+	pcs_tx_keep_next  <= pcs_rx_keep;
 end
 
+always @(posedge gx_tx_par_clk) begin
+	pcs_tx_ctrl  <= pcs_tx_ctrl_next;
+	pcs_tx_idle  <= pcs_tx_idle_next;
+	pcs_tx_term  <= pcs_tx_term_next;
+	pcs_tx_err   <= pcs_tx_err_next;	
+	pcs_tx_start <= pcs_tx_start_next;
+	pcs_tx_data  <= pcs_tx_data_next;
+	pcs_tx_keep  <= pcs_tx_keep_next;
+end
  
 endmodule
