@@ -25,3 +25,4 @@
 !*.sdc
 !cy10gx
 !clean_ip_tcl.sh
+!*.stp
