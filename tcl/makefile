@@ -94,6 +94,7 @@ build:
 	$(MAKE) init	
 	$(MAKE) setup
 	$(MAKE) rebuild_timing
+	$(MAKE) assmeble
 
 rebuild_timing:
 	$(MAKE) synth
