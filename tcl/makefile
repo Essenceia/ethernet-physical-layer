@@ -87,6 +87,9 @@ timing: quartus_timing.tcl
 build:
 	$(MAKE) init	
 	$(MAKE) setup
+	$(MAKE) rebuild_timing
+
+rebuild_timing:
 	$(MAKE) synth
 	$(MAKE) place
 	$(MAKE) timing
