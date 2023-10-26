@@ -53,5 +53,9 @@ set_global_assignment -name VERILOG_FILE $fpga_dir/top.v
 # set top
 set_global_assignment -name TOP_LEVEL_ENTITY top
 
+# Singal tap
+set_global_assignment -name ENABLE_SIGNALTAP ON
+set_global_assignment -name USE_SIGNALTAP_FILE tap.stp
+
 #close
 project_close

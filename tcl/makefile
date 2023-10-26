@@ -84,6 +84,12 @@ place:
 timing: quartus_timing.tcl
 	quartus_sta -t $<
 
+assemble:
+	quartus_asm $(PROJECT)
+
+tap:
+	quartus_stp $(PROJECT) 	
+
 build:
 	$(MAKE) init	
 	$(MAKE) setup
