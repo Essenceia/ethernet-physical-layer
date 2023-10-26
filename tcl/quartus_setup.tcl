@@ -30,7 +30,7 @@ set_global_assignment -name VERILOG_FILE $rtl_dir/gearbox_tx.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/pcs_enc_lite.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/pcs_tx.v
 
-#RX
+# RX
 set_global_assignment -name VERILOG_FILE $rtl_dir/_64b66b_rx.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/am_lock_rx.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/block_sync_rx.v
@@ -41,7 +41,8 @@ set_global_assignment -name VERILOG_FILE $rtl_dir/gearbox_rx.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/dec_lite_rx.v
 set_global_assignment -name VERILOG_FILE $rtl_dir/pcs_rx.v
 
-
+# Loopback
+set_global_assignment -name VERILOG_FILE $rtl_dir/pcs_loopback.v
 
 #IP
 # ip files should already be included in project by the qsys tcl generation

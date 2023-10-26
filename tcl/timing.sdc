@@ -23,7 +23,8 @@ set_false_path -from [get_registers gx_nreset] -to [get_registers nreset_next]
 derive_pll_clocks
 
 # rx -> tx, data and reset
-set_multicycle_path -from [get_clocks *rx_clkout] -to [get_clocks *tx_clkout] 2
+set_false_path -from [get_registers m_pcs_loopback|pcs_rx*] \
+-to [get_registers m_pcs_loopback|pcs_tx*] 
 
 # User contrained clock uncertainty
 derive_clock_uncertainty 

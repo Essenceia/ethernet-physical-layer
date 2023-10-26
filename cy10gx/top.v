@@ -253,26 +253,19 @@ logic [KEEP_W-1:0] pcs_rx_keep;
 );
 
 /* RCS TX */
-reg pcs_tx_nreset;
 
-// next
-reg                   pcs_tx_ctrl_next;
-reg                   pcs_tx_idle_next;
-reg                   pcs_tx_term_next;
-reg                   pcs_tx_err_next;
-reg [LANE0_CNT_N-1:0] pcs_tx_start_next;
-reg [DATA_W-1:0]      pcs_tx_data_next;
-reg [KEEP_W-1:0]      pcs_tx_keep_next;
 // tx input
-reg                   pcs_tx_ctrl;
-reg                   pcs_tx_idle;
-reg                   pcs_tx_term;
-reg                   pcs_tx_err;
-reg [LANE0_CNT_N-1:0] pcs_tx_start;
-reg [DATA_W-1:0]      pcs_tx_data;
-reg [KEEP_W-1:0]      pcs_tx_keep;
+logic                   pcs_tx_nreset;
+logic                   pcs_tx_ctrl;
+logic                   pcs_tx_idle;
+logic                   pcs_tx_term;
+logic                   pcs_tx_err;
+logic [LANE0_CNT_N-1:0] pcs_tx_start;
+logic [DATA_W-1:0]      pcs_tx_data;
+logic [KEEP_W-1:0]      pcs_tx_keep;
 
-logic pcs_tx_ready;
+/* keep unusued signal for debug */
+logic debug_pcs_tx_ready;
 
 pcs_tx#(
 .IS_10G(IS_10G)
@@ -289,43 +282,35 @@ pcs_tx#(
 .data_i     (pcs_tx_data),
 
 .marker_v_o (),
-.ready_o    (pcs_tx_ready),
+.ready_o    (debug_pcs_tx_ready),
 
 .serdes_data_o(gx_tx_parallel_data)
 );
 
-/* RX -> TX loopback 
- * flop nreset */
-reg   pcs_tx_nreset_2_next;
-reg   pcs_tx_nreset_next;
+/* data loopback */
+pcs_loopback #( .LANE0_CNT_N(LANE0_CNT_N), .DATA_W(DATA_W))
+m_pcs_loopback(
+.rx_clk(gx_rx_par_clk),
+.rx_nreset(nreset),
+.tx_clk(gx_tx_par_clk),
+.tx_nreset(pcs_tx_nreset),
 
-always @(posedge gx_rx_par_clk) begin
-	pcs_tx_nreset_2_next <= nreset;
-end 
-always @(posedge gx_tx_par_clk) begin
-	pcs_tx_nreset_next <= pcs_tx_nreset_2_next; 	
-	pcs_tx_nreset      <= pcs_tx_nreset_next; 	
-end
- 
-/* Flop rx data before sending to tx */
-always @(posedge gx_rx_par_clk) begin
-	pcs_tx_ctrl_next  <= pcs_rx_ctrl;
-	pcs_tx_idle_next  <= pcs_rx_idle;
-	pcs_tx_term_next  <= pcs_rx_term;
-	pcs_tx_err_next   <= pcs_rx_err;	
-	pcs_tx_start_next <= pcs_rx_start;
-	pcs_tx_data_next  <= pcs_rx_data;
-	pcs_tx_keep_next  <= pcs_rx_keep;
-end
+.pcs_rx_ctrl_i(pcs_rx_ctrl),
+.pcs_rx_idle_i(pcs_rx_idle),
+.pcs_rx_term_i(pcs_rx_term),
+.pcs_rx_err_i(pcs_rx_err),
+.pcs_rx_start_i(pcs_rx_start),
+.pcs_rx_data_i(pcs_rx_data),
+.pcs_rx_keep_i(pcs_rx_keep),
 
-always @(posedge gx_tx_par_clk) begin
-	pcs_tx_ctrl  <= pcs_tx_ctrl_next;
-	pcs_tx_idle  <= pcs_tx_idle_next;
-	pcs_tx_term  <= pcs_tx_term_next;
-	pcs_tx_err   <= pcs_tx_err_next;	
-	pcs_tx_start <= pcs_tx_start_next;
-	pcs_tx_data  <= pcs_tx_data_next;
-	pcs_tx_keep  <= pcs_tx_keep_next;
-end
+.pcs_tx_ctrl_o(pcs_tx_ctrl),
+.pcs_tx_idle_o(pcs_tx_idle),
+.pcs_tx_term_o(pcs_tx_term),
+.pcs_tx_err_o(pcs_tx_err),
+.pcs_tx_start_o(pcs_tx_start),
+.pcs_tx_data_o(pcs_tx_data),
+.pcs_tx_keep_o(pcs_tx_keep)
+
+);
  
 endmodule
