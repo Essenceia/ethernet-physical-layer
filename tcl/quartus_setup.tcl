@@ -50,6 +50,7 @@ set_global_assignment -name VERILOG_FILE $rtl_dir/pcs_loopback.v
 
 #TOP
 set_global_assignment -name VERILOG_FILE $fpga_dir/top.v
+set_global_assignment -name VERILOG_FILE $fpga_dir/top_pcs.v
 # set top
 set_global_assignment -name TOP_LEVEL_ENTITY top
 

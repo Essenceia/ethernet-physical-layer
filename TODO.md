@@ -7,13 +7,11 @@
 
 - TX
     - test 10G version
-    - phase align
-    - CDC
 
 - RX 
     - write 10G version
     - test 10G version
-    - CDC
+    - 40G CDC
     - fix broken geabox tb
 
 - Code clean :
