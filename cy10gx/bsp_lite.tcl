@@ -15,15 +15,34 @@ set_instance_assignment -name IO_STANDARD LVDS -to GXB1D_125M -entity top
 set_instance_assignment -name IO_STANDARD LVDS -to GXB1D_644M -entity top
 
 #[Transceiver Lanes (Bank 1D)]
-set_location_assignment PIN_F26 -to SFP1_RXD
-set_location_assignment PIN_F25 -to "SFP1_RXD_N"
-set_instance_assignment -name IO_STANDARD "HIGH SPEED DIFFERENTIAL I/O" -to SFP1_RXD -entity top
-set_instance_assignment -name XCVR_VCCR_VCCT_VOLTAGE 0_9V -to SFP1_RXD -entity top
+set_location_assignment PIN_P26 -to GXB1D_RXD[0]
+set_location_assignment PIN_M26 -to GXB1D_RXD[1]
+set_location_assignment PIN_K26 -to GXB1D_RXD[2]
+set_location_assignment PIN_H26 -to GXB1D_RXD[3]
+set_location_assignment PIN_F26 -to GXB1D_RXD[4]
+set_location_assignment PIN_D26 -to GXB1D_RXD[5]
+set_location_assignment PIN_D25 -to "GXB1D_RXD_N[5]"
+set_location_assignment PIN_F25 -to "GXB1D_RXD_N[4]"
+set_location_assignment PIN_H25 -to "GXB1D_RXD_N[3]"
+set_location_assignment PIN_K25 -to "GXB1D_RXD_N[2]"
+set_location_assignment PIN_M25 -to "GXB1D_RXD_N[1]"
+set_location_assignment PIN_P25 -to "GXB1D_RXD_N[0]"
+set_instance_assignment -name IO_STANDARD "HIGH SPEED DIFFERENTIAL I/O" -to GXB1D_RXD[*] -entity top
+set_instance_assignment -name XCVR_VCCR_VCCT_VOLTAGE 0_9V -to GXB1D_TXD[0] -entity top
 
-set_location_assignment PIN_G28 -to SFP1_TXD
-set_location_assignment PIN_G27 -to "SFP1_TXD_N"
-set_instance_assignment -name IO_STANDARD "HIGH SPEED DIFFERENTIAL I/O" -to SFP1_TXD -entity top
-set_instance_assignment -name XCVR_VCCR_VCCT_VOLTAGE 0_9V -to SFP1_TXD -entity top
+set_location_assignment PIN_N28 -to GXB1D_TXD[1]
+set_location_assignment PIN_L28 -to GXB1D_TXD[2]
+set_location_assignment PIN_J28 -to GXB1D_TXD[3]
+set_location_assignment PIN_G28 -to GXB1D_TXD[4]
+set_location_assignment PIN_E28 -to GXB1D_TXD[5]
+set_location_assignment PIN_E27 -to "GXB1D_TXD_N[5]"
+set_location_assignment PIN_G27 -to "GXB1D_TXD_N[4]"
+set_location_assignment PIN_J27 -to "GXB1D_TXD_N[3]"
+set_location_assignment PIN_L27 -to "GXB1D_TXD_N[2]"
+set_location_assignment PIN_N27 -to "GXB1D_TXD_N[1]"
+set_location_assignment PIN_R27 -to "GXB1D_TXD_N[0]"
+set_instance_assignment -name IO_STANDARD "HIGH SPEED DIFFERENTIAL I/O" -to GXB1D_TXD[*] -entity top
+set_instance_assignment -name XCVR_VCCR_VCCT_VOLTAGE 0_9V -to GXB1D_TXD[*] -entity top
 
 #[3.0V I/O]
 set_location_assignment PIN_A24 -to OSC_50m
