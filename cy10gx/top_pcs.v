@@ -79,7 +79,7 @@ reg   gx_nreset_q;
 reg   nreset_next;
 reg   nreset;
 
-always @(posedge slow_clk) begin
+always @(posedge clk_50m) begin
 	gx_nreset_q <= gx_nreset;
 end
 

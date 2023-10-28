@@ -4,7 +4,7 @@
  * timing constraints rule. */
 module pcs_loopback#(
 	parameter DATA_W = 64,
-	parameter LANE_N = 1
+	parameter LANE_N = 1,
 	parameter LANE0_CNT_N = 1,
 	localparam KEEP_W = DATA_W/8
 )(

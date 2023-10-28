@@ -1,5 +1,7 @@
-
+/* TOP module for cyclone 10 gx fpga 
+ * PCS loopback */
 module top #(
+	localparam SFP1_CH = 4,
 	localparam CH_N = 5,
 	localparam HEAD_W = 2,
 	localparam DATA_W = 64,
@@ -54,7 +56,7 @@ ALT_INBUF_DIFF m_inbuf_diff_rx (
 
 ALT_OUTBUF_DIFF m_outbuf_diff_txd(
 	.i   (gx_tx_ser_data[l]),
-	.o   (GXB1D_TXD)[l],
+	.o   (GXB1D_TXD[l]),
 	.obar(GXB1D_TXD_N[l])
 );
 end
@@ -62,73 +64,21 @@ endgenerate
 
 /* clk network
  * generate master clock at 161.MHz */
-logic slow_clk;     // 50Mhz integer clock
 logic gx_rx_par_clk;// parallel clk
 logic gx_tx_par_clk;// parallel clk
 logic gx_tx_ser_clk;// from core -> transiver fPLL
 
-assign slow_clk = OSC_50m;
-
 reg   io_nreset;
-//logic gx_tx_pll_reset;
-//logic gx_tx_pll_locked;
-//logic gx_tx_pll_powerdown;
-//logic gx_tx_pll_cal_busy;
-//
-//atxpll m_sfp1_tx_atxpll(
-//		.pll_powerdown(rst_pll_powerdown), // pll_powerdown.pll_powerdown
-//		.pll_refclk0(gx_644M_clk),               //   pll_refclk0.clk
-//		.tx_serial_clk(gx_tx_ser_clk),       // tx_serial_clk.clk
-//		.pll_locked(pll_locked),       //    pll_locked.pll_locked
-//		.pll_cal_busy(gx_tx_pll_cal_busy)    //  pll_cal_busy.pll_cal_busy
-//);
-	
+
 /* reset from IO, go through 2ff sync before use */
 logic io_nreset_raw;
 reg   io_nreset_meta_q;
 
 assign io_nreset_raw = FPGA_RSTn;
-always @(posedge slow_clk) begin
+always @(posedge OSC_50m) begin
 	io_nreset_meta_q <= io_nreset_raw;
 	io_nreset <= io_nreset_meta_q;
 end
-
-/* GX reset controller */
-//logic gx_rx_is_lockedtodata;
-//
-//logic gx_tx_analogreset;  
-//logic gx_tx_digitalreset;   
-//logic gx_rx_analogreset;       
-//logic gx_rx_digitalreset;        
-//logic gx_rx_cal_busy;
-//
-//logic rst_tx_cal_busy;
-//logic gx_tx_cal_busy;       
-//assign rst_tx_cal_busy = gx_tx_pll_cal_busy | gx_tx_cal_busy; 
-//
-//logic gx_rx_ready;
-//logic gx_tx_ready;
-//
-//phy_rst m_phy_rst (
-//        .clock               (slow_clk),              //   input,  width = 1,               clock.clk
-//        .reset               (~io_nreset),            //   input,  width = 1,               reset.reset
-//        .pll_powerdown0      (rst_pll_powerdown),     //  output,  width = 1,      pll_powerdown0.pll_powerdown
-//        .tx_analogreset0     (gx_tx_analogreset),     //  output,  width = 1,     tx_analogreset0.tx_analogreset
-//        .tx_digitalreset0    (gx_tx_digitalreset),    //  output,  width = 1,    tx_digitalreset0.tx_digitalreset
-//        .tx_ready0           (gx_tx_ready),           //  output,  width = 1,           tx_ready0.tx_ready
-//        .pll_locked0         (pll_locked),        //   input,  width = 1,         pll_locked0.pll_locked
-//        .pll_select          (1'b0),          //   input,  width = 1,          pll_select.pll_select
-//        .tx_cal_busy0        (rst_tx_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
-//
-//        .rx_analogreset0     (gx_rx_analogreset),     //  output,  width = 1,     rx_analogreset0.rx_analogreset
-//        .rx_digitalreset0    (gx_rx_digitalreset),    //  output,  width = 1,    rx_digitalreset0.rx_digitalreset
-//        .rx_ready0           (gx_rx_ready),           //  output,  width = 1,           rx_ready0.rx_ready
-//        .rx_is_lockedtodata0 (gx_rx_is_lockedtodata), //   input,  width = 1, rx_is_lockedtodata0.rx_is_lockedtodata
-//        .rx_cal_busy0        (gx_rx_cal_busy)         //   input,  width = 1,        rx_cal_busy0.rx_cal_busy
-//);
-///* 2ff cdc for reset */
-//logic  gx_sfp1_nreset;
-//assign gx_sfp1_nreset = ~( gx_rx_ready[SFP1_CH] & gx_tx_ready[SFP1_CH] );
 
 /* SFP1 PCS */
 logic              gx_rx_sfp1_is_lockedtoref;
@@ -203,4 +153,4 @@ logic [QCH_N-1:0]        gx_rx_set_locktoref;
 logic [QCH_N*DATA_W-1:0] gx_rx_par_data;
 logic [QCH_N*DATA_W-1:0] gx_tx_par_data;
 
- endmodule
+endmodule
