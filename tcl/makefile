@@ -50,7 +50,7 @@ endef
 
 # ip list
 # candidates : phase_align_fpll trans phy_rst phyfpll iopll atxpll
-ip_list := trans phy_rst atxpll
+ip_list := trans phy_rst atxpll cdc_fifo
 
 $(eval $(foreach x,$(ip_list),$(call IP_GEN,$x)))
 
@@ -110,6 +110,7 @@ clean:
 	rm -rf tmp-clearbox
 	$(foreach x,$(ip_list),$(call IP_CLEAN,$x))
 	rm -rf qdb
-	rm -f PCS.*
+	rm -f $(PROJECT).*
+	rm -r $(PROJECT)
 	rm -rf pcs
 	rm -f serv_req_info.txt
