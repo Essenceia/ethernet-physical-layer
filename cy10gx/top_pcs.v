@@ -8,20 +8,20 @@ module top_pcs #(
 	input  clk_644m, 
 	input  [LANE_N-1:0] gx_rx_par_clk,
 	input  [LANE_N-1:0] gx_tx_par_clk,
-	output gx_tx_ser_clk,
+	output [LANE_N-1:0] gx_tx_ser_clk,
 
 	input io_nreset_i,
 
 	/* GX transiver
  	 * reset signals */
-	output gx_tx_analogreset_o,
-	output gx_tx_digitalreset_o,
-	input  gx_tx_cal_busy_i,
+	output [LANE_N-1:0] gx_tx_analogreset_o,
+	output [LANE_N-1:0] gx_tx_digitalreset_o,
+	input  [LANE_N-1:0] gx_tx_cal_busy_i,
 
- 	output gx_rx_analogreset_o,
-	output gx_rx_digitalreset_o,
-	input  gx_rx_cal_busy_i,
-	input  gx_rx_is_lockedtodata_i,
+ 	output [LANE_N-1:0] gx_rx_analogreset_o,
+	output [LANE_N-1:0] gx_rx_digitalreset_o,
+	input  [LANE_N-1:0] gx_rx_cal_busy_i,
+	input  [LANE_N-1:0] gx_rx_is_lockedtodata_i,
 
 	/* GX traniver : parallel data to/from SerDes */
 	input  [LANE_N*DATA_W-1:0] gx_rx_par_data_i,
@@ -31,50 +31,89 @@ localparam LANE0_CNT_N = !IS_10G ? 1 : 2;
 localparam KEEP_W = DATA_W/8;
 
 logic pcs_clk;
+logic tx_ser_clk;
+
 /* atxpll for tx transiver serial clk : per pcs to help reduce jitter */
 logic rst_pll_powerdown;
-logic gx_tx_pll_reset;
-logic gx_tx_pll_locked;
-logic gx_tx_pll_powerdown;
-logic gx_tx_pll_cal_busy;
+logic rst_tx_cal_busy;
+logic pll_locked;
+
+logic trans_pll_locked;
+logic trans_pll_cal_busy;
 
 // TODO : fix clk
+generate
+if (IS_10G) begin: gen_is_10g
+
 assign pcs_clk = gx_rx_par_clk[0];
 
-atxpll m_sfp1_tx_atxpll(
-		.pll_powerdown(rst_pll_powerdown), // pll_powerdown.pll_powerdown
-		.pll_refclk0(clk_644m),               //   pll_refclk0.clk
-		.tx_serial_clk(gx_tx_ser_clk),       // tx_serial_clk.clk
-		.pll_locked(pll_locked),       //    pll_locked.pll_locked
-		.pll_cal_busy(gx_tx_pll_cal_busy)    //  pll_cal_busy.pll_cal_busy
+assign rst_tx_cal_busy = trans_pll_cal_busy | gx_tx_cal_busy_i; 
+assign pll_locked = trans_pll_locked;
+end else begin: gen_not_10g
+
+logic core_rst_pll_powerdown;
+logic core_pll_locked;
+logic core_pll_cal_busy;
+
+pcs_core_fpll m_pcs_clk_fpll(
+		.pll_powerdown (rst_pll_powerdown), // pll_powerdown.pll_powerdown
+		.pll_refclk0   (clk_644m),               //   pll_refclk0.clk
+		.outclk0       (pcs_clk),       // tx_serial_clk.clk
+		.pll_locked    (core_pll_locked),       //    pll_locked.pll_locked
+		.pll_cal_busy  (core_pll_cal_busy)    //  pll_cal_busy.pll_cal_busy
 );
-	
+/* hijake cal busy : add requirement to wait for common pcs core clk */
+assign rst_tx_cal_busy = trans_pll_cal_busy | |gx_tx_cal_busy_i | core_pll_cal_busy; 
+assign pll_locked = core_pll_locked & trans_pll_locked;
+
+end
+endgenerate
+
+atxpll m_trans_tx_atxpll(
+		.pll_powerdown(rst_pll_powerdown), // pll_powerdown.pll_powerdown
+		.pll_refclk0  (clk_644m),               //   pll_refclk0.clk
+		.tx_serial_clk(tx_ser_clk),       // tx_serial_clk.clk
+		.pll_locked   (trans_pll_locked),       //    pll_locked.pll_locked
+		.pll_cal_busy (trans_pll_cal_busy)    //  pll_cal_busy.pll_cal_busy
+);
+assign gx_tx_ser_clk = {LANE_N{tx_ser_clk}};
+
 /* GX reset controller */
-
-logic rst_tx_cal_busy;
-assign rst_tx_cal_busy = gx_tx_pll_cal_busy | gx_tx_cal_busy_i; 
-
 logic gx_rx_ready;
 logic gx_tx_ready;
+logic rst_tx_analogreset;
+logic rst_tx_digitalreset;
+logic rst_rx_analogreset;
+logic rst_rx_digitalreset;
+logic rst_rx_cal_busy;
+logic rst_rx_is_lockedtodata;
+
+assign rst_rx_is_lockedtodata = &gx_rx_is_lockedtodata_i;
+assign rst_rx_cal_busy = |gx_rx_cal_busy_i;
 
 phy_rst m_phy_rst (
         .clock               (clk_50m),              //   input,  width = 1,               clock.clk
         .reset               (~io_nreset_i),            //   input,  width = 1,               reset.reset
         .pll_powerdown0      (rst_pll_powerdown),     //  output,  width = 1,      pll_powerdown0.pll_powerdown
-        .tx_analogreset0     (gx_tx_analogreset_o),     //  output,  width = 1,     tx_analogreset0.tx_analogreset
-        .tx_digitalreset0    (gx_tx_digitalreset_o),    //  output,  width = 1,    tx_digitalreset0.tx_digitalreset
+        .tx_analogreset0     (rst_tx_analogreset),     //  output,  width = 1,     tx_analogreset0.tx_analogreset
+        .tx_digitalreset0    (rst_tx_digitalreset),    //  output,  width = 1,    tx_digitalreset0.tx_digitalreset
         .tx_ready0           (gx_tx_ready),           //  output,  width = 1,           tx_ready0.tx_ready
         .pll_locked0         (pll_locked),        //   input,  width = 1,         pll_locked0.pll_locked
         .pll_select          (1'b0),          //   input,  width = 1,          pll_select.pll_select
         .tx_cal_busy0        (rst_tx_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
 
-        .rx_analogreset0     (gx_rx_analogreset_o),     //  output,  width = 1,     rx_analogreset0.rx_analogreset
-        .rx_digitalreset0    (gx_rx_digitalreset_o),    //  output,  width = 1,    rx_digitalreset0.rx_digitalreset
+        .rx_analogreset0     (rst_rx_analogreset),     //  output,  width = 1,     rx_analogreset0.rx_analogreset
+        .rx_digitalreset0    (rst_rx_digitalreset),    //  output,  width = 1,    rx_digitalreset0.rx_digitalreset
         .rx_ready0           (gx_rx_ready),           //  output,  width = 1,           rx_ready0.rx_ready
-        .rx_is_lockedtodata0 (gx_rx_is_lockedtodata_i), //   input,  width = 1, rx_is_lockedtodata0.rx_is_lockedtodata
-        .rx_cal_busy0        (gx_rx_cal_busy)         //   input,  width = 1,        rx_cal_busy0.rx_cal_busy
+        .rx_is_lockedtodata0 (rst_rx_is_lockedtodata), //   input,  width = 1, rx_is_lockedtodata0.rx_is_lockedtodata
+        .rx_cal_busy0        (rst_rx_cal_busy)         //   input,  width = 1,        rx_cal_busy0.rx_cal_busy
 );
+assign gx_tx_analogreset_o = {LANE_N{rst_tx_analogreset}};
+assign gx_tx_digitalreset_o = {LANE_N{rst_tx_digitalreset}};
+assign gx_rx_analogreset_o = {LANE_N{rst_rx_analogreset}};
+assign gx_rx_digitalreset_o = {LANE_N{rst_rx_digitalreset}};
 
+/* reset */
 logic  gx_nreset;
 assign gx_nreset = ~( gx_rx_ready & gx_tx_ready );
 
@@ -87,15 +126,23 @@ always @(posedge clk_50m) begin
 	gx_nreset_q <= gx_nreset;
 end
 
+generate
+if (IS_10G) begin: gen_2ff_nreset_10g
 always @(posedge gx_rx_par_clk) begin
 	nreset_next <= gx_nreset_q;
 	nreset      <= nreset_next;
 end
+end else begin: gen_2ff_nreset_not_10g
+always @(posedge pcs_clk) begin
+	nreset_next <= gx_nreset_q;
+	nreset      <= nreset_next;
+end
+end
+endgenerate
 
 /* reset controller */
 
 /* PCS RX */
-logic                          nreset;
 logic [LANE_N-1:0]             pcs_rx_signal_ok;
 logic [LANE_N-1:0]             pcs_rx_valid;
 logic [LANE_N-1:0]             pcs_rx_ctrl;
@@ -168,11 +215,12 @@ pcs_tx#(
 
 /* data loopback */
 pcs_loopback #(
-	.DATA_W(DATA_W),
+	.IS_10G(IS_10G),
 	.LANE_N(LANE_N), 
 	.LANE0_CNT_N(LANE0_CNT_N), 
 	.DATA_W(DATA_W))
 m_pcs_loopback(
+.clk(pcs_clk),
 .rx_clk(gx_rx_par_clk),
 .rx_nreset(nreset),
 .tx_clk(gx_tx_par_clk),
@@ -194,7 +242,5 @@ m_pcs_loopback(
 .pcs_tx_data_o(pcs_tx_data),
 .pcs_tx_keep_o(pcs_tx_keep)
 );
-
-/* TX CDC fifo */ 
 
 endmodule

@@ -149,9 +149,9 @@ m_sfp1_pcs(
  * 40GBASE-R has 4 lanes -> serdes channels */
 localparam QCH_N = 4;
 
-logic [QCH_N-1:0] qx_rx_qsfp1_par_clk;
-logic [QCH_N-1:0] qx_tx_qsfp1_par_clk;
-logic [QCH_N-1:0] qx_tx_qsfp1_ser_clk;
+logic [QCH_N-1:0] gx_rx_qsfp1_par_clk;
+logic [QCH_N-1:0] gx_tx_qsfp1_par_clk;
+logic [QCH_N-1:0] gx_tx_qsfp1_ser_clk;
 
 logic [QCH_N-1:0] gx_tx_qsfp1_analogreset;
 logic [QCH_N-1:0] gx_tx_qsfp1_digitalreset;

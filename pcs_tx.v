@@ -99,7 +99,7 @@ endgenerate
 // scramble
 _64b66b_tx #(.LEN(XGMII_DATA_W))
 m_64b66b_tx(
-	.clk(clk),
+	.clk(pcs_clk),
 	.nreset(nreset),
 	.valid_i(scram_v),
 	.data_i (data_enc  ),
@@ -114,7 +114,7 @@ if ( !IS_10G ) begin : gen_not_10g
 	
 	am_tx #(.LANE_N(LANE_N), .HEAD_W( HEAD_W ), .DATA_W(DATA_W))
 	m_align_market(
-		.clk(clk),
+		.clk(pcs_clk),
 		.nreset(nreset),
 		.valid_i(gb_accept[0]),
 		.head_i(sync_head),
@@ -125,57 +125,54 @@ if ( !IS_10G ) begin : gen_not_10g
 	);
 
 	if (!IS_TB) begin: gen_cdc_fifo
-	/* CDC 
- 	 * alignement marker -> cdc -> gearbox 	*/
-	logic [LANE_N-1:0] rd_cdc_req;
-	logic [LANE_N-1:0] rd_cdc_empty;
-	logic [LANE_N-1:0] wr_cdc_valid;
-	logic [BLOCK_W-1:0] rd_cdc_data[LANE_N-1:0];
-	logic [BLOCK_W-1:0] wr_cdc_data[LANE_N-1:0];
-	
-	for(l=0; l<LANE_N;l++) begin: gen_cdc_lane	
-	/* wr */
-	assign wr_cdc_valid[l] = ~nreset;
-	assign wr_cdc_data[l]  = {data_mark[l*DATA_W+:DATA_W],
-							  sync_head_mark[l*HEAD_W+:HEAD_W]}; 
-	/* rd 
- 	 * req : only gearbox accept a new data 
- 	 * empty : fifo should never be empty when gearbox can accept
- 	 *	       new data, this only happens during reset, using this
- 	 *	       as sync reset confition */
-	assign rd_cdc_req[l] = gb_accept[l];
-	assign gb_nreset[l] = rd_cdc_req[l] & rd_cdc_empty[l];
-	cdc_fifo m_cdc_fifo_tx (
-		.wrclk(pcs_clk),   
-		.rdclk(tx_par_clk[l]), 
-		/* wr */
-		.wrreq(wr_cdc_valid[l]),   
-		.data(wr_cdc_data[l]),    
-		/* rd */  
-		.q(rd_cdc_data[l]),       
-		.rdreq(rd_cdc_req[l]),   
-		.rdempty(rd_cdc_empty[l])  
-	);
-	assign gb_data[l*DATA_W+:DATA_W] = rd_cdc_data[l][BLOCK_W-1:HEAD_W];
-	assign gb_head[l*HEAD_W+:HEAD_W] = rd_cdc_data[l][HEAD_W-1:0];
-	end
+		/* CDC 
+	 	 * alignement marker -> cdc -> gearbox 	*/
+		logic [LANE_N-1:0] rd_cdc_req;
+		logic [LANE_N-1:0] rd_cdc_empty;
+		logic [LANE_N-1:0] wr_cdc_valid;
+		logic [BLOCK_W-1:0] rd_cdc_data[LANE_N-1:0];
+		logic [BLOCK_W-1:0] wr_cdc_data[LANE_N-1:0];
+		
+		for(l=0; l<LANE_N;l++) begin: gen_cdc_lane	
+			/* wr */
+			assign wr_cdc_valid[l] = ~nreset;
+			assign wr_cdc_data[l]  = {data_mark[l*DATA_W+:DATA_W],
+									  sync_head_mark[l*HEAD_W+:HEAD_W]}; 
+			/* rd 
+		 	 * req : only gearbox accept a new data 
+		 	 * empty : fifo should never be empty when gearbox can accept
+		 	 *	       new data, this only happens during reset, using this
+		 	 *	       as sync reset confition */
+			assign rd_cdc_req[l] = gb_accept[l];
+			assign gb_nreset[l] = rd_cdc_req[l] & rd_cdc_empty[l];
+			cdc_fifo m_cdc_fifo_tx (
+				.wrclk(pcs_clk),   
+				.rdclk(tx_par_clk[l]), 
+				/* wr */
+				.wrreq(wr_cdc_valid[l]),   
+				.data(wr_cdc_data[l]),    
+				/* rd */  
+				.q(rd_cdc_data[l]),       
+				.rdreq(rd_cdc_req[l]),   
+				.rdempty(rd_cdc_empty[l])  
+			);
+			assign gb_data[l*DATA_W+:DATA_W] = rd_cdc_data[l][BLOCK_W-1:HEAD_W];
+			assign gb_head[l*HEAD_W+:HEAD_W] = rd_cdc_data[l][HEAD_W-1:0];
+		end
 	end else begin : gen_no_cdc
-	// gearbox data : marked data
-	assign gb_nreset = {LANE_N{nreset}};
-	assign gb_data = data_mark;
-	assign gb_head = sync_head_mark;
+		// gearbox data : marked data
+		assign gb_nreset = {LANE_N{nreset}};
+		assign gb_data = data_mark;
+		assign gb_head = sync_head_mark;
+		
+		end //!IS_TB
 	
-	end //!IS_TB
+		// scrambler, marker, data ready
+		assign scram_v = ~marker_v;
+		assign marker_v_o = marker_v;
+		assign ready_o = ~marker_v;
 
-	// scrambler
-	assign scram_v = ~marker_v;
-
-	
-	
-	assign marker_v_o = marker_v;
-	assign ready_o = ~marker_v;
-
-end else begin : gen_10g
+	end else begin : gen_10g
 	// gearbox data : scrambled data
 	assign gb_data = data_scram;
 	assign gb_head = sync_head;
@@ -213,7 +210,7 @@ endgenerate
 
 `ifdef FORMAL
 
-always @(posedge clk) begin
+always @(posedge pcs_clk) begin
 	// gearbox state should be the same regardless of the lane
 	// when we send all the data within the same cycle
 	// note : only applies when there are no cdc's between gearbox
