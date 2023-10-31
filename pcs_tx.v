@@ -27,9 +27,9 @@ module pcs_tx#(
 	parameter XGMII_DATA_W = LANE_N*DATA_W,
 	parameter XGMII_KEEP_W = LANE_N*KEEP_W
 )(
-	input pcs_clk, /* pcs common clk */
+	input              pcs_clk, /* pcs common clk */
 	input [LANE_N-1:0] tx_par_clk, /* serdes parallel clk */
-	input nreset,
+	input              nreset,
 
 	// MAC
 	input [LANE_N-1:0]             ctrl_v_i,
@@ -158,7 +158,7 @@ if ( !IS_10G ) begin : gen_not_10g
 			);
 			assign gb_data[l*DATA_W+:DATA_W] = rd_cdc_data[l][BLOCK_W-1:HEAD_W];
 			assign gb_head[l*HEAD_W+:HEAD_W] = rd_cdc_data[l][HEAD_W-1:0];
-		end
+		end // gen_cdc_lane
 	end else begin : gen_no_cdc
 		// gearbox data : marked data
 		assign gb_nreset = {LANE_N{nreset}};

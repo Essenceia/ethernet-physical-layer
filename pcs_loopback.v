@@ -10,10 +10,10 @@ module pcs_loopback#(
 	localparam KEEP_W = DATA_W/8
 )(
 	input clk,
-	input rx_clk,
-	input tx_clk,
-	input rx_nreset,
-	output logic tx_nreset,
+	input [LANE_N-1:0] rx_clk,
+	input [LANE_N-1:0] tx_clk,
+	input              rx_nreset,
+	output logic       tx_nreset,
 
 	/* From RX PCS */
 	input [LANE_N-1:0]             pcs_rx_ctrl_i,

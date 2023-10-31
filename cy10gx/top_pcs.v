@@ -126,24 +126,15 @@ always @(posedge clk_50m) begin
 	gx_nreset_q <= gx_nreset;
 end
 
-generate
-if (IS_10G) begin: gen_2ff_nreset_10g
-always @(posedge gx_rx_par_clk) begin
-	nreset_next <= gx_nreset_q;
-	nreset      <= nreset_next;
-end
-end else begin: gen_2ff_nreset_not_10g
 always @(posedge pcs_clk) begin
 	nreset_next <= gx_nreset_q;
 	nreset      <= nreset_next;
 end
-end
-endgenerate
 
 /* reset controller */
 
 /* PCS RX */
-logic [LANE_N-1:0]             pcs_rx_signal_ok;
+logic                          pcs_rx_signal_ok;
 logic [LANE_N-1:0]             pcs_rx_valid;
 logic [LANE_N-1:0]             pcs_rx_ctrl;
 logic [LANE_N-1:0]             pcs_rx_idle;
@@ -161,7 +152,7 @@ m_pcs_rx(
 .pcs_clk         (pcs_clk),
 .rx_par_clk      (gx_rx_par_clk),
 .nreset          (nreset),
-.serdes_lock_v_i (1'b1),// always ready otherwise reset
+.serdes_lock_v_i ({LANE_N{1'b1}}),// always ready otherwise reset
 .serdes_data_i   (gx_rx_par_data_i),
 .signal_v_o      (pcs_rx_signal_ok), 
 .valid_o         (pcs_rx_valid),
@@ -222,8 +213,8 @@ pcs_loopback #(
 m_pcs_loopback(
 .clk(pcs_clk),
 .rx_clk(gx_rx_par_clk),
-.rx_nreset(nreset),
 .tx_clk(gx_tx_par_clk),
+.rx_nreset(nreset),
 .tx_nreset(pcs_tx_nreset),
 
 .pcs_rx_ctrl_i(pcs_rx_ctrl),

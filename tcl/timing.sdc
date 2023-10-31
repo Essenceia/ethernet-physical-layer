@@ -16,7 +16,8 @@ create_clock -period 1.551 [get_ports GXB1D_644M]
 create_clock -period 8.0 [get_ports GXB1D_125M]  
 
 
-set m_loop *|m_pcs_loopback 
+# only applies to 10G, 40G has an internal cdc
+set m_loop m_sfp*_pcs|m_pcs_loopback 
 
 # nreset 2ff sync
 set_false_path -from [get_registers *sfp*_pcs|gx_nreset_q] -to [get_registers *sfp*|nreset_next]
