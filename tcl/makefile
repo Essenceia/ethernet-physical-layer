@@ -50,7 +50,7 @@ endef
 
 # ip list
 # candidates : phase_align_fpll trans phy_rst phyfpll iopll atxpll
-ip_list := trans phy_rst atxpll cdc_fifo
+ip_list := trans qsfp_trans phy_rst atxpll cdc_fifo
 
 $(eval $(foreach x,$(ip_list),$(call IP_GEN,$x)))
 

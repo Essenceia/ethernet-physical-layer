@@ -2,6 +2,8 @@
  * PCS loopback */
 module top #(
 	localparam SFP1_CH = 4,
+	localparam QSFP1_CH_LSB = 0,
+	localparam QSFP1_CH_MSB = 3,
 	localparam CH_N = 5,
 	localparam HEAD_W = 2,
 	localparam DATA_W = 64,
@@ -147,30 +149,64 @@ m_sfp1_pcs(
  * 40GBASE-R has 4 lanes -> serdes channels */
 localparam QCH_N = 4;
 
-logic [QCH_N-1:0]        gx_rx_is_lockedtoref;
-logic [QCH_N-1:0]        gx_rx_set_locktodata;   
-logic [QCH_N-1:0]        gx_rx_set_locktoref;      
-logic [QCH_N*DATA_W-1:0] gx_rx_par_data;
-logic [QCH_N*DATA_W-1:0] gx_tx_par_data;
+logic [QCH_N-1:0] qx_rx_qsfp1_par_clk;
+logic [QCH_N-1:0] qx_tx_qsfp1_par_clk;
+logic [QCH_N-1:0] qx_tx_qsfp1_ser_clk;
 
+logic [QCH_N-1:0] gx_tx_qsfp1_analogreset;
+logic [QCH_N-1:0] gx_tx_qsfp1_digitalreset;
+logic [QCH_N-1:0] gx_tx_qsfp1_cal_busy;
+logic [QCH_N-1:0] gx_rx_qsfp1_analogreset;
+logic [QCH_N-1:0] gx_rx_qsfp1_digitalreset;
+logic [QCH_N-1:0] gx_rx_qsfp1_cal_busy;
+logic [QCH_N-1:0] gx_rx_qsfp1_is_lockedtodata;
+
+logic [QCH_N-1:0]        gx_rx_qsfp1_is_lockedtoref;
+logic [QCH_N-1:0]        gx_rx_qsfp1_set_locktodata;   
+logic [QCH_N-1:0]        gx_rx_qsfp1_set_locktoref;      
+logic [QCH_N*DATA_W-1:0] gx_rx_qsfp1_par_data;
+logic [QCH_N*DATA_W-1:0] gx_tx_qsfp1_par_data;
+
+qsfp_trans m_qsfp1_trans (
+	.tx_analogreset          (gx_tx_qsfp1_analogreset),          //   input,   width = 1,          tx_analogreset.tx_analogreset
+	.tx_digitalreset         (gx_tx_qsfp1_digitalreset),         //   input,   width = 1,         tx_digitalreset.tx_digitalreset
+	.rx_analogreset          (gx_rx_qsfp1_analogreset),          //   input,   width = 1,          rx_analogreset.rx_analogreset
+	.rx_digitalreset         (gx_rx_qsfp1_digitalreset),         //   input,   width = 1,         rx_digitalreset.rx_digitalreset
+	.tx_cal_busy             (gx_tx_qsfp1_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
+	.rx_cal_busy             (gx_rx_qsfp1_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
+	.tx_serial_clk0          (gx_tx_qsfp1_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
+	.rx_cdr_refclk0          (gx_644M_clk), // not using cdc fifo TODO : remove
+	.tx_serial_data          (gx_tx_ser_data[QSFP1_CH_MSB:QSFP1_CH_LSB]),          //  output,   width = 1,          tx_serial_data.tx_serial_data
+	.rx_serial_data          (gx_rx_ser_data[QSFP1_CH_MSB:QSFP1_CH_LSB]),        //   input,   width = 1,          rx_serial_data.rx_serial_data
+	.rx_set_locktodata       (),       //   input,   width = 1,       rx_set_locktodata.rx_set_locktodata
+	.rx_set_locktoref        (),        //   input,   width = 1,        rx_set_locktoref.rx_set_locktoref
+	.rx_is_lockedtoref       (gx_rx_qsfp1_is_lockedtoref),       //  output,   width = 1,       rx_is_lockedtoref.rx_is_lockedtoref
+	.rx_is_lockedtodata      (gx_rx_qsfp1_is_lockedtodata),      //  output,   width = 1,      rx_is_lockedtodata.rx_is_lockedtodata
+	.tx_clkout               (gx_tx_qsfp1_par_clk),               //  output,   width = 1,               tx_clkout.clk
+	.rx_clkout               (gx_rx_qsfp1_par_clk),               //  output,   width = 1,               rx_clkout.clk
+	.tx_parallel_data        (gx_tx_qsfp1_par_data),        //   input,  width = 64,        tx_parallel_data.tx_parallel_data
+	.unused_tx_parallel_data (), //   input,  width = 64, unused_tx_parallel_data.unused_tx_parallel_data
+	.rx_parallel_data        (gx_rx_qsfp1_par_data),      //  output,  width = 64,        rx_parallel_data.rx_parallel_data
+	.unused_rx_parallel_data ()  //  output,  width = 64, unused_rx_parallel_data.unused_rx_parallel_data
+);
 top_pcs #(
 	.IS_10G(1'b0))
-m_asfp1_pcs(
-.clk_50m      (),
-.clk_644m     (),
-.gx_rx_par_clk(),
-.gx_tx_par_clk(),
-.gx_tx_ser_clk(),
-.io_nreset_i(),
-.gx_tx_analogreset_o(),
-.gx_tx_digitalreset_o(),
-.gx_tx_cal_busy_i(),
-.gx_rx_analogreset_o(),
-.gx_rx_digitalreset_o(),
-.gx_rx_cal_busy_i(),
-.gx_rx_is_lockedtodata_i(),
-.gx_rx_par_data_i(),
-.gx_tx_par_data_o()
+m_qsfp1_pcs(
+.clk_50m      (OSC_50m),
+.clk_644m     (gx_644M_clk),
+.gx_rx_par_clk(gx_rx_qsfp1_par_clk),
+.gx_tx_par_clk(gx_tx_qsfp1_par_clk),
+.gx_tx_ser_clk(gx_tx_qsfp1_ser_clk),
+.io_nreset_i  (io_nreset),
+.gx_tx_analogreset_o    (gx_tx_qsfp1_analogreset),
+.gx_tx_digitalreset_o   (gx_tx_qsfp1_digitalreset),
+.gx_tx_cal_busy_i       (gx_tx_qsfp1_cal_busy),
+.gx_rx_analogreset_o    (gx_rx_qsfp1_analogreset),
+.gx_rx_digitalreset_o   (gx_rx_qsfp1_digitalreset),
+.gx_rx_cal_busy_i       (gx_rx_qsfp1_cal_busy),
+.gx_rx_is_lockedtodata_i(gx_rx_qsfp1_is_lockedtodata),
+.gx_rx_par_data_i       (gx_rx_qsfp1_par_data),
+.gx_tx_par_data_o       (gx_tx_qsfp1_par_data)
 );
 
 
