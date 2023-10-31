@@ -153,4 +153,25 @@ logic [QCH_N-1:0]        gx_rx_set_locktoref;
 logic [QCH_N*DATA_W-1:0] gx_rx_par_data;
 logic [QCH_N*DATA_W-1:0] gx_tx_par_data;
 
+top_pcs #(
+	.IS_10G(1'b0))
+m_asfp1_pcs(
+.clk_50m      (),
+.clk_644m     (),
+.gx_rx_par_clk(),
+.gx_tx_par_clk(),
+.gx_tx_ser_clk(),
+.io_nreset_i(),
+.gx_tx_analogreset_o(),
+.gx_tx_digitalreset_o(),
+.gx_tx_cal_busy_i(),
+.gx_rx_analogreset_o(),
+.gx_rx_digitalreset_o(),
+.gx_rx_cal_busy_i(),
+.gx_rx_is_lockedtodata_i(),
+.gx_rx_par_data_i(),
+.gx_tx_par_data_o()
+);
+
+
 endmodule

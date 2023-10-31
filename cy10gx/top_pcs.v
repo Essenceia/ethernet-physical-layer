@@ -6,8 +6,8 @@ module top_pcs #(
 )(
 	input  clk_50m,
 	input  clk_644m, 
-	input  gx_rx_par_clk,
-	input  gx_tx_par_clk,
+	input  [LANE_N-1:0] gx_rx_par_clk,
+	input  [LANE_N-1:0] gx_tx_par_clk,
 	output gx_tx_ser_clk,
 
 	input io_nreset_i,
@@ -30,12 +30,16 @@ module top_pcs #(
 localparam LANE0_CNT_N = !IS_10G ? 1 : 2;
 localparam KEEP_W = DATA_W/8;
 
+logic pcs_clk;
 /* atxpll for tx transiver serial clk : per pcs to help reduce jitter */
 logic rst_pll_powerdown;
 logic gx_tx_pll_reset;
 logic gx_tx_pll_locked;
 logic gx_tx_pll_powerdown;
 logic gx_tx_pll_cal_busy;
+
+// TODO : fix clk
+assign pcs_clk = gx_rx_par_clk[0];
 
 atxpll m_sfp1_tx_atxpll(
 		.pll_powerdown(rst_pll_powerdown), // pll_powerdown.pll_powerdown
@@ -104,10 +108,12 @@ logic [LANE_N*KEEP_W-1:0]      pcs_rx_keep;
 
 pcs_rx #(
 	.IS_10G(IS_10G),
+	.IS_TB(0),
 	.DATA_W(DATA_W))
 m_pcs_rx(
+.pcs_clk         (pcs_clk),
+.rx_par_clk      (gx_rx_par_clk),
 .nreset          (nreset),
-.clk             (gx_rx_par_clk),
 .serdes_lock_v_i (1'b1),// always ready otherwise reset
 .serdes_data_i   (gx_rx_par_data_i),
 .signal_v_o      (pcs_rx_signal_ok), 
@@ -139,9 +145,11 @@ logic debug_pcs_tx_ready;
 
 pcs_tx#(
 	.IS_10G(IS_10G),
-	.DATA_W(DATA_W))
-m_pcs_tx(
-.clk        (gx_tx_par_clk),
+	.DATA_W(DATA_W),
+	.IS_TB(0)
+)m_pcs_tx(
+.pcs_clk    (pcs_clk),
+.tx_par_clk (gx_tx_par_clk),
 .nreset     (pcs_tx_nreset),
 
 .ctrl_v_i   (pcs_tx_ctrl),
@@ -186,6 +194,7 @@ m_pcs_loopback(
 .pcs_tx_data_o(pcs_tx_data),
 .pcs_tx_keep_o(pcs_tx_keep)
 );
- 
+
+/* TX CDC fifo */ 
 
 endmodule

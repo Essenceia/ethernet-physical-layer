@@ -15,6 +15,7 @@
  * is composed of 4 lanes of 1 block width. */
 module pcs_tx#(
 	parameter IS_10G = 0,
+	parameter IS_TB = 1,
 	parameter LANE_N = IS_10G ? 1 : 4,
 	parameter DATA_W = 64,
 	parameter HEAD_W = 2,
@@ -26,7 +27,8 @@ module pcs_tx#(
 	parameter XGMII_DATA_W = LANE_N*DATA_W,
 	parameter XGMII_KEEP_W = LANE_N*KEEP_W
 )(
-	input clk, /* PCS clk */
+	input pcs_clk, /* pcs common clk */
+	input [LANE_N-1:0] tx_par_clk, /* serdes parallel clk */
 	input nreset,
 
 	// MAC
@@ -68,6 +70,7 @@ logic [LANE_N-1:0] gb_accept;
 /*verilator lint_on UNUSEDSIGNAL */
 
 /* input to gearbox */
+logic [LANE_N-1:0]        gb_nreset;
 logic [LANE_N*HEAD_W-1:0] gb_head;
 logic [LANE_N*DATA_W-1:0] gb_data;
 
@@ -120,15 +123,57 @@ if ( !IS_10G ) begin : gen_not_10g
 		.head_o(sync_head_mark ),
 		.data_o(data_mark )
 	);
-	// scrambler
-	assign scram_v = ~marker_v & gb_accept[0];
 
+	if (!IS_TB) begin: gen_cdc_fifo
+	/* CDC 
+ 	 * alignement marker -> cdc -> gearbox 	*/
+	logic [LANE_N-1:0] rd_cdc_req;
+	logic [LANE_N-1:0] rd_cdc_empty;
+	logic [LANE_N-1:0] wr_cdc_valid;
+	logic [BLOCK_W-1:0] rd_cdc_data[LANE_N-1:0];
+	logic [BLOCK_W-1:0] wr_cdc_data[LANE_N-1:0];
+	
+	for(l=0; l<LANE_N;l++) begin: gen_cdc_lane	
+	/* wr */
+	assign wr_cdc_valid[l] = ~nreset;
+	assign wr_cdc_data[l]  = {data_mark[l*DATA_W+:DATA_W],
+							  sync_head_mark[l*HEAD_W+:HEAD_W]}; 
+	/* rd 
+ 	 * req : only gearbox accept a new data 
+ 	 * empty : fifo should never be empty when gearbox can accept
+ 	 *	       new data, this only happens during reset, using this
+ 	 *	       as sync reset confition */
+	assign rd_cdc_req[l] = gb_accept[l];
+	assign gb_nreset[l] = rd_cdc_req[l] & rd_cdc_empty[l];
+	cdc_fifo m_cdc_fifo_tx (
+		.wrclk(pcs_clk),   
+		.rdclk(tx_par_clk[l]), 
+		/* wr */
+		.wrreq(wr_cdc_valid[l]),   
+		.data(wr_cdc_data[l]),    
+		/* rd */  
+		.q(rd_cdc_data[l]),       
+		.rdreq(rd_cdc_req[l]),   
+		.rdempty(rd_cdc_empty[l])  
+	);
+	assign gb_data[l*DATA_W+:DATA_W] = rd_cdc_data[l][BLOCK_W-1:HEAD_W];
+	assign gb_head[l*HEAD_W+:HEAD_W] = rd_cdc_data[l][HEAD_W-1:0];
+	end
+	end else begin : gen_no_cdc
 	// gearbox data : marked data
+	assign gb_nreset = {LANE_N{nreset}};
 	assign gb_data = data_mark;
 	assign gb_head = sync_head_mark;
 	
+	end //!IS_TB
+
+	// scrambler
+	assign scram_v = ~marker_v;
+
+	
+	
 	assign marker_v_o = marker_v;
-	assign ready_o = marker_v;
+	assign ready_o = ~marker_v;
 
 end else begin : gen_10g
 	// gearbox data : scrambled data
@@ -156,8 +201,8 @@ for(l=0; l<LANE_N; l++) begin : gen_gearbox_lane
 		.DATA_W(DATA_W),
 		.HEAD_W(HEAD_W)
 	)m_gearbox_tx(
-		.clk(clk),
-		.nreset(nreset),
+		.clk(tx_par_clk[l]),
+		.nreset(gb_nreset[l]),
 		.head_i(gb_head[l*HEAD_W+HEAD_W-1:l*HEAD_W]),
 		.data_i(gb_data[l*DATA_W+DATA_W-1:l*DATA_W]),
 		.accept_v_o(gb_accept[l]),  
@@ -171,7 +216,8 @@ endgenerate
 always @(posedge clk) begin
 	// gearbox state should be the same regardless of the lane
 	// when we send all the data within the same cycle
-	if ( CNT_N == 1 ) begin
+	// note : only applies when there are no cdc's between gearbox
+	if ( CNT_N == 1 && IS_TB == 0 ) begin
 		for(l=0; l<LANE_N; l++) begin
 			assert ( gearbox_full[0] == gearbox_full[l]);
 		end
