@@ -93,7 +93,7 @@ build:
 	$(MAKE) init	
 	$(MAKE) setup
 	$(MAKE) rebuild_timing
-	$(MAKE) assmeble
+	$(MAKE) assemble
 
 rebuild_timing:
 	$(MAKE) synth
