@@ -1,26 +1,35 @@
 # RTL Ethernet Physical Layer
 
-Parametrisable implementation of the ethernet physical layer's PCS for **10GBASE-R** and **40GBASE-R**.
+Parametrisable implementation of the Ethernet physical layer's PCS for **10GBASE-R** and **40GBASE-R**.
 
 RTL is platform agnostic but current synthesis flow target's the Intel **Cyclone 10 GX** FPGA series.
 
 ## Quickstart
 
-I would recommend checking out the latest stable tag.
-
 Pre-requisite : 
-Have a working version of `verilator` installed and follow the 
-[instructions set the path to your simulators vpi library](/tb/README.md#vpi).
+Have `quartus` installed, and set in `PATH`. 
 
-To build and run the top level testbench:
-```
-make clean
-make SIM=V run_pcs
+This quickstart will create test project for the `10CX150YF780E5G` part with a
+`10GBASE-R` PCS and `40GBASE-R` PCS in loop-back mode on transceiver bank `1D`.
+
+![Basic shematics of loopback!](/doc/quickstart.svg)
+
+To create a new quartus project, and run lint, synthesize, and check timing and
+then assemble; in the `tcl` directory run : 
+```sh
+make build 
 ```
 
-Open the waves, here we are using `gtkwave` as our viewer :
-```
-gtkwave wave/pcs_tb.vcd
+A project named `PCS.qsf` will be created in the `tcl` directory and all logs, including timing
+will be in the `tcl/PCS` directory.
+
+### Quartus versions other then 22.3
+
+This project was build for `quartus 22,3`, compatibility issues with the intel `IP` might
+arise with other versions, to force compatibility use the `compat` argument.
+
+```sh
+make build compat=1
 ```
 
 ## Roadmap
