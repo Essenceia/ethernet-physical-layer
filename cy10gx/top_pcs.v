@@ -113,9 +113,10 @@ assign gx_tx_digitalreset_o = {LANE_N{rst_tx_digitalreset}};
 assign gx_rx_analogreset_o = {LANE_N{rst_rx_analogreset}};
 assign gx_rx_digitalreset_o = {LANE_N{rst_rx_digitalreset}};
 
-/* reset */
+/* PCS logic nreset, set to reset(high) while both
+ * rx and tx are not ready */
 logic  gx_nreset;
-assign gx_nreset = ~( gx_rx_ready & gx_tx_ready );
+assign gx_nreset = gx_rx_ready & gx_tx_ready;
 
 /* 2ff cdc for reset */
 reg   gx_nreset_q;
