@@ -181,6 +181,7 @@ build:
 # Dependencies for linter.
 pcs_tx_deps := pcs_tx.v pcs_enc_lite.v _64b66b_tx.v gearbox_tx.v am_tx.v am_lane_tx.v  
 pcs_rx_deps := pcs_rx.v gearbox_rx.v block_sync_rx.v am_lock_rx.v lane_reorder_rx.v deskew_rx.v deskew_lane_rx.v _64b66b_rx.v dec_lite_rx.v 
+fake_reset_deps := fake_reset.v 
 
 lint_64b66b_tx : _64b66b_tx.v build
 	$(call LINT, _64b66b_tx.v, $64b66b_tx)
@@ -194,6 +195,8 @@ lint_pcs_tx : $(pcs_tx_deps)
 lint_pcs_rx: $(pcs_rx_deps)
 	$(call LINT, $(pcs_rx_deps),pcs_rx)
 
+lint_fake_reset: $(fake_reset_deps)
+	$(call LINT,$(fake_reset_deps),fake_reset)
 
 #############
 # Testbench #
@@ -221,7 +224,6 @@ lane_reorder_rx_deps := lane_reorder_rx.v $(TB_DIR)/lane_reorder_rx_tb.sv
 xgmii_dec_rx_deps := dec_lite_rx.v xgmii_dec_intf_rx.v $(TB_DIR)/xgmii_dec_rx_tb.sv 
 deskew_rx_deps := deskew_rx.v deskew_lane_rx.v $(TB_DIR)/deskew_rx_tb.sv 
 pcs_10g_loopback_deps :=  pcs_10g_loopback.v $(pcs_rx_deps) $(pcs_tx_deps) $(TB_DIR)/pcs_10g_loopback_tb.sv 
-
 # Standard run recipe to run a given testbench
 define run_recipe
 run_$1: $1_tb

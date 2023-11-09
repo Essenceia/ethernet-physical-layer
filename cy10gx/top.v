@@ -1,6 +1,7 @@
 /* TOP module for cyclone 10 gx fpga 
  * PCS loopback */
 module top #(
+	parameter  FAKE_RESET = 1,
 	localparam SFP1_CH = 4,
 	localparam QSFP1_CH_LSB = 0,
 	localparam QSFP1_CH_MSB = 3,
@@ -70,7 +71,8 @@ logic gx_rx_par_clk;// parallel clk
 logic gx_tx_par_clk;// parallel clk
 logic gx_tx_ser_clk;// from core -> transiver fPLL
 
-reg   io_nreset;
+reg   io_nreset_q;
+logic io_nreset;
 
 /* reset from IO, go through 2ff sync before use */
 logic io_nreset_raw;
@@ -79,8 +81,22 @@ reg   io_nreset_meta_q;
 assign io_nreset_raw = FPGA_RSTn;
 always @(posedge OSC_50m) begin
 	io_nreset_meta_q <= io_nreset_raw;
-	io_nreset <= io_nreset_meta_q;
+	io_nreset_q <= io_nreset_meta_q;
 end
+
+generate
+if ( FAKE_RESET ) begin
+logic fake_reset;
+
+fake_reset m_fake_reset(
+	.clk(OSC_50m),
+	.fpga_reset_i(io_nreset_q),
+	.fake_reset_o(io_nreset)	
+);
+end else begin
+assign io_nreset = io_nreset_q;
+end // FAKE_RESET
+endgenerate
 
 /* SFP1 PCS */
 logic              gx_rx_sfp1_is_lockedtoref;
