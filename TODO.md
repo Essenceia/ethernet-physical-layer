@@ -23,3 +23,6 @@
 - TB :
     - add 10g pcs tb
     - quartus simulation tb
+
+- FPGA, when reunited with build server :heart:
+    - :warning: add cdc on nreset for 40G RX PCS -> gearbox 
