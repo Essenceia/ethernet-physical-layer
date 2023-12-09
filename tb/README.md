@@ -7,22 +7,32 @@ It is built from the top level Makefile.
 ## Overview
 
 Top level test bench :
-`pcs_tb.sv` covers `rx` and `tx` is driven via the `vpi` by `C/C++` code contained in the `vpi` folder
+
+- `pcs_tb.sv` covers `rx` and `tx` is driven via the `vpi` by `C/C++` code contained in the `vpi` folder
 
 Unit test benches : 
-`am_tx_tb.sv` `tx` alignment marker content check, uses `vpi` and expected results are provided by `C/C++` code.
-`block_sync_rx_tb.sv`  checks `rx` block lock follows behaviour outlines in clause 82.12 
-`lane_reorder_rx_tb.sv` `rx` lane reordering check 
-`xgmii_dec_rx_tb.sv` check translation from internal decoded 
+
+- `am_tx_tb.sv` `tx` alignment marker content check, uses `vpi` and expected results are provided by `C/C++` code.
+
+- `block_sync_rx_tb.sv`  checks `rx` block lock follows behaviour outlines in clause 82.12 
+
+- `lane_reorder_rx_tb.sv` `rx` lane reordering check 
+
+- `xgmii_dec_rx_tb.sv` check translation from internal decoded 
     representation to standard xgmii representation, used for compatibility
     with third party MACs.
-`_64b66b_tb.sv` checks scrambler and descrambler behavior, data going though
+
+- `_64b66b_tb.sv` checks scrambler and descrambler behavior, data going though
     scrambler then descrambler should match original
-`pcs_10g_enc_tb.sv` check xgmii to internal representation interface behavior,
+
+- `pcs_10g_enc_tb.sv` check xgmii to internal representation interface behavior,
     this is the `tx` counterpart to the `rx` `xgmii_dec_rx_tb`
-`am_lock_rx_tb.sv` check `rx` alignment locking matches behavior outlined in clause 82.13
-`deskew_rx_tb.sv` check skew compensation and lane realignment on `rx` path
-`gearbox_tx_tb.sv` check `tx` path 66b to 64b gearbox 
+
+- `am_lock_rx_tb.sv` check `rx` alignment locking matches behavior outlined in clause 82.13
+
+- `deskew_rx_tb.sv` check skew compensation and lane realignment on `rx` path
+
+- `gearbox_tx_tb.sv` check `tx` path 66b to 64b gearbox 
 
 
 ### Simulators 
