@@ -1,7 +1,6 @@
 /* TOP module for cyclone 10 gx fpga 
  * PCS loopback */
 module top #(
-	parameter  FAKE_RESET = 1,
 	localparam SFP1_CH = 4,
 	localparam QSFP1_CH_LSB = 0,
 	localparam QSFP1_CH_MSB = 3,
@@ -71,32 +70,21 @@ logic gx_rx_par_clk;// parallel clk
 logic gx_tx_par_clk;// parallel clk
 logic gx_tx_ser_clk;// from core -> transiver fPLL
 
-reg   io_nreset_q;
-logic io_nreset;
+/* reset from IO, using asynchronous reset synchronizer circuit */
+reg   io_meta_nreset_q;
+reg   io_master_nreset_q;
+logic io_master_nreset;
 
-/* reset from IO, go through 2ff sync before use */
-logic io_nreset_raw;
-reg   io_nreset_meta_q;
-
-assign io_nreset_raw = FPGA_RSTn;
-always @(posedge OSC_50m) begin
-	io_nreset_meta_q <= io_nreset_raw;
-	io_nreset_q <= io_nreset_meta_q;
+always @(posedge OSC_50m or negedge FPGA_RSTn) begin
+	if (~FPGA_RSTn)begin
+		io_meta_nreset_q   <= 1'b0;
+		io_master_nreset_q <= 1'b0;
+	end else begin
+		io_meta_nreset_q   <= 1'b1;
+		io_master_nreset_q <= io_meta_nreset_q;
+	end
 end
-
-generate
-if ( FAKE_RESET ) begin
-logic fake_reset;
-
-fake_reset m_fake_reset(
-	.clk(OSC_50m),
-	.fpga_reset_i(io_nreset_q),
-	.fake_reset_o(io_nreset)	
-);
-end else begin
-assign io_nreset = io_nreset_q;
-end // FAKE_RESET
-endgenerate
+assign io_master_nreset = io_master_nreset_q;
 
 /* SFP1 PCS */
 logic              gx_rx_sfp1_is_lockedtoref;
@@ -146,7 +134,7 @@ m_sfp1_pcs(
 .gx_tx_par_clk(gx_tx_sfp1_par_clk),
 .gx_tx_ser_clk(gx_tx_sfp1_ser_clk),
 
-.io_nreset_i(io_nreset),
+.io_nreset_i(io_master_nreset),
 
 .gx_tx_analogreset_o(gx_tx_sfp1_analogreset),
 .gx_tx_digitalreset_o(gx_tx_sfp1_digitalreset),
@@ -213,7 +201,7 @@ m_qsfp1_pcs(
 .gx_rx_par_clk(gx_rx_qsfp1_par_clk),
 .gx_tx_par_clk(gx_tx_qsfp1_par_clk),
 .gx_tx_ser_clk(gx_tx_qsfp1_ser_clk),
-.io_nreset_i  (io_nreset),
+.io_nreset_i  (io_master_nreset),
 .gx_tx_analogreset_o    (gx_tx_qsfp1_analogreset),
 .gx_tx_digitalreset_o   (gx_tx_qsfp1_digitalreset),
 .gx_tx_cal_busy_i       (gx_tx_qsfp1_cal_busy),
