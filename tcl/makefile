@@ -77,7 +77,7 @@ synth:
 	quartus_syn $(PROJECT)
 
 # place and route
-place:
+fit:
 	quartus_fit $(PROJECT)
 
 timing: quartus_timing.tcl
@@ -97,7 +97,7 @@ build:
 
 rebuild_timing:
 	$(MAKE) synth
-	$(MAKE) place
+	$(MAKE) fit
 	$(MAKE) timing
 
 # clean
