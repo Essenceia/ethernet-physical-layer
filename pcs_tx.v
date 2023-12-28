@@ -165,17 +165,18 @@ if ( !IS_10G ) begin : gen_not_10g
 		assign gb_data = data_mark;
 		assign gb_head = sync_head_mark;
 		
-		end //!IS_TB
+	end //!IS_TB
 	
-		// scrambler, marker, data ready
-		assign scram_v = ~marker_v;
-		assign marker_v_o = marker_v;
-		assign ready_o = ~marker_v;
+	// scrambler, marker, data ready
+	assign scram_v = ~marker_v;
+	assign marker_v_o = marker_v;
+	assign ready_o = ~marker_v;
 
-	end else begin : gen_10g
+end else begin : gen_10g
 	// gearbox data : scrambled data
 	assign gb_data = data_scram;
 	assign gb_head = sync_head;
+	assign gb_nreset = nreset;
 	
 	// scrambler
 	assign scram_v = gb_accept[0];

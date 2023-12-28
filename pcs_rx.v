@@ -53,7 +53,8 @@ logic [LANE_N-1:0] gb_data_v;
 logic [HEAD_W-1:0] gb_head[LANE_N-1:0];
 logic [DATA_W-1:0] gb_data[LANE_N-1:0];
 logic [LANE_N-1:0] gb_slip_v;/* bit slip */
-
+reg   [LANE_N-1:0] gb_nreset_meta_q;
+reg   [LANE_N-1:0] gb_nreset_q;
 /* block sync */
 logic [LANE_N-1:0] bs_lock_v;
 
@@ -73,18 +74,23 @@ logic [DATA_W-1:0] dec_data[LANE_N-1:0];
 genvar l;
 generate
 for(l=0; l<LANE_N; l++)begin : gen_gearbox_block_sync_loop
-
-	/* SerDes
+		/* SerDes
 	 * signal valid when locked */
 	assign serdes_signal_v[l] = ~serdes_lock_v_i[l];
 	
 	/* gearbox */
+	/* cdc for synchronous reset */
+	always @(posedge rx_par_clk[l])begin
+		gb_nreset_meta_q[l] <= nreset;
+		gb_nreset_q[l]      <= gb_nreset_meta_q[l];
+	end
+
 	gearbox_rx #(
 		.HEAD_W(HEAD_W),
 		.DATA_W(DATA_W)
 	)m_gearbox_rx(
 		.clk(rx_par_clk[l]),
-		.nreset(nreset),
+		.nreset(gb_nreset_q[l]),
 		.lock_v_i(serdes_lock_v_i[l]),
 		.data_i(serdes_data_i[l*DATA_W+DATA_W-1:l*DATA_W]),
 		.slip_v_i(gb_slip_v[l]),
@@ -151,15 +157,15 @@ for(l=0; l<LANE_N; l++)begin : gen_40g_lane_loop
 		 * rx clk and the multilane common pcs clk.
 		 * Step down frequency from 161.13MHz to 156.25MHz */
 		cdc_fifo m_cdc_fifo_rx (
-		.wrclk(rx_par_clk[l]),   
-		.rdclk(pcs_clk), 
-		/* wr */
-		.wrreq(wr_cdc_valid[l]),   
-		.data(wr_cdc_data[l]),    
-		/* rd */  
-		.q(rd_cdc_data[l]),       
-		.rdreq(1'b1),   
-		.rdempty(rd_cdc_valid[l])  
+			.wrclk(rx_par_clk[l]),   
+			.rdclk(pcs_clk), 
+			/* wr */
+			.wrreq(wr_cdc_valid[l]),   
+			.data(wr_cdc_data[l]),    
+			/* rd */  
+			.q(rd_cdc_data[l]),       
+			.rdreq(1'b1),   
+			.rdempty(rd_cdc_valid[l])  
 		);
 	end else begin : gen_no_cdc
 		assign rd_cdc_valid[l] = wr_cdc_valid[l];

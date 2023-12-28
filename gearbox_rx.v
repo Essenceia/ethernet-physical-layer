@@ -89,10 +89,11 @@ generate
 		/* verilator lint_on WIDTHEXPAND */
 	end
 
+logic              unused_rd_data_mask_rev;
 logic [DATA_W-1:0] rd_data_mask_rev; // reversed verson of the data mask
 logic [BLOCK_W-1:0] rd_data_mask; // full version of the mask
 
-assign rd_data_mask_rev = shift_sel - {{DATA_W-1{1'b0}}, 1'b1};
+assign {unused_rd_data_mask_rev, rd_data_mask_rev} = shift_sel - {{DATA_W-1{1'b0}}, 1'b1};
 
 assign rd_data_mask[HEAD_W-1:0] = {HEAD_W{1'b0}};
 for(i=HEAD_W; i< BLOCK_W; i++) begin: rd_data_mask_reverse
