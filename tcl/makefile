@@ -83,8 +83,16 @@ fit:
 timing: quartus_timing.tcl
 	quartus_sta -t $<
 
-assemble:
+# by default assemble will produce a SRAM object file ( .sof )
+# programmed using passive serial
+SOF_OBJ := $(PROJECT_DIR)/$(PROJECT).sof
+PROG := "USB-Blaster [1-3]"
+
+$(SOF_OBJ):
 	quartus_asm $(PROJECT)
+
+prog_sof: $(SOF_OBJ)
+	quartus_pgm -c $(PROG) -m PS -o $(SOF_OBJ)
 
 tap:
 	quartus_stp $(PROJECT) 	
@@ -96,6 +104,7 @@ build:
 	$(MAKE) assemble
 
 rebuild_timing:
+	$(MAKE) lint
 	$(MAKE) synth
 	$(MAKE) fit
 	$(MAKE) timing
