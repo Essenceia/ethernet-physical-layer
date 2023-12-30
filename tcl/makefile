@@ -92,7 +92,7 @@ $(SOF_OBJ):
 	quartus_asm $(PROJECT)
 
 prog_sof: $(SOF_OBJ)
-	quartus_pgm -c $(PROG) -m PS -o $(SOF_OBJ)
+	quartus_pgm -c $(PROG) -m JTAG -o "p;$(SOF_OBJ)@1"
 
 tap:
 	quartus_stp $(PROJECT) 	
