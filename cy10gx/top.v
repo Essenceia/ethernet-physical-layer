@@ -30,7 +30,8 @@ module top #(
 
 	/* status led's */
 	output wire LED_ATX_PLL_LOCKED,
-	output wire LED_ATX_PLL_BUSY
+	output wire LED_ATX_PLL_BUSY,
+	output wire LED_ATX_PLL_TEST
 );
 
 /* differential input buffers */
@@ -103,6 +104,7 @@ atxpll m_trans_tx_atxpll(
 );
 assign LED_ATX_PLL_LOCKED = clk_644m_pll_locked;
 assign LED_ATX_PLL_BUSY   = clk_644m_pll_cal_busy;
+assign LED_ATX_PLL_TEST   = 1'b1;
 
 /* SFP1 PCS */
 logic              gx_rx_sfp1_is_lockedtoref;

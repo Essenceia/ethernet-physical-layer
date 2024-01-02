@@ -63,6 +63,9 @@ set_instance_assignment -name IO_STANDARD "1.8 V" -to "LED_ATX_PLL_LOCKED"
 # LED 1
 set_location_assignment PIN_A8 -to LED_ATX_PLL_BUSY
 set_instance_assignment -name IO_STANDARD "1.8 V" -to "LED_ATX_PLL_BUSY"
+# LED 2
+set_location_assignment PIN_B9 -to LED_ATX_PLL_TEST
+set_instance_assignment -name IO_STANDARD "1.8 V" -to "LED_ATX_PLL_TEST"
 
 # Thermal
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
