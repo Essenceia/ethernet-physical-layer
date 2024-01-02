@@ -26,3 +26,4 @@
 !cy10gx
 !clean_ip_tcl.sh
 !*.stp
+cy10gx/two_ff_sync.sv

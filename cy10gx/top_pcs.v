@@ -8,9 +8,12 @@ module top_pcs #(
 	input  clk_644m, 
 	input  [LANE_N-1:0] gx_rx_par_clk,
 	input  [LANE_N-1:0] gx_tx_par_clk,
-	output [LANE_N-1:0] gx_tx_ser_clk,
 
 	input io_nreset_i,
+	
+	/* tx serial pll */
+	input tx_ser_pll_locked_i,
+	input tx_ser_pll_cal_busy_i,
 
 	/* GX transiver
  	 * reset signals */
@@ -31,52 +34,7 @@ localparam LANE0_CNT_N = !IS_10G ? 1 : 2;
 localparam KEEP_W = DATA_W/8;
 
 logic pcs_clk;
-logic tx_ser_clk;
-
-/* atxpll for tx transiver serial clk : per pcs to help reduce jitter */
-logic rst_pll_powerdown;
-logic rst_tx_cal_busy;
-logic pll_locked;
-
-logic trans_pll_locked;
-logic trans_pll_cal_busy;
-
-// TODO : fix clk
-generate
-if (IS_10G) begin: gen_is_10g
-
 assign pcs_clk = gx_rx_par_clk[0];
-
-assign rst_tx_cal_busy = trans_pll_cal_busy | gx_tx_cal_busy_i; 
-assign pll_locked = trans_pll_locked;
-end else begin: gen_not_10g
-
-logic core_rst_pll_powerdown;
-logic core_pll_locked;
-logic core_pll_cal_busy;
-
-pcs_core_fpll m_pcs_clk_fpll(
-		.pll_powerdown (rst_pll_powerdown), // pll_powerdown.pll_powerdown
-		.pll_refclk0   (clk_644m),               //   pll_refclk0.clk
-		.outclk0       (pcs_clk),       // tx_serial_clk.clk
-		.pll_locked    (core_pll_locked),       //    pll_locked.pll_locked
-		.pll_cal_busy  (core_pll_cal_busy)    //  pll_cal_busy.pll_cal_busy
-);
-/* hijake cal busy : add requirement to wait for common pcs core clk */
-assign rst_tx_cal_busy = trans_pll_cal_busy | |gx_tx_cal_busy_i | core_pll_cal_busy; 
-assign pll_locked = core_pll_locked & trans_pll_locked;
-
-end
-endgenerate
-
-atxpll m_trans_tx_atxpll(
-		.pll_powerdown(rst_pll_powerdown), // pll_powerdown.pll_powerdown
-		.pll_refclk0  (clk_644m),               //   pll_refclk0.clk
-		.tx_serial_clk(tx_ser_clk),       // tx_serial_clk.clk
-		.pll_locked   (trans_pll_locked),       //    pll_locked.pll_locked
-		.pll_cal_busy (trans_pll_cal_busy)    //  pll_cal_busy.pll_cal_busy
-);
-assign gx_tx_ser_clk = {LANE_N{tx_ser_clk}};
 
 /* GX reset controller */
 logic gx_rx_ready;
@@ -98,9 +56,9 @@ phy_rst m_phy_rst (
         .tx_analogreset0     (rst_tx_analogreset),     //  output,  width = 1,     tx_analogreset0.tx_analogreset
         .tx_digitalreset0    (rst_tx_digitalreset),    //  output,  width = 1,    tx_digitalreset0.tx_digitalreset
         .tx_ready0           (gx_tx_ready),           //  output,  width = 1,           tx_ready0.tx_ready
-        .pll_locked0         (pll_locked),        //   input,  width = 1,         pll_locked0.pll_locked
+        .pll_locked0         (tx_ser_pll_locked_i),        //   input,  width = 1,         pll_locked0.pll_locked
         .pll_select          (1'b0),          //   input,  width = 1,          pll_select.pll_select
-        .tx_cal_busy0        (rst_tx_cal_busy),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
+        .tx_cal_busy0        (tx_ser_pll_cal_busy_i),        //   input,  width = 1,        tx_cal_busy0.tx_cal_busy
 
         .rx_analogreset0     (rst_rx_analogreset),     //  output,  width = 1,     rx_analogreset0.rx_analogreset
         .rx_digitalreset0    (rst_rx_digitalreset),    //  output,  width = 1,    rx_digitalreset0.rx_digitalreset

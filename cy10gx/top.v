@@ -26,7 +26,11 @@ module top #(
     input  wire GXB1D_644M_N,
 	/* 125 MHz */
     input  wire GXB1D_125M,
-    input  wire GXB1D_125M_N
+    input  wire GXB1D_125M_N,
+
+	/* status led's */
+	output wire LED_ATX_PLL_LOCKED,
+	output wire LED_ATX_PLL_BUSY
 );
 
 /* differential input buffers */
@@ -68,7 +72,6 @@ endgenerate
  * generate master clock at 161.MHz */
 logic gx_rx_par_clk;// parallel clk
 logic gx_tx_par_clk;// parallel clk
-logic gx_tx_ser_clk;// from core -> transiver fPLL
 
 /* reset from IO, using asynchronous reset synchronizer circuit */
 reg   io_meta_nreset_q;
@@ -85,6 +88,21 @@ always @(posedge OSC_50m or negedge FPGA_RSTn) begin
 	end
 end
 assign io_master_nreset = io_master_nreset_q;
+
+/* 644M clk : shared atxpll for all transivers on bank 1*/
+logic clk_644m;
+logic clk_644m_pll_locked;
+logic clk_644m_pll_cal_busy;
+
+atxpll m_trans_tx_atxpll(
+		.pll_powerdown(~io_master_nreset), // pll_powerdown.pll_powerdown
+		.pll_refclk0  (gx_644M_clk),       //   pll_refclk0.clk
+		.tx_serial_clk(clk_644m),          // tx_serial_clk.clk
+		.pll_locked   (clk_644m_pll_locked),  //    pll_locked.pll_locked
+		.pll_cal_busy (clk_644m_pll_cal_busy) //  pll_cal_busy.pll_cal_busy
+);
+assign LED_ATX_PLL_LOCKED = clk_644m_pll_locked;
+assign LED_ATX_PLL_BUSY   = clk_644m_pll_cal_busy;
 
 /* SFP1 PCS */
 logic              gx_rx_sfp1_is_lockedtoref;
@@ -109,7 +127,7 @@ trans m_sfp1_trans (
 	.rx_digitalreset         (gx_rx_sfp1_digitalreset),         //   input,   width = 1,         rx_digitalreset.rx_digitalreset
 	.tx_cal_busy             (gx_tx_sfp1_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
 	.rx_cal_busy             (gx_rx_sfp1_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
-	.tx_serial_clk0          (gx_tx_sfp1_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
+	.tx_serial_clk0          (clk_644m),          //   input,   width = 1,          tx_serial_clk0.clk
 	.rx_cdr_refclk0          (gx_644M_clk), // not using cdc fifo TODO : remove
 	.tx_serial_data          (gx_tx_ser_data[SFP1_CH]),          //  output,   width = 1,          tx_serial_data.tx_serial_data
 	.rx_serial_data          (gx_rx_ser_data[SFP1_CH]),        //   input,   width = 1,          rx_serial_data.rx_serial_data
@@ -126,15 +144,17 @@ trans m_sfp1_trans (
 );
 
 top_pcs #(
-	.IS_10G(1'b1))
+	.IS_10G(1))
 m_sfp1_pcs(
 .clk_50m(OSC_50m),
-.clk_644m(gx_644M_clk),
+.clk_644m(clk_644m),
 .gx_rx_par_clk(gx_rx_sfp1_par_clk),
 .gx_tx_par_clk(gx_tx_sfp1_par_clk),
-.gx_tx_ser_clk(gx_tx_sfp1_ser_clk),
 
 .io_nreset_i(io_master_nreset),
+
+.tx_ser_pll_locked_i(clk_644m_pll_locked),
+.tx_ser_pll_cal_busy_i(clk_644m_pll_cal_busy),
 
 .gx_tx_analogreset_o(gx_tx_sfp1_analogreset),
 .gx_tx_digitalreset_o(gx_tx_sfp1_digitalreset),
@@ -178,7 +198,7 @@ qsfp_trans m_qsfp1_trans (
 	.rx_digitalreset         (gx_rx_qsfp1_digitalreset),         //   input,   width = 1,         rx_digitalreset.rx_digitalreset
 	.tx_cal_busy             (gx_tx_qsfp1_cal_busy),             //  output,   width = 1,             tx_cal_busy.tx_cal_busy
 	.rx_cal_busy             (gx_rx_qsfp1_cal_busy),             //  output,   width = 1,             rx_cal_busy.rx_cal_busy
-	.tx_serial_clk0          (gx_tx_qsfp1_ser_clk),          //   input,   width = 1,          tx_serial_clk0.clk
+	.tx_serial_clk0          ({4{clk_644m}}),          //   input,   width = 1,          tx_serial_clk0.clk
 	.rx_cdr_refclk0          (gx_644M_clk), // not using cdc fifo TODO : remove
 	.tx_serial_data          (gx_tx_ser_data[QSFP1_CH_MSB:QSFP1_CH_LSB]),          //  output,   width = 1,          tx_serial_data.tx_serial_data
 	.rx_serial_data          (gx_rx_ser_data[QSFP1_CH_MSB:QSFP1_CH_LSB]),        //   input,   width = 1,          rx_serial_data.rx_serial_data
@@ -197,11 +217,12 @@ top_pcs #(
 	.IS_10G(1'b0))
 m_qsfp1_pcs(
 .clk_50m      (OSC_50m),
-.clk_644m     (gx_644M_clk),
+.clk_644m     (clk_644m),
 .gx_rx_par_clk(gx_rx_qsfp1_par_clk),
 .gx_tx_par_clk(gx_tx_qsfp1_par_clk),
-.gx_tx_ser_clk(gx_tx_qsfp1_ser_clk),
 .io_nreset_i  (io_master_nreset),
+.tx_ser_pll_locked_i(clk_644m_pll_locked),
+.tx_ser_pll_cal_busy_i(clk_644m_pll_cal_busy),
 .gx_tx_analogreset_o    (gx_tx_qsfp1_analogreset),
 .gx_tx_digitalreset_o   (gx_tx_qsfp1_digitalreset),
 .gx_tx_cal_busy_i       (gx_tx_qsfp1_cal_busy),

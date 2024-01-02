@@ -56,6 +56,14 @@ set_instance_assignment -name IO_STANDARD "3.0-V LVCMOS" -to FPGA_RSTn -entity t
 # GX 1D channels [0:3] and 5
 set_global_assignment -name PRESERVE_UNUSED_XCVR_CHANNEL ON
 
+# Status led's
+# LED 0
+set_location_assignment PIN_B8 -to LED_ATX_PLL_LOCKED
+set_instance_assignment -name IO_STANDARD "1.8 V" -to "LED_ATX_PLL_LOCKED"
+# LED 1
+set_location_assignment PIN_A8 -to LED_ATX_PLL_BUSY
+set_instance_assignment -name IO_STANDARD "1.8 V" -to "LED_ATX_PLL_BUSY"
+
 # Thermal
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
